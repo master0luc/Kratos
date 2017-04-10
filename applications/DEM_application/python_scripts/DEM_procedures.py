@@ -763,12 +763,31 @@ class Procedures(object):
         creator_destructor.CalculateSurroundingBoundingBox(spheres_model_part, clusters_model_part, rigid_faces_model_part, self.bounding_box_enlargement_factor, self.automatic_bounding_box_OPTION)
 
     def DeleteFiles(self):
+
+        #................Removing extra files
         files_to_delete_list = glob('*.time')
+        files_to_delete_list.extend(glob('*.dat'))
+        files_to_delete_list.extend(glob('*.txt'))
+        files_to_delete_list.extend(glob('*.gp'))
+        for to_erase_file in files_to_delete_list:
+            os.remove(to_erase_file)
+
+        #...........Getting rid of unuseful folders
+        folders_to_delete_list      = glob('*Data')
+        folders_to_delete_list.extend(glob('*ists'))
+        folders_to_delete_list.extend(glob('*ults'))
+        folders_to_delete_list.extend(glob('*he__'))
+        folders_to_delete_list.extend(glob('*aphs'))
+        folders_to_delete_list.extend(glob('*iles'))
+        for to_erase_folder in folders_to_delete_list:
+            shutil.rmtree(to_erase_folder)
+        '''
         for to_erase_file in files_to_delete_list:
             try:
                 os.remove(to_erase_file)
             except OSError:
-                pass            
+                pass
+        '''
 
     def PreProcessModel(self, DEM_parameters):
         pass

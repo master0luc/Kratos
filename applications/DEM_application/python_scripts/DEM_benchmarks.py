@@ -37,6 +37,7 @@ class Solution(main_script.Solution):
         self.main_path = os.getcwd()
         self.dt = self.output_time_step = self.number_of_coeffs_of_restitution = self.number_of_points_in_the_graphic = 0
         self.PreviousOperations()
+        self.bench = True
    
     def Initialize(self, iteration, coeff_of_restitution_iteration):
         super().Initialize(iteration, coeff_of_restitution_iteration)

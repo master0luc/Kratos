@@ -1,3 +1,3 @@
                                          Start   	Stop     	Elapsed 
                                  Repeat # 	Total     	Max     	Min     	Average     	%
-Reading Input.......................... 5 	0.00028098s     	0.000226087s     	5.75394e-06s     	5.6196e-05s     	0.71035%
+Reading Input.......................... 5 	0.000280504s     	0.000221226s     	7.40518e-06s     	5.61009e-05s     	0.793535%

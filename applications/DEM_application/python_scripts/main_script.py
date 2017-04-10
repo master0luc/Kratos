@@ -65,6 +65,7 @@ class Solution:
 
         # Set the print function TO_DO: do this better...
         self.KRATOSprint   = self.procedures.KRATOSprint
+        self.bench = False
 
     def Run(self):        
     
@@ -345,6 +346,7 @@ class Solution:
         for obj in objects_to_destroy:
             del obj
 
-        self.procedures.DeleteFiles()
+        if self.bench == True:
+            self.procedures.DeleteFiles()
 
         self.KRATOSprint(self.report.FinalReport(timer))
