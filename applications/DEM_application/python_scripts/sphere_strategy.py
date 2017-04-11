@@ -204,7 +204,6 @@ class ExplicitStrategy:
         os.chdir("..")
         for properties in self.spheres_model_part.Properties:
             self.ModifyProperties(properties)
-            print("dises1")
 
         for properties in self.inlet_model_part.Properties:
             self.ModifyProperties(properties)
@@ -214,7 +213,6 @@ class ExplicitStrategy:
             
         for properties in self.rigid_body_model_part.Properties:
             self.ModifyProperties(properties, 1)
-            print("dises")
         
         # RESOLUTION METHODS AND PARAMETERS
         # Creating the solution strategy
