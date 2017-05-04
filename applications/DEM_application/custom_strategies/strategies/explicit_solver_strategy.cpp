@@ -1092,7 +1092,19 @@ namespace Kratos {
 
                 #pragma omp for
                 for (int i = 0; i < number_of_particles; i++) {
+                    
+                    /*
+                    if (mListOfSphericParticles[i]->mNeighbourRigidFaces.size()) {
+                        array_1d<double, 3> zero_vector = ZeroVector(3);
+                        mListOfSphericParticles[i]->GetGeometry()[0].FastGetSolutionStepValue(VELOCITY) = zero_vector;
+                        mListOfSphericParticles[i]->GetGeometry()[0].FastGetSolutionStepValue(ANGULAR_VELOCITY)= zero_vector;
+                    }
+                    */
+
                     for (unsigned int j = 0; j < mListOfSphericParticles[i]->mNeighbourRigidFaces.size(); j++) {
+                        //
+                        //mListOfSphericParticles[i]->GetGeometry()[0].FastGetSolutionStepValue(VELOCITY) = mListOfSphericParticles[i]->GetGeometry()[0].FastGetSolutionStepValue(ANGULAR_VELOCITY) = ZeroVector(3);
+                        //
                         DEMWall* p_wall = mListOfSphericParticles[i]->mNeighbourRigidFaces[j];
                         #pragma omp critical
                         {

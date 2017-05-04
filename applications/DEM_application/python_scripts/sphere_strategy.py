@@ -107,9 +107,9 @@ class ExplicitStrategy:
 
         # GLOBAL PHYSICAL ASPECTS
         self.gravity = Vector(3)
-        self.gravity[0] = Param.GravityX
-        self.gravity[1] = Param.GravityY
-        self.gravity[2] = Param.GravityZ
+        self.gravity[0] = 0.0 #Param.GravityX
+        self.gravity[1] = 0.0 #Param.GravityY
+        self.gravity[2] = -9.81 #0.0 #Param.GravityZ
 
         self.virtual_mass_option = 0
         self.nodal_mass_coeff = Param.VirtualMassCoefficient

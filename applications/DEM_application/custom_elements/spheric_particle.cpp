@@ -170,9 +170,9 @@ void SphericParticle::CalculateRightHandSide(ProcessInfo& r_process_info, double
     InitializeForceComputation(r_process_info);
 
     double RollingResistance = 0.0;
-
+    
     ComputeBallToBallContactForce(data_buffer, r_process_info, elastic_force, contact_force, RollingResistance);
-
+    
     ComputeBallToRigidFaceContactForce(elastic_force, contact_force, RollingResistance, rigid_element_force, r_process_info, data_buffer.mDt, search_control);
 
     if (this->IsNot(DEMFlags::BELONGS_TO_A_CLUSTER)){
@@ -1338,7 +1338,7 @@ void SphericParticle::AddUpFEMForcesAndProject(double LocalCoordSystem[3][3],
     for (unsigned int index = 0; index < 3; index++) {
         LocalContactForce[index] = LocalElasticContactForce[index] + ViscoDampingLocalContactForce[index];
     }
-    LocalContactForce[2] -= cohesive_force;
+    //LocalContactForce[2] -= cohesive_force;
 
     GeometryFunctions::VectorLocal2Global(LocalCoordSystem, LocalElasticContactForce, GlobalElasticContactForce);
     GeometryFunctions::VectorLocal2Global(LocalCoordSystem, LocalContactForce, GlobalContactForce);

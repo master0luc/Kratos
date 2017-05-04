@@ -40,6 +40,8 @@ namespace Kratos {
         const double contact_radius = sqrt(equiv_radius * indentation);
         const double cohesive_force = equiv_young * sqrt(8.0 * equiv_cohesion * KRATOS_M_PI * contact_radius * contact_radius * contact_radius / equiv_young);
         
+        if (element1->SlowGetParticleMaterial() != element2->SlowGetParticleMaterial()) return 0.0;
+        
         return cohesive_force;
     }
     

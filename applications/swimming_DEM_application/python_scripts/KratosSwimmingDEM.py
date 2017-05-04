@@ -282,9 +282,9 @@ class Solution:
 
         first_print = True; index_5 = 1; index_10 = 1; index_50 = 1; control = 0.0
 
-        if (self.pp.CFD_DEM.ModelDataInfo == "ON"):
+        if self.pp.CFD_DEM.ModelDataInfo == "ON":
             os.chdir(data_and_results)
-            if (self.pp.CFD_DEM.ContactMeshOption == "ON"):
+            if self.pp.CFD_DEM.ContactMeshOption == "ON":
                 (coordination_number) = self.alg.procedures.ModelData(self.alg.spheres_model_part, self.alg.solver) # Calculates the mean number of neighbours the mean radius, etc..
                 self.alg.KRATOSprint ("Coordination Number: " + str(coordination_number) + "\n")
                 os.chdir(self.main_path)
@@ -391,18 +391,28 @@ class Solution:
         self.alg.PerformZeroStepInitializations()
 
         post_utils.Writeresults(time)
+        
+        #
+        time_starting_velocity_decrease = 1.1
+        time_ending_velocity_decrease = 3.0 #2.0
+        vx = 0.0
+        vy = 0.0
+        vz = 0.0
+        flux_vel_X = 2.5 #5.0 #1.5
+        #
+        # sim_type = 0 means clot, 1 means lungs
+        sim_type = 0
+        #
 
-        while (time <= final_time):
-
+        while time <= final_time:
+            
             time = time + Dt
             step += 1
             fluid_model_part.CloneTimeStep(time)
             self.alg.TellTime(time)
-
-
+            
             if self.pp.CFD_DEM.coupling_scheme_type  == "UpdatedDEM":
                 time_final_DEM_substepping = time + Dt
-
             else:
                 time_final_DEM_substepping = time
 
@@ -431,7 +441,58 @@ class Solution:
                     sys.stdout.flush()
 
             # printing if required
-
+            
+            #
+            # Aquí sólo uso la variable NORMAL para almacenar un cierto campo inicial de velocidad
+            
+            if time < time_starting_velocity_decrease:
+                for node in fluid_model_part.Nodes:
+                    if sim_type == 0:
+                        if node.Z < (0.3333333 - 0.164 * time):
+                            node.SetSolutionStepValue(VELOCITY_X, 0.0)
+                        else:
+                            node.SetSolutionStepValue(VELOCITY_X, flux_vel_X)
+                        node.SetSolutionStepValue(VELOCITY_Z, 0.0)
+                        node.SetSolutionStepValue(VELOCITY_Y, 0.0)
+                        '''
+                        if node.Z < 0.3333333:
+                            node.SetSolutionStepValue(VELOCITY_X, 0.71 * 9.0 * flux_vel_X * time * node.Z * node.Z)
+                            node.SetSolutionStepValue(VELOCITY_Z, 0.71 * 4.5 * flux_vel_X * time * node.Z * node.Z)
+                        else:
+                            node.SetSolutionStepValue(VELOCITY_X, flux_vel_X * time)
+                            node.SetSolutionStepValue(VELOCITY_Z, 0.0)
+                        node.SetSolutionStepValue(VELOCITY_Y, 0.0)'''
+                    else:
+                        node.SetSolutionStepValue(NORMAL_X, node.GetSolutionStepValue(VELOCITY_X))
+                        node.SetSolutionStepValue(NORMAL_Y, node.GetSolutionStepValue(VELOCITY_Y))
+                        node.SetSolutionStepValue(NORMAL_Z, node.GetSolutionStepValue(VELOCITY_Z))
+            #
+            #
+            
+            if time > time_starting_velocity_decrease:
+                for node in fluid_model_part.Nodes:
+                    if sim_type == 0:
+                        if node.Z < (0.3333333 - 0.164 * time_starting_velocity_decrease):
+                            node.SetSolutionStepValue(VELOCITY_X, 0.0)
+                        else:
+                            node.SetSolutionStepValue(VELOCITY_X, flux_vel_X)
+                        node.SetSolutionStepValue(VELOCITY_Z, 0.0)
+                        node.SetSolutionStepValue(VELOCITY_Y, 0.0)
+                    else:
+                        vx = node.GetSolutionStepValue(VELOCITY_X)
+                        vy = node.GetSolutionStepValue(VELOCITY_Y)
+                        vz = node.GetSolutionStepValue(VELOCITY_Z)
+                        node.SetSolutionStepValue(VELOCITY_X, vx*((time_ending_velocity_decrease - time)/(time_ending_velocity_decrease - time_starting_velocity_decrease)))
+                        node.SetSolutionStepValue(VELOCITY_Y, vy*((time_ending_velocity_decrease - time)/(time_ending_velocity_decrease - time_starting_velocity_decrease)))
+                        node.SetSolutionStepValue(VELOCITY_Z, vz*((time_ending_velocity_decrease - time)/(time_ending_velocity_decrease - time_starting_velocity_decrease)))
+                    
+                    #
+                    '''node.SetSolutionStepValue(VELOCITY_X, node.GetSolutionStepValue(NORMAL_X) * ((time_ending_velocity_decrease - time) / (time_ending_velocity_decrease - time_starting_velocity_decrease)))
+                    node.SetSolutionStepValue(VELOCITY_Y, node.GetSolutionStepValue(NORMAL_Y) * ((time_ending_velocity_decrease - time) / (time_ending_velocity_decrease - time_starting_velocity_decrease)))
+                    node.SetSolutionStepValue(VELOCITY_Z, node.GetSolutionStepValue(NORMAL_Z) * ((time_ending_velocity_decrease - time) / (time_ending_velocity_decrease - time_starting_velocity_decrease)))'''
+                    #
+            #
+            
             if particles_results_counter.Tick():
                 # eliminating remote balls
 
