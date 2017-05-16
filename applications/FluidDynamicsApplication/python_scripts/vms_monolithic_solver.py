@@ -25,6 +25,7 @@ def AddVariables(model_part, config=None):
     model_part.AddNodalSolutionStepVariable(EXTERNAL_PRESSURE)
     model_part.AddNodalSolutionStepVariable(FLAG_VARIABLE)
     model_part.AddNodalSolutionStepVariable(NORMAL)
+    model_part.AddNodalSolutionStepVariable(REFERENCE_VELOCITY)
     model_part.AddNodalSolutionStepVariable(Y_WALL)
     model_part.AddNodalSolutionStepVariable(PATCH_INDEX)
 
