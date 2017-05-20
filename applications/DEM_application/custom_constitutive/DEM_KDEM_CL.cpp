@@ -29,9 +29,9 @@ namespace Kratos {
 
         KRATOS_TRY
         double radius_sum = radius + other_radius;
-        double equiv_radius = radius * other_radius / radius_sum;
-        //double equiv_radius = 0.5 * radius_sum;
-        calculation_area = KRATOS_M_PI * equiv_radius * equiv_radius;
+        //double equiv_radius = radius * other_radius / radius_sum;
+        double equiv_radius = 0.5 * radius_sum;
+        calculation_area = KRATOS_M_PI * equiv_radius * equiv_radius * 0.77777777777778;
         KRATOS_CATCH("")  
     }
     
@@ -45,7 +45,7 @@ namespace Kratos {
     }
     
     void DEM_KDEM::GetContactArea(const double radius, const double other_radius, const Vector& vector_of_initial_areas, const int neighbour_position, double& calculation_area) {
-        if (vector_of_initial_areas.size()) calculation_area = vector_of_initial_areas[neighbour_position];
+        if (0); //(vector_of_initial_areas.size()) calculation_area = vector_of_initial_areas[neighbour_position];
         else CalculateContactArea(radius, other_radius, calculation_area);
     }
 
@@ -211,16 +211,71 @@ namespace Kratos {
             int i_neighbour_count,
             int time_steps) {
 
-        KRATOS_TRY       
-      
+        KRATOS_TRY
+                
+        /*if ((element1->GetGeometry()[0].Coordinates()[0] > 0.34) && (element1->GetGeometry()[0].Coordinates()[0] < 0.35) &&
+            (element1->GetGeometry()[0].Coordinates()[1] > 0.3) && (element1->GetGeometry()[0].Coordinates()[1] < 0.305) &&
+            (element2->GetGeometry()[0].Coordinates()[0] > 0.35) && (element2->GetGeometry()[0].Coordinates()[0] < 0.36) &&
+            (element2->GetGeometry()[0].Coordinates()[1] > 0.3) && (element2->GetGeometry()[0].Coordinates()[1] < 0.305)) {
+            KRATOS_WATCH(element1->Id())
+            KRATOS_WATCH(element2->Id())
+        }*/
+        bool clip = false;
+        double limit_force = 0.0;
+        
         if (indentation >= 0.0) { //COMPRESSION
             LocalElasticContactForce[2] = kn_el * indentation;  
         }
         else { //tension   
             int& failure_type = element1->mIniNeighbourFailureId[i_neighbour_count];
-            if (failure_type == 0) {  
+            
+            //Clip1:
+            if ((element1->Id() == 159) && (element2->Id()) == 186) {
+                clip = true;
+                //failure_type = 4;
+                //LocalElasticContactForce[2] = 0.0;
+                //return;
+            }
+            if ((element1->Id() == 186) && (element2->Id()) == 159) {
+                clip = true;
+                //failure_type = 4;
+                //LocalElasticContactForce[2] = 0.0;
+                //return;
+            }
+            //Clip2:
+            if ((element1->Id() == 481) && (element2->Id()) == 492) {
+                clip = true;
+                //failure_type = 4;
+                //LocalElasticContactForce[2] = 0.0;
+                //return;
+            }
+            if ((element1->Id() == 492) && (element2->Id()) == 481) {
+                clip = true;
+                //failure_type = 4;
+                //LocalElasticContactForce[2] = 0.0;
+                //return;
+            }
+            //Clip4:
+            if ((element1->Id() == 370) && (element2->Id()) == 385) {
+                clip = true;
+                //failure_type = 4;
+                //LocalElasticContactForce[2] = 0.0;
+                //return;
+            }
+            if ((element1->Id() == 385) && (element2->Id()) == 370) {
+                clip = true;
+                //failure_type = 4;
+                //LocalElasticContactForce[2] = 0.0;
+                //return;
+            }
+            
+            if (failure_type == 0) {
+                
                 double mTensionLimit = 0.5 * 1e6 * (element1->GetFastProperties()->GetContactSigmaMin() + element2->GetFastProperties()->GetContactSigmaMin()); //N/m2
-                const double limit_force = mTensionLimit * calculation_area;
+                
+                limit_force = mTensionLimit * calculation_area;
+                if (clip) limit_force = 38000; //N
+                
                 LocalElasticContactForce[2] = kn_el * indentation;
                 if (fabs(LocalElasticContactForce[2]) > limit_force) {          
                     failure_type = 4; //tension failure
@@ -354,7 +409,7 @@ namespace Kratos {
         const double equivalent_radius = sqrt(calculation_area / KRATOS_M_PI);
         const double Inertia_I = 0.25 * KRATOS_M_PI * equivalent_radius * equivalent_radius * equivalent_radius * equivalent_radius;
         const double Inertia_J = 2.0 * Inertia_I; // This is the polar inertia
-        const double debugging_rotational_factor = 5.0; //1.0; // Hardcoded only for testing purposes. Obviously, this parameter should be always 1.0
+        const double debugging_rotational_factor = 1.0; //5.0; //1.0; // Hardcoded only for testing purposes. Obviously, this parameter should be always 1.0
                         
         const double element_mass  = element->GetMass();
         const double neighbor_mass = neighbor->GetMass();
