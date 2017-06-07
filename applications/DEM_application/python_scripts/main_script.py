@@ -259,9 +259,41 @@ class Solution(object):
 
     def RunMainTemporalLoop(self):
 
-        self.step           = 0
-        self.time           = 0.0
+        self.step      = 0
+        self.time      = 0.0
         time_old_print = 0.0
+        pi = 3.141592
+        bucket_modelpart_number = 2 # Check this number. It might change between meshing operations
+                            
+        bucket_modelpart_name = self.rigid_face_model_part.GetSubModelPart(str(bucket_modelpart_number))
+        angular_velocity_of_arm = -4 * pi / 180
+        coordinates_of_arm_articulation_y = -6
+        coordinates_of_arm_articulation_z = 6.0675 #5.5675 (+0.5m because MTG prefers it this way)
+        arm_rotation_start_time = 0
+        arm_rotation_stop_time = 10
+        angular_velocity_of_bucket = -11 * pi / 180
+        initial_coordinates_of_bucket_articulation_y = -1.5
+        initial_coordinates_of_bucket_articulation_z = 0.7052 #0.2052 (+0.5m because MTG prefers it this way)
+        bucket_rotation_start_time = 5
+        bucket_rotation_stop_time = 15
+        time_to_lift_the_bucket = 16
+        time_to_stop_lifting_the_bucket = 19
+        bucket_lifting_velocity_z = 0.5
+
+        excavator_object = ExcavatorUtility(bucket_modelpart_name,
+                                            angular_velocity_of_arm,
+                                            coordinates_of_arm_articulation_y,
+                                            coordinates_of_arm_articulation_z,
+                                            arm_rotation_start_time,
+                                            arm_rotation_stop_time,
+                                            angular_velocity_of_bucket,
+                                            initial_coordinates_of_bucket_articulation_y,
+                                            initial_coordinates_of_bucket_articulation_z,
+                                            bucket_rotation_start_time,
+                                            bucket_rotation_stop_time,
+                                            time_to_lift_the_bucket,
+                                            time_to_stop_lifting_the_bucket,
+                                            bucket_lifting_velocity_z)
 
         while (self.time < DEM_parameters.FinalTime):
 
@@ -281,8 +313,9 @@ class Solution(object):
 
             self.AfterSolveOperations()
 
-            self.DEMFEMProcedures.MoveAllMeshes(self.all_model_parts, self.time, self.dt)
+            #self.DEMFEMProcedures.MoveAllMeshes(self.all_model_parts, self.time, self.dt)
             #DEMFEMProcedures.MoveAllMeshesUsingATable(rigid_face_model_part, time, dt)
+            excavator_object.ExecuteInitializeSolutionStep()
 
             ##### adding DEM elements by the inlet ######
             if (DEM_parameters.dem_inlet_option):

@@ -23,13 +23,13 @@ namespace Kratos {
         mW1[1] = 0.0;
         mW1[2] = 0.0;
         const double X_coord_of_YZ_of_symmetry = -2.252; // Hardcoded at the moment
-        mCoordinatesOfStatorCenter[0] = X_coord_of_YZ_of_symmetry;
-        mCoordinatesOfStatorCenter[1] = coordinates_of_arm_articulation_y;
-        mCoordinatesOfStatorCenter[2] = coordinates_of_arm_articulation_z;
-        mInitialCoordinatesOfRotorCenter[0] = X_coord_of_YZ_of_symmetry;
-        mInitialCoordinatesOfRotorCenter[1] = initial_coordinates_of_bucket_articulation_y;
-        mInitialCoordinatesOfRotorCenter[2] = initial_coordinates_of_bucket_articulation_z;
-        const array_1d<double,3> centers_distance = mInitialCoordinatesOfRotorCenter - mCoordinatesOfStatorCenter;
+        mCoordinatesOfArmCenter[0] = X_coord_of_YZ_of_symmetry;
+        mCoordinatesOfArmCenter[1] = coordinates_of_arm_articulation_y;
+        mCoordinatesOfArmCenter[2] = coordinates_of_arm_articulation_z;
+        mInitialCoordinatesOfBucketCenter[0] = X_coord_of_YZ_of_symmetry;
+        mInitialCoordinatesOfBucketCenter[1] = initial_coordinates_of_bucket_articulation_y;
+        mInitialCoordinatesOfBucketCenter[2] = initial_coordinates_of_bucket_articulation_z;
+        const array_1d<double,3> centers_distance = mInitialCoordinatesOfBucketCenter - mCoordinatesOfArmCenter;
         mEccentricity = sqrt(centers_distance[1] * centers_distance[1] + centers_distance[2] * centers_distance[2]);
         mW2[0] = angular_velocity_of_bucket_x;
         mW2[1] = 0.0;
@@ -60,17 +60,17 @@ namespace Kratos {
         ProcessInfo& rCurrentProcessInfo = mrModelPart.GetProcessInfo();
         const double& rCurrentTime = rCurrentProcessInfo[TIME];
 
-        if (!mrModelPart.NodesBegin()->SolutionStepsDataHas(DISPLACEMENT))
-            KRATOS_ERROR << "DISPLACEMENT variable is not in move rotor submodelpart.";
+        if (!mrModelPart.NodesBegin()->SolutionStepsDataHas(DISPLACEMENT)) KRATOS_ERROR << "DISPLACEMENT variable is not in move bucket submodelpart.";
 
-        if (!mrModelPart.NodesBegin()->SolutionStepsDataHas(VELOCITY))
-            KRATOS_ERROR << "VELOCITY variable is not in move rotor submodelpart.";
+        if (!mrModelPart.NodesBegin()->SolutionStepsDataHas(VELOCITY)) KRATOS_ERROR << "VELOCITY variable is not in move bucket submodelpart.";
 
         //UPDATE POSITION OF ROTOR AXIS:
-        const double initial_angle = atan2((mInitialCoordinatesOfRotorCenter[2] - mCoordinatesOfStatorCenter[2]), (mInitialCoordinatesOfRotorCenter[1] - mCoordinatesOfStatorCenter[1]));
+        const double initial_angle = atan2((mInitialCoordinatesOfBucketCenter[2] - mCoordinatesOfArmCenter[2]), (mInitialCoordinatesOfBucketCenter[1] - mCoordinatesOfArmCenter[1]));
         double rotated_angle1;
         static double final_rotated_angle1;
-        if (rCurrentTime < mArmStopTime) {
+        if (rCurrentTime < mArmStartTime) {
+            return;
+        } else if (rCurrentTime < mArmStopTime) {
             rotated_angle1 = mW1[0] * (rCurrentTime - mArmStartTime);
             final_rotated_angle1 = rotated_angle1;
         } else {
@@ -79,14 +79,14 @@ namespace Kratos {
         }
         
         const double current_angle1 = initial_angle + rotated_angle1;
-        array_1d<double,3> vector_to_rotor_center;
-        vector_to_rotor_center[0] = 0.0;
-        vector_to_rotor_center[1] = mEccentricity * cos(current_angle1);
-        vector_to_rotor_center[2] = mEccentricity * sin(current_angle1);
-        const array_1d<double,3> current_rotor_position = mCoordinatesOfStatorCenter + vector_to_rotor_center;
-        noalias(mrModelPart[ROTATION_CENTER]) = current_rotor_position;
+        array_1d<double,3> vector_to_bucket_center;
+        vector_to_bucket_center[0] = 0.0;
+        vector_to_bucket_center[1] = mEccentricity * cos(current_angle1);
+        vector_to_bucket_center[2] = mEccentricity * sin(current_angle1);
+        const array_1d<double,3> current_bucket_position = mCoordinatesOfArmCenter + vector_to_bucket_center;
+        noalias(mrModelPart[ROTATION_CENTER]) = current_bucket_position;
         //UPDATE VELOCITY OF ROTOR AXIS:
-        const array_1d<double,3> rotor_velocity = MathUtils<double>::CrossProduct(vector_to_rotor_center, mW1);
+        const array_1d<double,3> bucket_velocity = MathUtils<double>::CrossProduct(vector_to_bucket_center, mW1);
 
         //UPDATE LOCAL AXES (ROTATE THEM AROUND (0,0,1) THE ROTATED ANGLE )
         double rotated_angle2;
@@ -114,22 +114,22 @@ namespace Kratos {
         GeometryFunctions::RotateAVectorAGivenAngleAroundAUnitaryVector(initial_local_axis_2, vertical_vector, rotated_angle1 + rotated_angle2, current_local_axis_2);
 
         //UPDATE POSITION AND VELOCITY OF ALL NODES
-        array_1d<double,3> from_rotor_center_to_node;
+        array_1d<double,3> from_bucket_center_to_node;
         array_1d<double,3> backup_coordinates;
         
         for (ModelPart::NodesContainerType::iterator node_i = mrModelPart.NodesBegin(); node_i != mrModelPart.NodesEnd(); node_i++) {
             //Get local coordinates at the beginning (local axes are assumed oriented as global axes at the beginning)
             array_1d<double,3> local_coordinates;
-            local_coordinates[1] = node_i->Y0() - mInitialCoordinatesOfRotorCenter[1];
-            local_coordinates[2] = node_i->Z0() - mInitialCoordinatesOfRotorCenter[2];
+            local_coordinates[1] = node_i->Y0() - mInitialCoordinatesOfBucketCenter[1];
+            local_coordinates[2] = node_i->Z0() - mInitialCoordinatesOfBucketCenter[2];
 
             //Use local coordinates with the updated local axes
-            noalias(from_rotor_center_to_node) = local_coordinates[1] * current_local_axis_1 + local_coordinates[2] * current_local_axis_2;
+            noalias(from_bucket_center_to_node) = local_coordinates[1] * current_local_axis_1 + local_coordinates[2] * current_local_axis_2;
 
             array_1d<double,3>& current_node_position = node_i->Coordinates();
             backup_coordinates = current_node_position;
-            current_node_position[1] = current_rotor_position[1] + local_coordinates[1] * current_local_axis_1[1] + local_coordinates[2] * current_local_axis_2[1];
-            current_node_position[2] = current_rotor_position[2] + local_coordinates[1] * current_local_axis_1[2] + local_coordinates[2] * current_local_axis_2[2];
+            current_node_position[1] = current_bucket_position[1] + local_coordinates[1] * current_local_axis_1[1] + local_coordinates[2] * current_local_axis_2[1];
+            current_node_position[2] = current_bucket_position[2] + local_coordinates[1] * current_local_axis_1[2] + local_coordinates[2] * current_local_axis_2[2];
             
             if ((rCurrentTime > mTimeLiftBucket) && (rCurrentTime <= mTimeStopLiftBucket)) current_node_position[2] = current_node_position[2] + mBucketLiftingVelocity[2] * (rCurrentTime - mTimeLiftBucket);
             if (rCurrentTime > mTimeStopLiftBucket) current_node_position[2] += mBucketLiftingVelocity[2] * (mTimeStopLiftBucket - mTimeLiftBucket);
@@ -138,7 +138,7 @@ namespace Kratos {
             noalias(node_i->FastGetSolutionStepValue(DELTA_DISPLACEMENT)) = node_i->Coordinates() - backup_coordinates;
 
             array_1d<double,3>& current_node_velocity = node_i->FastGetSolutionStepValue(VELOCITY);
-            current_node_velocity = rotor_velocity + MathUtils<double>::CrossProduct(from_rotor_center_to_node, mW2);
+            current_node_velocity = bucket_velocity + MathUtils<double>::CrossProduct(from_bucket_center_to_node, mW2);
             if ((rCurrentTime > mTimeLiftBucket) && (rCurrentTime <= mTimeStopLiftBucket)) current_node_velocity[2] += mBucketLiftingVelocity[2];
 
         }//end of loop over nodes

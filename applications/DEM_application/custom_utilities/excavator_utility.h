@@ -51,8 +51,8 @@ namespace Kratos {
         array_1d<double,3>                         mLocalAxis1;
         array_1d<double,3>                         mLocalAxis2;
         array_1d<double,3>                         mLocalAxis3;
-        array_1d<double,3>    mInitialCoordinatesOfRotorCenter;
-        array_1d<double,3>          mCoordinatesOfStatorCenter;
+        array_1d<double,3>    mInitialCoordinatesOfBucketCenter;
+        array_1d<double,3>          mCoordinatesOfArmCenter;
         double mArmStartTime;
         double mBucketStartTime;
         double mArmStopTime;
