@@ -53,8 +53,8 @@ RigidFace3D::~RigidFace3D() {}
 void RigidFace3D::Initialize() {
 
     const unsigned int number_of_nodes = GetGeometry().size();
-
-    for (unsigned int i=0; i< number_of_nodes; i++)
+    
+    for (unsigned int i = 0; i < number_of_nodes; i++)
     {
         this->GetGeometry()[i].FastGetSolutionStepValue(NON_DIMENSIONAL_VOLUME_WEAR) = 0.0;
         this->GetGeometry()[i].FastGetSolutionStepValue(IMPACT_WEAR) = 0.0;

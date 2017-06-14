@@ -417,6 +417,7 @@ class Procedures(object):
         model_part.AddNodalSolutionStepVariable(DEM_NODAL_AREA)
         model_part.AddNodalSolutionStepVariable(NON_DIMENSIONAL_VOLUME_WEAR)
         model_part.AddNodalSolutionStepVariable(IMPACT_WEAR)
+        print("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
         #model_part.AddNodalSolutionStepVariable(FREE_BODY_MOTION)
         
     def AddRigidBodyVariables(self, model_part, DEM_parameters):
@@ -1675,7 +1676,8 @@ class DEMIo(object):
             
     def PrintingRigidBodyVariables(self, export_model_part, time):
         for variable in self.rigid_body_variables:
-            self.gid_io.WriteNodalResults(variable, export_model_part.Nodes, time, 0)
+            pass
+            ##self.gid_io.WriteNodalResults(variable, export_model_part.Nodes, time, 0)
 
     def PrintingContactElementsVariables(self, export_model_part, time):
         if (self.contact_mesh_option == "ON"):

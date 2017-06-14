@@ -47,7 +47,7 @@ class RigidBodyManager {
     private:
 
     /// Assignment operator
-    RigidBodyManager & operator=(RigidBodyManager const& rOther);
+    RigidBodyManager& operator=(RigidBodyManager const& rOther);
 
     }; // Class RigidBodyManager
 

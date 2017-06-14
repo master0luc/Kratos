@@ -20,7 +20,7 @@
 // Project includes
 #include "includes/define.h"
 #include "includes/node.h"
-#include "includes/element.h"
+#include "includes/element.h" /////////// QUITAR?
 #include "geometries/geometry.h"
 #include "includes/properties.h"
 #include "includes/process_info.h"
@@ -31,11 +31,12 @@
 #include "custom_elements/spheric_particle.h"
 #include "custom_utilities/create_and_destroy.h"
 #include "utilities/quaternion.h"
+#include "custom_elements/rigid_body_element.h"
 
 namespace Kratos
 {
-    
-    class Cluster3D : public Element {
+    class Element;
+    class Cluster3D : public RigidBodyElement3D {
         
     public:
         /// Pointer definition of Cluster3D
@@ -51,7 +52,7 @@ namespace Kratos
         /// Destructor.
         virtual ~Cluster3D();
       
-        using Element::Initialize;
+        //using Element::Initialize;
         virtual void Initialize(ProcessInfo& r_process_info);
         virtual void SetIntegrationScheme(DEMIntegrationScheme::Pointer& integration_scheme);
         virtual void InitializeSolutionStep(ProcessInfo& r_process_info){};
@@ -111,12 +112,12 @@ namespace Kratos
 
         virtual void save(Serializer& rSerializer) const
         {
-            KRATOS_SERIALIZE_SAVE_BASE_CLASS(rSerializer, Element );
+            KRATOS_SERIALIZE_SAVE_BASE_CLASS(rSerializer, RigidBodyElement3D );
         }
 
         virtual void load(Serializer& rSerializer)
         {
-            KRATOS_SERIALIZE_LOAD_BASE_CLASS(rSerializer, Element );
+            KRATOS_SERIALIZE_LOAD_BASE_CLASS(rSerializer, RigidBodyElement3D );
         }
 
     }; // Class Cluster3D

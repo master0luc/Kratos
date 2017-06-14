@@ -274,54 +274,66 @@ namespace Kratos {
 
         KRATOS_TRY
         
-        ConditionsArrayType& pTConditions = mpFem_model_part->GetCommunicator().LocalMesh().Conditions();
+        ConditionsArrayType& pTConditions = mpRigidBody_model_part->GetCommunicator().LocalMesh().Conditions();
         OpenMPUtils::CreatePartition(mNumberOfThreads, pTConditions.size(), this->GetElementPartition());
-        ModelPart& fem_model_part = GetFemModelPart();
         ProcessInfo& r_process_info = GetModelPart().GetProcessInfo();
         ModelPart& rigid_body_model_part = GetRigidBodyModelPart();
+        ModelPart& fem_model_part = GetFemModelPart();
                 
-        if (fem_model_part.NumberOfSubModelParts()) {
-            for (ModelPart::SubModelPartsContainerType::iterator sub_model_part = fem_model_part.SubModelPartsBegin(); sub_model_part != fem_model_part.SubModelPartsEnd(); ++sub_model_part) {
+        if (rigid_body_model_part.NumberOfSubModelParts()) {
+            for (ModelPart::SubModelPartsContainerType::iterator sub_model_part = rigid_body_model_part.SubModelPartsBegin(); sub_model_part != rigid_body_model_part.SubModelPartsEnd(); ++sub_model_part) {
                  
                 ModelPart& submp = *sub_model_part;             
                 const int fbm = submp[FREE_BODY_MOTION];
 
                 if (fbm) {
-                    //RigidBodyElement3D* RBE = new RigidBodyElement3D;
+
                     NodesArrayType& pNodes = sub_model_part->Nodes();
                     
-                    #pragma omp parallel for
+                    vector<unsigned int> node_partition;
+                    OpenMPUtils::CreatePartition(mNumberOfThreads, pNodes.size(), node_partition);
+                    
+                    for (int k = 0; k < mNumberOfThreads; k++) {
+
+                        NodesArrayType::iterator i_begin = pNodes.ptr_begin() + node_partition[k];
+                        NodesArrayType::iterator i_end = pNodes.ptr_begin() + node_partition[k + 1];
+
+                        fem_model_part.AddNodes(i_begin, i_end);
+                    }
+
                     for (int k = 0; k < mNumberOfThreads; k++) {
                         ConditionsArrayType::iterator it_begin = pTConditions.ptr_begin() + this->GetElementPartition()[k];
                         ConditionsArrayType::iterator it_end = pTConditions.ptr_begin() + this->GetElementPartition()[k + 1];
 
                         for (ConditionsArrayType::iterator it = it_begin; it != it_end; ++it) {
                             (it)->Initialize();
-                            //Add this triangle to the newly created RigidBodyElement3D... Not necessary, maybe only Nodes?
                         }
+                        
+                        fem_model_part.AddConditions(it_begin, it_end);
                     }
-                    
-                    vector<unsigned int> node_partition;
-                    OpenMPUtils::CreatePartition(mNumberOfThreads, pNodes.size(), node_partition);
-                    
-                    // Node
-                    Node<3>::Pointer pnew_node;
+
+                    // Central Node
+                    Node<3>::Pointer central_node;
+                    Geometry<Node<3> >::PointsArrayType central_node_list;
+                    ///
                     array_1d<double, 3> reference_coordinates;
                     reference_coordinates[0] = submp[RIGID_BODY_CENTROID][0];
                     reference_coordinates[1] = submp[RIGID_BODY_CENTROID][1];
                     reference_coordinates[2] = submp[RIGID_BODY_CENTROID][2];
                     int Node_Id = mpParticleCreatorDestructor->FindMaxNodeIdInModelPart(rigid_body_model_part);
-                    mpParticleCreatorDestructor->CentroidCreatorForRigidBodyElements(rigid_body_model_part, pnew_node, Node_Id + 1, reference_coordinates);
-                    
+                    mpParticleCreatorDestructor->CentroidCreatorForRigidBodyElements(rigid_body_model_part, central_node, Node_Id + 1, reference_coordinates);
+                    central_node_list.push_back(central_node);
+
                     // Element
                     int Element_Id = mpParticleCreatorDestructor->FindMaxElementIdInModelPart(rigid_body_model_part);
-                    Point3D<Node<3>> geometry(pnew_node); //??
-                    //Properties::Pointer properties = fem_model_part.GetMesh().pGetProperties(0);
-                    //RigidBodyElement3D RBEAux = RigidBodyElement3D();
-                    //Element::Pointer RBE_Kratos = RBEAux.Create(Element_Id + 1,geometry,properties);
-                    //Element::GeometryType::Pointer Geometry= Element::GeometryType::Pointer(new Point3D <Node<3> >(Element::GeometryType::PointsArrayType(1)));
-                    RigidBodyElement3D* RBE = new RigidBodyElement3D(Element_Id + 1, geometry); //, properties);
-                    //RigidBodyElement3D* RBE = dynamic_cast<RigidBodyElement3D*>(RBE_Kratos.get());    
+                    Properties::Pointer properties = rigid_body_model_part.GetMesh().pGetProperties(0);
+                    
+                    std::string ElementNameString = "RigidBodyElement3D";
+                    const Element& r_reference_element = KratosComponents<Element>::Get(ElementNameString);
+                    Element::Pointer RBE_Kratos = r_reference_element.Create(Element_Id + 1, central_node_list, properties);
+                    RigidBodyElement3D* RBE = dynamic_cast<RigidBodyElement3D*>(RBE_Kratos.get());
+                   
+                    rigid_body_model_part.AddElement(RBE_Kratos); //, Element_Id + 1);
 
                     for (int k = 0; k < mNumberOfThreads; k++) {
 
@@ -333,7 +345,14 @@ namespace Kratos {
                             RBE->mListOfNodes.push_back(*(i.base()));                           
                         }
                     }
-                    
+                    /*
+                    #pragma omp parallel for
+                    for (int k = 0; k < int(pTConditions.size()); k++) {
+                        
+                        ConditionsArrayType::iterator it = pTConditions.ptr_begin() + k;
+                        RBE->mListOfRigidFaces.push_back(*(it.base()));                           
+                    }
+                    */
                     RBE->Initialize(r_process_info, submp);
                 }
             }
@@ -755,7 +774,6 @@ namespace Kratos {
                 double fbm = submp[FREE_BODY_MOTION];
                 
                 if (!fbm) {                   
-                    KRATOS_WATCH("FREE_BODY_MOTION")
                     #pragma omp parallel for
                     for (int k = 0; k < mNumberOfThreads; k++) {
                         ConditionsArrayType::iterator it_begin = pTConditions.ptr_begin() + this->GetElementPartition()[k];

@@ -120,6 +120,7 @@ namespace Kratos {
     
     void DEMIntegrationScheme::MoveRigidBodyElement(RigidBodyElement3D* rigid_body_element, Node<3> & i, const double delta_t,
                                                     const bool rotation_option, const double force_reduction_factor, const int StepFlag) {
+        KRATOS_WATCH("MoveRigidBodyElement...")
         CalculateTranslationalMotionOfNode(i, delta_t, force_reduction_factor, StepFlag);
         if (rotation_option) {
             RotateRigidBodyElementNode(i, delta_t, force_reduction_factor, StepFlag);                

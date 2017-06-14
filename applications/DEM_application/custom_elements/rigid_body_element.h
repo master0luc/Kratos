@@ -87,9 +87,8 @@ namespace Kratos {
         std::vector<Node<3>::Pointer > mListOfNodes;
         DEMIntegrationScheme* mpIntegrationScheme;
  
-    protected:
+    //protected:
 
-        
         std::vector<RigidFace3D*> mListOfRigidFaces;
         array_1d<double,3> mInertias;                                
         double mMass;
@@ -100,12 +99,12 @@ namespace Kratos {
 
         virtual void save(Serializer& rSerializer) const
         {
-            KRATOS_SERIALIZE_SAVE_BASE_CLASS(rSerializer, Element );
+            KRATOS_SERIALIZE_SAVE_BASE_CLASS(rSerializer, Element);
         }
 
         virtual void load(Serializer& rSerializer)
         {
-            KRATOS_SERIALIZE_LOAD_BASE_CLASS(rSerializer, Element );
+            KRATOS_SERIALIZE_LOAD_BASE_CLASS(rSerializer, Element);
         }
 
     }; // Class RigidBodyElement3D

@@ -76,7 +76,7 @@ set( KRATOS_DEM_APPLICATION_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/properties_proxies.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/dem_fem_utilities.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/AuxiliaryUtilities.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/rigid_body_manager.cpp
+        #${CMAKE_CURRENT_SOURCE_DIR}/custom_utilities/rigid_body_manager.cpp
 )
 
 ###############################################################

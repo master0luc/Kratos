@@ -229,6 +229,11 @@ namespace Kratos {
     }
     
     void RigidBodyElement3D::Move(const double delta_t, const bool rotation_option, const double force_reduction_factor, const int StepFlag ) {
+        KRATOS_WATCH(delta_t)
+        KRATOS_WATCH(force_reduction_factor)
+        KRATOS_WATCH(rotation_option)
+        KRATOS_WATCH(StepFlag)
+        KRATOS_WATCH("Moving...")
         GetIntegrationScheme().MoveRigidBodyElement(this, GetGeometry()[0], delta_t, rotation_option, force_reduction_factor, StepFlag);            
     }   
 } // namespace Kratos

@@ -55,6 +55,7 @@ namespace Kratos
                 ModelPart& submp = *sub_model_part;
                 
                 const bool rigid_body_motion = submp[RIGID_BODY_MOTION];
+                //KRATOS_WATCH("MoveAllMeshes...")
                 if (!rigid_body_motion) continue;
                 
                 NodesArrayType& rNodes = submp.Nodes();

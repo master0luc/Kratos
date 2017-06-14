@@ -23,20 +23,20 @@
 
 namespace Kratos {
 
-    Cluster3D::Cluster3D() : Element() {}
+    Cluster3D::Cluster3D() : RigidBodyElement3D() {}
             
     Cluster3D::Cluster3D(IndexType NewId, GeometryType::Pointer pGeometry)
-    : Element(NewId, pGeometry) {
+    : RigidBodyElement3D(NewId, pGeometry) {
         mpIntegrationScheme = NULL;
     }
       
     Cluster3D::Cluster3D(IndexType NewId, GeometryType::Pointer pGeometry, PropertiesType::Pointer pProperties)
-    : Element(NewId, pGeometry, pProperties) {
+    : RigidBodyElement3D(NewId, pGeometry, pProperties) {
         mpIntegrationScheme = NULL;
     }
       
     Cluster3D::Cluster3D(IndexType NewId, NodesArrayType const& ThisNodes)
-    : Element(NewId, ThisNodes) {
+    : RigidBodyElement3D(NewId, ThisNodes) {
         mpIntegrationScheme = NULL;
     }
     
