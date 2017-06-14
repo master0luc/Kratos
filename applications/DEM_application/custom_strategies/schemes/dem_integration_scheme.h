@@ -1,15 +1,9 @@
 //        
-// Author: Miguel AngelCeligueta, maceli@cimne.upc.edu
+// Author: Miguel Angel Celigueta, maceli@cimne.upc.edu
 //
 
-
-#if !defined(KRATOS_DEM_INTEGRATION_SCHEME_H_INCLUDED)
+#if !defined KRATOS_DEM_INTEGRATION_SCHEME_H_INCLUDED
 #define KRATOS_DEM_INTEGRATION_SCHEME_H_INCLUDED
-
-
-
-
-// External includes 
 
 // Project includes
 #include "includes/define.h"
@@ -50,7 +44,7 @@ namespace Kratos {
         virtual void SetIntegrationSchemeInProperties(Properties::Pointer pProp) const;
         
         /*virtual void AddSpheresVariables(ModelPart & r_model_part, bool TRotationOption);
-        virtual void AddClustersVariables(ModelPart & r_model_part, bool TRotationOption); */               
+        virtual void AddClustersVariables(ModelPart & r_model_part, bool TRotationOption);*/               
         virtual void Move(Node<3> & i, const double delta_t, const bool rotation_option, const double force_reduction_factor, const int StepFlag);
         virtual void MoveCluster(Cluster3D* cluster_element, Node<3> & i, const double delta_t, const bool rotation_option, const double force_reduction_factor, const int StepFlag);
         virtual void MoveRigidBodyElement(RigidBodyElement3D* rigid_body_element, Node<3> & i, const double delta_t,
@@ -212,7 +206,7 @@ namespace Kratos {
         return rOStream;
     }
 
-} // namespace Kratos.
+} // namespace Kratos
 
-#endif // KRATOS_DEM_INTEGRATION_SCHEME_H_INCLUDED  defined 
+#endif // KRATOS_DEM_INTEGRATION_SCHEME_H_INCLUDED defined 
 

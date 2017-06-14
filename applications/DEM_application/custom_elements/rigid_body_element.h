@@ -1,15 +1,12 @@
-//   Created by:   Salva Latorre, latorre@cimne.upc.edu
+// Created by: Salva Latorre, latorre@cimne.upc.edu
 
-#if !defined(KRATOS_RIGID_BODY_ELEMENT_H_INCLUDED)
+#if !defined KRATOS_RIGID_BODY_ELEMENT_H_INCLUDED
 #define KRATOS_RIGID_BODY_ELEMENT_H_INCLUDED
 
 // System includes
 #include <string>
 #include <iostream> 
 #include <cmath>
-
-// External includes 
-//#include "boost/smart_ptr.hpp"
 
 // Project includes
 #include "includes/define.h"
@@ -92,6 +89,8 @@ namespace Kratos {
         std::vector<RigidFace3D*> mListOfRigidFaces;
         array_1d<double,3> mInertias;                                
         double mMass;
+        std::vector<SphericParticle*> mListOfSphericParticles; 
+
       
     private:
        

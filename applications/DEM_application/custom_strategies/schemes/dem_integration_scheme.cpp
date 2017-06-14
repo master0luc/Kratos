@@ -111,10 +111,10 @@ namespace Kratos {
         CalculateTranslationalMotionOfNode(i, delta_t, force_reduction_factor, StepFlag);   
         if (rotation_option) {
             RotateClusterNode(i, delta_t, force_reduction_factor, StepFlag);                
-            cluster_element->UpdatePositionOfSpheres();
+            cluster_element->UpdatePositionOfNodes();
         }  
         else {
-            cluster_element->UpdateLinearDisplacementAndVelocityOfSpheres();
+            cluster_element->UpdateLinearDisplacementAndVelocityOfNodes();
         }
     }
     
@@ -304,7 +304,7 @@ namespace Kratos {
                 Node<3> & i = cluster_element.GetGeometry()[0];
 
                 RotateClusterNode(i, delta_t, moment_reduction_factor, StepFlag);                
-                cluster_element.UpdatePositionOfSpheres();
+                cluster_element.UpdatePositionOfNodes();
             } //for Elements
         } //for number of threads
         KRATOS_CATCH(" ")

@@ -397,7 +397,7 @@ namespace Kratos {
             cluster_element.GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES).clear();
             cluster_element.GetGeometry()[0].FastGetSolutionStepValue(PARTICLE_MOMENT).clear();
 
-            cluster_element.GetClustersForce(gravity);
+            cluster_element.GetRigidBodyElementsForce(gravity);
         } // loop over clusters
         KRATOS_CATCH("")
     }
