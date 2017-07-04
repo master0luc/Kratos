@@ -437,7 +437,7 @@ class ExplicitStrategy:
 
             type_of_law = DiscontinuumConstitutiveLaw.GetTypeOfLaw()
             
-            print("veamos:")
+            print("properties[WALL_FRICTION]:")
             print(properties[WALL_FRICTION])
 
             write_gamma = False
@@ -468,8 +468,8 @@ class ExplicitStrategy:
             scheme_name = properties[DEM_INTEGRATION_SCHEME_NAME]
         else:
             scheme_name = self.Parameters.IntegrationScheme
+            print('Scheme_name:')
             print(scheme_name)
-            print('dises')
             
         scheme, error_status, summary_mssg = self.GetScheme(scheme_name)
         scheme.SetIntegrationSchemeInProperties(properties)
