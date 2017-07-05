@@ -21,19 +21,23 @@ namespace Kratos {
     RigidBodyElement3D::RigidBodyElement3D(IndexType NewId, GeometryType::Pointer pGeometry)
     : Element(NewId, pGeometry) {
         mpIntegrationScheme = NULL;
+        KRATOS_WATCH("RigidBodyElement3D Constructor1")
     }
       
     RigidBodyElement3D::RigidBodyElement3D(IndexType NewId, GeometryType::Pointer pGeometry, PropertiesType::Pointer pProperties)
     : Element(NewId, pGeometry, pProperties) {
         mpIntegrationScheme = NULL;
+        KRATOS_WATCH("RigidBodyElement3D Constructor2")
     }
       
     RigidBodyElement3D::RigidBodyElement3D(IndexType NewId, NodesArrayType const& ThisNodes)
     : Element(NewId, ThisNodes) {
         mpIntegrationScheme = NULL;
+        KRATOS_WATCH("RigidBodyElement3D Constructor3")
     }
     
     Element::Pointer RigidBodyElement3D::Create(IndexType NewId, NodesArrayType const& ThisNodes, PropertiesType::Pointer pProperties) const {
+        KRATOS_WATCH("RigidBodyElement3D Constructor4")
         return Element::Pointer(new RigidBodyElement3D(NewId, GetGeometry().Create(ThisNodes), pProperties));
     }      
     
@@ -42,6 +46,7 @@ namespace Kratos {
     
         mListOfCoordinates.clear();  
         if (mpIntegrationScheme != NULL) delete mpIntegrationScheme;
+        KRATOS_WATCH("RigidBodyElement3D Destructor")
         // Destroy triangles?
     }
       
@@ -65,6 +70,9 @@ namespace Kratos {
         mInertias[0] = rigid_body_element_sub_model_part[RIGID_BODY_INERTIAS][0];
         mInertias[1] = rigid_body_element_sub_model_part[RIGID_BODY_INERTIAS][1];
         mInertias[2] = rigid_body_element_sub_model_part[RIGID_BODY_INERTIAS][2];
+        KRATOS_WATCH(mInertias[0])
+        KRATOS_WATCH(mInertias[1])
+        KRATOS_WATCH(mInertias[2])
         mMass = rigid_body_element_sub_model_part[RIGID_BODY_MASS]; 
         
         GetGeometry()[0].FastGetSolutionStepValue(ORIENTATION) = Quaternion<double>(1.0, 0.0, 0.0, 0.0);
@@ -83,10 +91,11 @@ namespace Kratos {
 
         const array_1d<double,3>& reference_inertias = mInertias;                                
         GetGeometry()[0].FastGetSolutionStepValue(NODAL_MASS) = mMass;
+        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(NODAL_MASS))
         GetGeometry()[0].FastGetSolutionStepValue(PRINCIPAL_MOMENTS_OF_INERTIA)[0] = reference_inertias[0];
         GetGeometry()[0].FastGetSolutionStepValue(PRINCIPAL_MOMENTS_OF_INERTIA)[1] = reference_inertias[1];
         GetGeometry()[0].FastGetSolutionStepValue(PRINCIPAL_MOMENTS_OF_INERTIA)[2] = reference_inertias[2];
-        
+        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(PRINCIPAL_MOMENTS_OF_INERTIA)[2])
         array_1d<double, 3> base_principal_moments_of_inertia = GetGeometry()[0].FastGetSolutionStepValue(PRINCIPAL_MOMENTS_OF_INERTIA);  
         
         Quaternion<double>& Orientation = GetGeometry()[0].FastGetSolutionStepValue(ORIENTATION);

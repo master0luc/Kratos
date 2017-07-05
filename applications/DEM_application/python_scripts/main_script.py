@@ -101,7 +101,7 @@ class Solution:
         self.solver.AddDofs(self.spheres_model_part)
         self.solver.AddDofs(self.cluster_model_part)
         self.solver.AddDofs(self.DEM_inlet_model_part)
-        self.solver.AddDofs(self.rigid_body_model_part)
+        #self.solver.AddDofs(self.rigid_body_model_part)
         
         os.chdir(self.main_path)
 

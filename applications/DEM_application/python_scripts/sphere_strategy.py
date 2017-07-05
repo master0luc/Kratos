@@ -464,6 +464,9 @@ class ExplicitStrategy:
                 pre_utils.SetClusterInformationInProperties(name, list_of_coordinates, list_of_radii, size, volume, inertias, properties)
                 self.Procedures.KRATOSprint(properties)
             
+        print("properties[WALL_FRICTION]:")
+        print(properties[WALL_FRICTION])
+            
         if properties.Has(DEM_INTEGRATION_SCHEME_NAME):  
             scheme_name = properties[DEM_INTEGRATION_SCHEME_NAME]
         else:

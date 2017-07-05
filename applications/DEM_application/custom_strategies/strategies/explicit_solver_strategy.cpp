@@ -423,12 +423,11 @@ namespace Kratos {
         ProcessInfo& r_process_info = GetModelPart().GetProcessInfo();
         double dt = r_process_info[DELTA_TIME];
         const array_1d<double, 3>& gravity = r_process_info[GRAVITY];
-        //double dem_stress_zz = 0.0;
-
         const int number_of_particles = (int) mListOfSphericParticles.size();
         
-        //double total_volume = 0.0;
-        //unsigned int total_particles = 0;
+        /*double dem_stress_zz = 0.0;
+        double total_volume = 0.0;
+        unsigned int total_particles = 0;*/
         
         #pragma omp parallel for schedule(dynamic, 100) //schedule(guided)for schedule(dynamic, 100) //schedule(guided) TODO UNCOMMENT
         for (int i = 0; i < number_of_particles; i++) {
@@ -438,10 +437,10 @@ namespace Kratos {
             //dem_stress_zz += mListOfSphericParticles[i]->GetGeometry()[0].FastGetSolutionStepValue(DEM_STRESS_ZZ);
         }
         
-        //KRATOS_WATCH(total_volume)
-        //KRATOS_WATCH(total_particles)
+        /*KRATOS_WATCH(total_volume)
+        KRATOS_WATCH(total_particles)
         
-        /*
+        
         dem_stress_zz /= number_of_particles;
         
         double variance_dem_stress_zz = 0.0;
@@ -682,8 +681,64 @@ namespace Kratos {
                     vector<unsigned int> node_partition;
                     OpenMPUtils::CreatePartition(mNumberOfThreads, pNodes.size(), node_partition);
                     
-                
-                
+                    for (int k = 0; k < mNumberOfThreads; k++) {
+                        ConditionsArrayType::iterator it_begin = pTConditions.ptr_begin() + this->GetElementPartition()[k];
+                        ConditionsArrayType::iterator it_end = pTConditions.ptr_begin() + this->GetElementPartition()[k + 1];
+
+                        for (ConditionsArrayType::iterator it = it_begin; it != it_end; ++it) {
+                            (it)->Initialize();
+                        }                        
+                    }
+                    
+                    // Central Node
+                    Node<3>::Pointer central_node;
+                    Geometry<Node<3> >::PointsArrayType central_node_list;
+                    ///
+                    array_1d<double, 3> reference_coordinates;
+                    reference_coordinates[0] = submp[RIGID_BODY_CENTROID][0];
+                    reference_coordinates[1] = submp[RIGID_BODY_CENTROID][1];
+                    reference_coordinates[2] = submp[RIGID_BODY_CENTROID][2];
+                    KRATOS_WATCH(reference_coordinates[0])
+                    KRATOS_WATCH(reference_coordinates[1])
+                    KRATOS_WATCH(reference_coordinates[2])
+                    int Node_Id = mpParticleCreatorDestructor->FindMaxNodeIdInModelPart(fem_model_part);
+                    KRATOS_WATCH(Node_Id)
+                    mpParticleCreatorDestructor->CentroidCreatorForRigidBodyElements(fem_model_part, central_node, Node_Id + 1, reference_coordinates);
+                    central_node_list.push_back(central_node);
+
+                    // Element
+                    int Element_Id = mpParticleCreatorDestructor->FindMaxElementIdInModelPart(fem_model_part);
+                    KRATOS_WATCH(Element_Id)
+                    Properties::Pointer properties = fem_model_part.GetMesh().pGetProperties(0); ////This is Properties 0 ?????
+                    
+                    std::string ElementNameString = "RigidBodyElement3D";
+                    const Element& r_reference_element = KratosComponents<Element>::Get(ElementNameString);
+                    Element::Pointer RBE_Kratos = r_reference_element.Create(Element_Id + 1, central_node_list, properties);
+                    RigidBodyElement3D* RBE = dynamic_cast<RigidBodyElement3D*>(RBE_Kratos.get());
+                   
+                    rigid_body_model_part.AddElement(RBE_Kratos); //, Element_Id + 1);
+
+                    for (int k = 0; k < mNumberOfThreads; k++) {
+
+                        NodesArrayType::iterator i_begin = pNodes.ptr_begin() + node_partition[k];
+                        NodesArrayType::iterator i_end = pNodes.ptr_begin() + node_partition[k + 1];
+
+                        for (ModelPart::NodeIterator i = i_begin; i != i_end; ++i) {
+                            
+                            RBE->mListOfNodes.push_back(*(i.base()));                           
+                        }
+                    }
+                    
+                    #pragma omp parallel for
+                    for (int k = 0; k < int(pTConditions.size()); k++) {
+                        
+                        ConditionsArrayType::iterator it = pTConditions.ptr_begin() + k;
+                        
+                        RigidFace3D* it_point = dynamic_cast<RigidFace3D*>(&(*it));
+                        RBE->mListOfRigidFaces.push_back(it_point);
+                    }
+                    
+                    RBE->Initialize(r_process_info, submp);
                 }
             }
         }
