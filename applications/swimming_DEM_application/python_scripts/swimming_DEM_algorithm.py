@@ -502,7 +502,26 @@ class Algorithm(object):
                     sys.stdout.flush()
 
             # printing if required
-
+            '''for node in self.fluid_model_part.Nodes:
+                if node.Z > 2.99 and node.X > -0.49 and node.X < 0.49 and node.Y > -0.49 and node.Y < 0.49: #node.GetSolutionStepValue(VELOCITY_Z) < 0:
+                    node.SetSolutionStepValue(VELOCITY_X, 0.0)
+                    node.SetSolutionStepValue(VELOCITY_Y, 0.0)
+                    node.SetSolutionStepValue(VELOCITY_Z, 0.5)'''
+            
+            for node in self.fluid_model_part.Nodes:
+                if node.Z > 2.99:
+                    if math.sqrt(node.X * node.X + node.Y * node.Y) < 0.25:
+                        node.SetSolutionStepValue(PRESSURE, 0.0)
+                        node.Fix(PRESSURE)
+                    else:
+                        node.SetSolutionStepValue(VELOCITY_X, 0.0)
+                        node.SetSolutionStepValue(VELOCITY_Y, 0.0)
+                        node.SetSolutionStepValue(VELOCITY_Z, 0.0)
+                        node.Fix(VELOCITY_X)
+                        node.Fix(VELOCITY_Y)
+                        node.Fix(VELOCITY_Z)
+                        node.Free(PRESSURE)
+                        
             if self.particles_results_counter.Tick():
                 # eliminating remote balls
 
