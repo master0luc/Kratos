@@ -393,7 +393,7 @@ class Solution:
         post_utils.Writeresults(time)
 
         # sim_type = 0 means clot, 1 means lungs
-        sim_type = 1
+        '''sim_type = 1
         
         if sim_type == 0:
             time_starting_velocity_decrease = 1.1
@@ -405,7 +405,7 @@ class Solution:
             time_setting_velocity_constant = 2.85 
             vx = 0.0
             vy = 0.0
-            vz = 0.0     
+            vz = 0.0'''     
         #
 
         while time <= final_time:
@@ -446,7 +446,7 @@ class Solution:
 
             # printing if required
             
-            #   
+            '''   
             if time < time_starting_velocity_decrease:
                 for node in fluid_model_part.Nodes:
                     if sim_type == 0:
@@ -456,21 +456,22 @@ class Solution:
                             node.SetSolutionStepValue(VELOCITY_X, flux_vel_X)
                         node.SetSolutionStepValue(VELOCITY_Z, 0.0)
                         node.SetSolutionStepValue(VELOCITY_Y, 0.0)
-                        '''
+                        
                         if node.Z < 0.3333333:
                             node.SetSolutionStepValue(VELOCITY_X, 0.71 * 9.0 * flux_vel_X * time * node.Z * node.Z)
                             node.SetSolutionStepValue(VELOCITY_Z, 0.71 * 4.5 * flux_vel_X * time * node.Z * node.Z)
                         else:
                             node.SetSolutionStepValue(VELOCITY_X, flux_vel_X * time)
                             node.SetSolutionStepValue(VELOCITY_Z, 0.0)
-                        node.SetSolutionStepValue(VELOCITY_Y, 0.0)'''
+                        node.SetSolutionStepValue(VELOCITY_Y, 0.0)
+                    
                     else:
                         node.SetSolutionStepValue(REFERENCE_VELOCITY_X, node.GetSolutionStepValue(VELOCITY_X))
                         node.SetSolutionStepValue(REFERENCE_VELOCITY_Y, node.GetSolutionStepValue(VELOCITY_Y))
-                        node.SetSolutionStepValue(REFERENCE_VELOCITY_Z, node.GetSolutionStepValue(VELOCITY_Z))
+                        node.SetSolutionStepValue(REFERENCE_VELOCITY_Z, node.GetSolutionStepValue(VELOCITY_Z))'''
             #
             
-            #
+            '''
             if time > time_starting_velocity_decrease and time < time_setting_velocity_constant:
                 for node in fluid_model_part.Nodes:
                     if sim_type == 0:
@@ -486,10 +487,21 @@ class Solution:
                         vz = node.GetSolutionStepValue(REFERENCE_VELOCITY_Z)
                         node.SetSolutionStepValue(VELOCITY_X, vx*((time_ending_velocity_decrease - time)/(time_ending_velocity_decrease - time_starting_velocity_decrease)))
                         node.SetSolutionStepValue(VELOCITY_Y, vy*((time_ending_velocity_decrease - time)/(time_ending_velocity_decrease - time_starting_velocity_decrease)))
-                        node.SetSolutionStepValue(VELOCITY_Z, vz*((time_ending_velocity_decrease - time)/(time_ending_velocity_decrease - time_starting_velocity_decrease)))
+                        node.SetSolutionStepValue(VELOCITY_Z, vz*((time_ending_velocity_decrease - time)/(time_ending_velocity_decrease - time_starting_velocity_decrease)))'''
             #
+            '''
+            time_of_setting_the_outlet_velocity = 0.1
+            coord_X_outlet = 2.09
+            outlet_X_velocity = 1.0
             
-            #
+            if time > time_of_setting_the_outlet_velocity:
+                for node in fluid_model_part.Nodes:
+                    if node.X > coord_X_outlet:
+                        node.SetSolutionStepValue(VELOCITY_X, outlet_X_velocity)
+                        node.SetSolutionStepValue(VELOCITY_Y, 0.0)
+                        node.SetSolutionStepValue(VELOCITY_Z, 0.0)'''
+            
+            '''
             if time > time_setting_velocity_constant:
                 for node in fluid_model_part.Nodes:
                     if sim_type == 0:
@@ -505,7 +517,7 @@ class Solution:
                         vz = -node.GetSolutionStepValue(REFERENCE_VELOCITY_Z)
                         node.SetSolutionStepValue(VELOCITY_X, vx)
                         node.SetSolutionStepValue(VELOCITY_Y, vy)
-                        node.SetSolutionStepValue(VELOCITY_Z, vz)
+                        node.SetSolutionStepValue(VELOCITY_Z, vz)'''
             #
 
             if particles_results_counter.Tick():

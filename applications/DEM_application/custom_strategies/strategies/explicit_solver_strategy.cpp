@@ -1093,10 +1093,18 @@ namespace Kratos {
                 #pragma omp for
                 for (int i = 0; i < number_of_particles; i++) {
                     
-                    if (mListOfSphericParticles[i]->mNeighbourRigidFaces.size()) {
+                    //if ((mListOfSphericParticles[i]->mNeighbourRigidFaces.size()) && (!mListOfSphericParticles[i]->GetGeometry()[0].FastGetSolutionStepValue(SPRAYED_MATERIAL))) {
+                    if (mListOfSphericParticles[i]->mNeighbourRigidFaces.size()) { // && (!mListOfSphericParticles[i]->GetGeometry()[0].FastGetSolutionStepValue(SPRAYED_MATERIAL))) {
                         array_1d<double, 3> zero_vector = ZeroVector(3);
                         mListOfSphericParticles[i]->GetGeometry()[0].FastGetSolutionStepValue(VELOCITY) = zero_vector;
                         mListOfSphericParticles[i]->GetGeometry()[0].FastGetSolutionStepValue(ANGULAR_VELOCITY)= zero_vector;
+                        mListOfSphericParticles[i]->GetGeometry()[0].Set(DEMFlags::FIXED_VEL_X, true);
+                        mListOfSphericParticles[i]->GetGeometry()[0].Set(DEMFlags::FIXED_VEL_Y, true);
+                        mListOfSphericParticles[i]->GetGeometry()[0].Set(DEMFlags::FIXED_VEL_Z, true);
+                        mListOfSphericParticles[i]->GetGeometry()[0].Set(DEMFlags::FIXED_ANG_VEL_X, true);
+                        mListOfSphericParticles[i]->GetGeometry()[0].Set(DEMFlags::FIXED_ANG_VEL_Y, true);
+                        mListOfSphericParticles[i]->GetGeometry()[0].Set(DEMFlags::FIXED_ANG_VEL_Z, true);
+                        //mListOfSphericParticles[i]->GetGeometry()[0].FastGetSolutionStepValue(SPRAYED_MATERIAL) = 1.0;
                     }
                     
                     for (unsigned int j = 0; j < mListOfSphericParticles[i]->mNeighbourRigidFaces.size(); j++) {

@@ -136,6 +136,8 @@ void SphericParticle::Initialize(const ProcessInfo& r_process_info)
     DEMIntegrationScheme::Pointer& integration_scheme = GetProperties()[DEM_INTEGRATION_SCHEME_POINTER];
     SetIntegrationScheme(integration_scheme);
     
+    GetGeometry()[0].FastGetSolutionStepValue(SPRAYED_MATERIAL) = 0.0;
+    
     KRATOS_CATCH( "" )
 }
 

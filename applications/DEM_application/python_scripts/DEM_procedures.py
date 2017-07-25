@@ -440,7 +440,7 @@ class Procedures(object):
         if (Var_Translator(self.DEM_parameters.PostExportId)):
             model_part.AddNodalSolutionStepVariable(EXPORT_ID)
 
-        #model_part.AddNodalSolutionStepVariable(SPRAYED_MATERIAL)
+        model_part.AddNodalSolutionStepVariable(SPRAYED_MATERIAL)
 
     def AddRigidFaceVariables(self, model_part, DEM_parameters):
 
