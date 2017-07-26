@@ -266,7 +266,22 @@ class Solution(object):
         bucket_modelpart_number = 2 # Check this number. It might change between meshing operations
                             
         bucket_modelpart_name = self.rigid_face_model_part.GetSubModelPart(str(bucket_modelpart_number))
-        angular_velocity_of_arm = -4 * pi / 180
+        
+        angular_velocity_of_arm = -pi / 6
+        coordinates_of_arm_articulation_y = 0.498285
+        coordinates_of_arm_articulation_z = 0.1629
+        arm_rotation_start_time = 1.0
+        arm_rotation_stop_time = 2.0
+        angular_velocity_of_bucket = 0
+        initial_coordinates_of_bucket_articulation_y = 0.498285
+        initial_coordinates_of_bucket_articulation_z = 0.1629
+        bucket_rotation_start_time = 10.0
+        bucket_rotation_stop_time = 20.0
+        time_to_lift_the_bucket = 2.0
+        time_to_stop_lifting_the_bucket = 3.0
+        bucket_lifting_velocity_z = 0.15
+        
+        '''MTG SETTINGS: angular_velocity_of_arm = -4 * pi / 180
         coordinates_of_arm_articulation_y = -6
         coordinates_of_arm_articulation_z = 6.0675 #5.5675 (+0.5m because MTG prefers it this way)
         arm_rotation_start_time = 0
@@ -278,7 +293,7 @@ class Solution(object):
         bucket_rotation_stop_time = 15
         time_to_lift_the_bucket = 16
         time_to_stop_lifting_the_bucket = 19
-        bucket_lifting_velocity_z = 0.5
+        bucket_lifting_velocity_z = 0.5'''
 
         excavator_object = ExcavatorUtility(bucket_modelpart_name,
                                             angular_velocity_of_arm,
@@ -313,7 +328,7 @@ class Solution(object):
 
             self.AfterSolveOperations()
 
-            #self.DEMFEMProcedures.MoveAllMeshes(self.all_model_parts, self.time, self.dt)
+            self.DEMFEMProcedures.MoveAllMeshes(self.all_model_parts, self.time, self.dt)
             #DEMFEMProcedures.MoveAllMeshesUsingATable(rigid_face_model_part, time, dt)
             excavator_object.ExecuteInitializeSolutionStep()
 

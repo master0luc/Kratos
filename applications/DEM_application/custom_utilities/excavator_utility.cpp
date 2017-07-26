@@ -68,9 +68,19 @@ namespace Kratos {
         const double initial_angle = atan2((mInitialCoordinatesOfBucketCenter[2] - mCoordinatesOfArmCenter[2]), (mInitialCoordinatesOfBucketCenter[1] - mCoordinatesOfArmCenter[1]));
         double rotated_angle1;
         static double final_rotated_angle1;
+        static bool updated_node_position = false;
         if (rCurrentTime < mArmStartTime) {
             return;
         } else if (rCurrentTime < mArmStopTime) {
+            //
+            if (!updated_node_position) {
+                for (ModelPart::NodesContainerType::iterator node_i = mrModelPart.NodesBegin(); node_i != mrModelPart.NodesEnd(); node_i++) {
+                    node_i->Y0() = node_i->Y();
+                    node_i->Z0() = node_i->Z();
+                    updated_node_position = true;
+                }
+            }
+            //
             rotated_angle1 = mW1[0] * (rCurrentTime - mArmStartTime);
             final_rotated_angle1 = rotated_angle1;
         } else {
