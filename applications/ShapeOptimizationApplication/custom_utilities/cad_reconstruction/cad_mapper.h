@@ -92,8 +92,8 @@ class CADMapper
 	typedef UblasSpace<double, CompressedMatrix, Vector> CompressedSpaceType;
 	typedef UblasSpace<double, SparseMatrix, Vector> SparseSpaceType;
 	typedef UblasSpace<double, Matrix, Vector> DenseSpaceType;
-    typedef typename CompressedSpaceType::MatrixType CompressedMatrixType;
-	typedef typename SparseSpaceType::MatrixType SparseMatrixType;
+    typedef CompressedSpaceType::MatrixType CompressedMatrixType;
+	typedef SparseSpaceType::MatrixType SparseMatrixType;
     typedef std::vector<double> DoubleVector;
     typedef std::vector<int> IntVector;
     typedef std::vector<ControlPoint> ControlPointVector;

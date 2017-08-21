@@ -104,8 +104,8 @@ public:
 
 	// For matrix vector operations
 	typedef UblasSpace<double, CompressedMatrix, Vector> SparseSpaceType;
-	typedef typename SparseSpaceType::MatrixType SparseMatrixType;
-	typedef typename SparseSpaceType::VectorType VectorType;
+	typedef SparseSpaceType::MatrixType SparseMatrixType;
+	typedef SparseSpaceType::VectorType VectorType;
 	typedef std::vector<int> IntVector;
 	typedef std::vector<double> DoubleVector;
 	typedef boost::python::extract<double> takeDouble;

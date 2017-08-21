@@ -66,8 +66,8 @@ public:
     // Type definitions for linear algebra including sparse systems
     // ==========================================================================
     typedef UblasSpace<double, CompressedMatrix, Vector> SparseSpaceType;
-    typedef typename SparseSpaceType::MatrixType SparseMatrixType;
-    typedef typename SparseSpaceType::VectorType VectorType;
+    typedef SparseSpaceType::MatrixType SparseMatrixType;
+    typedef SparseSpaceType::VectorType VectorType;
     typedef std::vector<double> DoubleVector;
 
     /// Pointer definition of ControlPoint
