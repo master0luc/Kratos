@@ -50,6 +50,3 @@ kratos/includes/kratos_version.h
 # Output of tests of meshing application (MMG)
 *.o.sol
 *.o.mesh
-
-# ShapeOptimization
-applications/ShapeOptimizationApplication/test_examples/*

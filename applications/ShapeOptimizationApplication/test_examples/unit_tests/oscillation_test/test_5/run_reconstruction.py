@@ -19,6 +19,7 @@ import json as json
 
 # Input parameters
 fem_input_filename = "test_1"
+# cad_geometry_input_filename = "test_1_geometry.json" 
 cad_geometry_input_filename = "test_1_geometry.json" 
 cad_integration_input_filename = "Benchmark_halbkreis_32x16_multipatch_integration_data.json" 
 
@@ -65,14 +66,22 @@ def surf_4(u,v):
     return [u,v,fabs(x_1)]
 def surf_5(u,v):
     return [u,v,u**2]
+def surf_6(u,v):
+    return [u,v,0]
+def surf_7(u,v):
+    if u < 2.5:
+        return [u,v,0.5*(u-2.5)**2]
+    else:
+        return [u,v,-0.5*(u-2.5)**2]
+        
 # ======================================================================================================================================
 # mesh definition
 # ======================================================================================================================================    
-def mesh_1(surf): # "mesh of 4 nodes"
+def mesh_1(surf): # "mesh of 4 nodes"           CORNERS           
     for u, v in [[0,0], [0,5], [5,0], [5,5]]:
         [x,y,z] = surf(u,v)
         mapper.set_point(0, u, v, x, y, z)
-def mesh_2(surf, n): # "mesh of n nodes"
+def mesh_2(surf, n): # "mesh of n nodes"        MAIN DIAGONAL + CORNERS
     mesh_1(surf) # 4 nodes
     n = n-3
     for i in range(1,n): # n-1 more nodes
@@ -80,7 +89,7 @@ def mesh_2(surf, n): # "mesh of n nodes"
         v = u
         [x,y,z] = surf(u,v)
         mapper.set_point(0, u, v, x, y, z)
-def mesh_3(surf, n): # "mesh of n nodes"
+def mesh_3(surf, n): # "mesh of n nodes"        SECOND DIAGONAL + CORNERS
     mesh_1(surf)
     n = n-3
     for i in range(1,n):
@@ -88,7 +97,7 @@ def mesh_3(surf, n): # "mesh of n nodes"
         v = 5 - u
         [x,y,z] = surf(u,v)
         mapper.set_point(0, u, v, x, y, z)
-def mesh_4(surf,n): # "mesh of n nodes"
+def mesh_4(surf,n): # "mesh of n nodes"         REGULAR GRID n x n
     n = int(sqrt(n))
     for i in range(n):
         for j in range(n):
@@ -96,24 +105,24 @@ def mesh_4(surf,n): # "mesh of n nodes"
             v = j * 5/(n-1)
             [x,y,z] = surf(u,v)
             mapper.set_point(0, u, v, x, y, z)
-def mesh_5(surf): # "mesh of 8 nodes"
+def mesh_5(surf): # "mesh of 8 nodes"           CORNERS + 4 INNER CORNERS
     mesh_1(surf)
     for u, v in [[1.5,1.5], [1.5,3.5], [3.5,1.5], [3.5,3.5]]:
         [x,y,z] = surf(u,v)
         mapper.set_point(0, u, v, x, y, z)
-def mesh_6(surf,n,m): # "mesh of n x m nodes"
+def mesh_6(surf,n,m): # "mesh of n x m nodes"   REGULAR GRID n x m
     for i in range(n):
         for j in range(m):
             u = i * 5/(n-1)
             v = j * 5/(m-1)
             [x,y,z] = surf(u,v)
             mapper.set_point(0, u, v, x, y, z)
-def mesh_7(surf,n):
+def mesh_7(surf,n): #                           EDGES' MIDDLE POINTS + SECOND DIAGONAL + CORNERS
     mesh_3(surf, n-4)
     for u, v in [[2.5,0], [0,2.5], [2.5,5], [5,2.5]]:
         [x,y,z] = surf(u,v)
         mapper.set_point(0, u, v, x, y, z)
-def mesh_8(surf,n):
+def mesh_8(surf,n): #                           REGULAR MESH ON EDGES
     n = int(n/4)
     for i in range(n):
         u = i * 5/n
@@ -135,7 +144,7 @@ def mesh_8(surf,n):
         v = 5 - i * 5/n
         [x,y,z] = surf(u,v)
         mapper.set_point(0, u, v, x, y, z)
-def mesh_9(surf,n): # "mesh of 4 x r x r"
+def mesh_9(surf,n): # "mesh of 4 x r x r"       4 INNER REGULAR MESHES
     r = int(sqrt(n/4))
     for i in range(r):
         for j in range(r):
@@ -152,7 +161,25 @@ def mesh_9(surf,n): # "mesh of 4 x r x r"
             u -= 2.5
             [x,y,z] = surf(u,v)
             mapper.set_point(0, u, v, x, y, z)
+def mesh_10(surf,n):
+    n = n/4
+    n = int(sqrt(n))
+    for k in range(4):
+        for i in range(n):
+            for j in range(n):
+                u = i * 2.5/(n-1)
+                v = j * 2.5/(n-1)
 
+                if k == 1 or k == 3:
+                    u_abs = u + 2.5
+                else:
+                    u_abs = u
+                if k == 0 or k == 1:
+                    v_abs = v + 2.5
+                else:
+                    v_abs = v
+                [x,y,z] = surf(u_abs,v_abs)
+                mapper.set_point(k, u, v, x, y, z)
 # ======================================================================================================================================
 # Mapping
 # ======================================================================================================================================    
@@ -162,17 +189,23 @@ linear_solver = SuperLUSolver()
 mapper = CADMapper(fe_model_part,cad_geometry,cad_integration_data,linear_solver)
 
 # Set nearest point + shape update to map
-surf = surf_2
+surf = surf_7
 mesh = mesh_4
 n = 16
 m = 3
 
-mesh(surf, 16)
-
+try:
+    mesh(surf)
+except TypeError:
+    try:
+        mesh(surf,n)
+    except TypeError:
+        mesh(surf,n,m)
 
 # # Perform mapping
 mapper.external_map_to_cad_space()
 
+print("Objective =", mapper.compute_objective())
 # ======================================================================================================================================
 # Writing results
 # ======================================================================================================================================

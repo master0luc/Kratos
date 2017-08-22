@@ -1107,6 +1107,33 @@ public:
 	}
 
 	// --------------------------------------------------------------------------
+	void SetGrevilleAbscissae(int control_point_index, double& u_cp, double& v_cp)
+	{
+		// compute indeces of control point
+			// control_point_index = v_index * m_n_u + u_index, hence
+			int u_index = control_point_index % m_n_u;
+			int v_index = control_point_index / m_n_u;
+
+		// compute Greville abscissae
+			// u_cp = (1/m_p) * (u_i + ... + u_i+p)
+			// v_cp = (1/m_q) * (v_i + ... + v_i+p)	
+			u_cp = 0;
+			v_cp = 0;
+		
+			for(int i=u_index; i<=u_index+m_p; i++)
+			{
+				u_cp += m_knot_vector_u[i];
+			}
+			u_cp /= m_p;
+
+			for(int i=v_index; i<=v_index+m_q; i++)
+			{
+				v_cp += m_knot_vector_v[i];
+			}
+			v_cp /= m_q;
+	}
+
+	// --------------------------------------------------------------------------
 	IntVector GetKnotSpan(double _u, double _v)
 	{
 		int span_u=find_Knot_Span(m_knot_vector_u,_u,m_p,m_n_u);

@@ -49,6 +49,10 @@
         "smyblas2.c": "cpp",
         "zmyblas2.c": "cpp",
         "gun.c": "cpp",
-        "infcover.c": "cpp"
+        "infcover.c": "cpp",
+        "d_sign.c": "cpp",
+        "r_sign.c": "cpp",
+        "lookupa.c": "cpp",
+        "trees.c": "cpp"
     }
 }
