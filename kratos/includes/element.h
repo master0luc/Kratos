@@ -506,6 +506,23 @@ public:
     {
     }
 
+	/**
+	* ELEMENTS inherited from this class must implement this method
+	* if they need to add static stability element contributions for an eigensolver
+	* CalculateGeometricStiffnessMatrix, CalculateElasticStiffnessMatrix methods are : OPTIONAL
+	*/
+	virtual void CalculateGeometricStiffnessMatrix(MatrixType& rGeometricStiffnessMatrix, ProcessInfo& rCurrentProcessInfo)
+	{
+		if (rGeometricStiffnessMatrix.size1() != 0)
+				rGeometricStiffnessMatrix.resize(0, 0, false);
+	}
+
+	virtual void CalculateElasticStiffnessMatrix(MatrixType& rElasticStiffnessMatrix, ProcessInfo& rCurrentProcessInfo)
+	{
+		if (rElasticStiffnessMatrix.size1() != 0)
+			rElasticStiffnessMatrix.resize(0, 0, false);
+	}
+
 
     /**
      * ELEMENTS inherited from this class must implement this methods

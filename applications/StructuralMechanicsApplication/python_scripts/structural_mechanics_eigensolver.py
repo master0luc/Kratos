@@ -62,6 +62,8 @@ class EigenSolver(structural_mechanics_solver.MechanicalSolver):
         """
         if self.settings["solution_type"].GetString() == "Dynamic":
             solution_scheme = StructuralMechanicsApplication.EigensolverDynamicScheme()
+        elif self.settings["solution_type"].GetString() == "Stability":
+            solution_scheme = StructuralMechanicsApplication.EigensolverStabilityScheme()
         else:
             raise Exception("Unsupported solution_type: " + self.settings["solution_type"])
         return solution_scheme
