@@ -265,7 +265,7 @@ class Solution(object):
         pi = 3.141592
         bucket_modelpart_number = 2 # Check this number. It might change between meshing operations
                             
-        bucket_modelpart_name = self.rigid_face_model_part.GetSubModelPart(str(bucket_modelpart_number))
+        '''bucket_modelpart_name = self.rigid_face_model_part.GetSubModelPart(str(bucket_modelpart_number))
         
         angular_velocity_of_arm = -pi / 6
         coordinates_of_arm_articulation_y = 0.498285
@@ -279,7 +279,7 @@ class Solution(object):
         bucket_rotation_stop_time = 20.0
         time_to_lift_the_bucket = 2.0
         time_to_stop_lifting_the_bucket = 3.0
-        bucket_lifting_velocity_z = 0.15
+        bucket_lifting_velocity_z = 0.15'''
         
         '''MTG SETTINGS: angular_velocity_of_arm = -4 * pi / 180
         coordinates_of_arm_articulation_y = -6
@@ -295,7 +295,7 @@ class Solution(object):
         time_to_stop_lifting_the_bucket = 19
         bucket_lifting_velocity_z = 0.5'''
 
-        excavator_object = ExcavatorUtility(bucket_modelpart_name,
+        '''excavator_object = ExcavatorUtility(bucket_modelpart_name,
                                             angular_velocity_of_arm,
                                             coordinates_of_arm_articulation_y,
                                             coordinates_of_arm_articulation_z,
@@ -308,7 +308,7 @@ class Solution(object):
                                             bucket_rotation_stop_time,
                                             time_to_lift_the_bucket,
                                             time_to_stop_lifting_the_bucket,
-                                            bucket_lifting_velocity_z)
+                                            bucket_lifting_velocity_z)'''
 
         while (self.time < DEM_parameters.FinalTime):
 
@@ -330,7 +330,7 @@ class Solution(object):
 
             self.DEMFEMProcedures.MoveAllMeshes(self.all_model_parts, self.time, self.dt)
             #DEMFEMProcedures.MoveAllMeshesUsingATable(rigid_face_model_part, time, dt)
-            excavator_object.ExecuteInitializeSolutionStep()
+            #excavator_object.ExecuteInitializeSolutionStep()
 
             ##### adding DEM elements by the inlet ######
             if (DEM_parameters.dem_inlet_option):
