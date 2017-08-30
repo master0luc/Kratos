@@ -173,6 +173,53 @@ public:
 
 		return is_inside;
 	}
+	
+	bool CheckIfPointIsInside(double& u, double& v) 
+	{	
+		// Boost is used to check whether point of interest is inside given polygon or not
+
+		// Type definitions to use boost functionalities
+		typedef boost::geometry::model::d2::point_xy<double> point_type;
+		typedef boost::geometry::model::polygon<point_type> polygon_type;
+
+		point_type poi(u, v);
+
+		// same as: bool CheckIfPointIsInside(array_1d<double, 2> &point_of_interest)
+			// We assume point is inside, check all boundary loops if this is true. If this is not true for a single loop, then point is considered outside of this patch
+			bool is_inside = true;
+
+			// Loop over all boundary loops of current patch
+			for(BoundaryLoopVector::iterator loop_i =  m_boundary_loops.begin(); loop_i!=m_boundary_loops.end(); loop_i++)
+			{
+
+				// Initialize necessary variables
+				polygon_type poly;
+				std::vector<array_1d<double, 2>>& boundary_polygon = loop_i->GetBoundaryPolygon();
+
+				// Prepare polygon for boost
+				for(unsigned int i=0;i<boundary_polygon.size();i++)
+					boost::geometry::append( boost::geometry::exterior_ring(poly), 
+											boost::geometry::make<point_type>(boundary_polygon[i][0], boundary_polygon[i][1]));
+				if(boundary_polygon.size()>0)
+					boost::geometry::append( boost::geometry::exterior_ring(poly), 
+											boost::geometry::make<point_type>(boundary_polygon[0][0], boundary_polygon[0][1]));
+
+				// Check inside or outside
+				is_inside = boost::geometry::within(poi, poly);
+				
+				// Boost does not consider the polygon direction, it always assumes inside as in the interior of the closed polygon.
+				// If the CAD loop is an inner loop, however, the area which is considered inner is the unbounded side of the closed polygon.
+				// So we toggle the results from the within search to be correct.
+				if(loop_i->IsInnerLoop())
+					is_inside = !is_inside;
+
+				// If a point is considered outside in one loop, it is outside in general, hence we can break the loop
+				if(!is_inside) 
+					break;
+			}
+
+		return is_inside;			
+	}
 
 	// --------------------------------------------------------------------------
 	unsigned int GetId()

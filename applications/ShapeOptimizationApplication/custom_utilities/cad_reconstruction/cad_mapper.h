@@ -3834,6 +3834,135 @@ class CADMapper
 					}
 
 		////////////////////////////////////////////////////////
+
+
+		///////////////////////// MODULAR CODE ///////////////////////////////
+			// parametrisation
+				void parametrisation(const unsigned int u_resolution, const unsigned int v_resolution)
+				{
+					std::cout << "\n> Starting computation of nearest points..." << std::endl;
+		
+					NodeVector list_of_cad_nodes;
+					DoubleVector list_of_us_of_cad_nodes;
+					DoubleVector list_of_vs_of_cad_nodes;
+					IntVector list_of_patch_itrs_of_cad_nodes;
+					create_point_cloud(u_resolution, v_resolution,
+									   list_of_patch_itrs_of_cad_nodes,
+									   list_of_us_of_cad_nodes,
+									   list_of_vs_of_cad_nodes,
+									   list_of_cad_nodes);
+
+					create_KD_tree();
+					compute_nearest_neighbours();
+					compute_nearest_points_2();
+				}
+				
+				// auxiliary functions
+					void create_point_cloud(const unsigned int u_resolution, const unsigned int v_resolution,
+											IntVector& list_of_patch_itrs_of_cad_nodes,
+											DoubleVector& list_of_us_of_cad_nodes,
+											DoubleVector& list_of_vs_of_cad_nodes,
+											NodeVector& list_of_cad_nodes)
+					{
+						//
+							// input:
+							//		u_resolution, v_resolution
+							// output:
+							//		list_of_cad_nodes, list_of_us_of_cad_nodes, list_of_vs_of_cad_nodes, list_of_patch_itrs_of_cad_nodes
+							
+							// for each patch
+							// 1:	Create a grid of points, equidistant in the parameter space.
+							//		All the points belong to the inner of the patch (i.e. no points lying on the border)
+							// for each point
+							// 	if the point is inside
+							// 2:	its coordinates in the geometrical space are computed
+							// 3:	all the information is stored in the output lists:	- u,
+							//															- v,
+							//															- patch_id,
+							//															- CAD node (containing X, Y, Z coordinates)
+							
+							// N.B. CAD nodes ids start with 1
+
+						unsigned int cad_node_counter = 0;
+
+						//Loop over all surface of all patches
+						for (unsigned int patch_itr = 0; patch_itr < m_patches.size(); patch_itr++)
+						{
+							Patch& patch = m_patches[patch_itr];
+							NURBSSurface& surface = patch.GetSurface();
+							std::cout << "\n> Processing Patch with brep_id " << patch.GetId() << std::endl;
+
+							// Get relevant data
+								double u_min = surface.GetKnotVectorU().front();
+								double u_max = surface.GetKnotVectorU().back();
+								double v_min = surface.GetKnotVectorV().front();
+								double v_max = surface.GetKnotVectorV().back();
+								double delta_u = (u_max-u_min) / u_resolution;
+								double delta_v = (v_max-v_min) / v_resolution;
+
+							// Loop over all u & v according to specified resolution
+							for(unsigned int i=1; i<u_resolution; i++)
+							{
+								double u_i = u_min + i*delta_u;
+
+								for(unsigned int j=1; j<v_resolution; j++)
+								{
+									double v_j = v_min + j*delta_v;
+
+									// Check if u_i and v_j represent a point inside the closed boundary loop
+									if(patch.CheckIfPointIsInside(u_i, v_j))
+									{
+										++cad_node_counter;					
+										// compute unique point in CAD-model for given u&v
+										Point<3> cad_point_coordinates;
+										surface.EvaluateSurfacePoint(cad_point_coordinates, u_i, v_j);
+
+										// Add id to point --> node. Add node to list of CAD nodes
+										NodeType::Pointer new_cad_node = Node<3>::Pointer(new Node<3>(cad_node_counter, cad_point_coordinates));
+
+										// Store for cad node the corresponding cad information in separate vectors
+										list_of_patch_itrs_of_cad_nodes.push_back(patch_itr);
+										list_of_us_of_cad_nodes.push_back(u_i);
+										list_of_vs_of_cad_nodes.push_back(v_j);
+										list_of_cad_nodes.push_back(new_cad_node);
+									}
+								}
+							}
+						}						
+					}
+
+					void create_KD_tree()
+					{}
+
+					void compute_nearest_neighbours()
+					{}
+
+					void compute_nearest_points_2() // Newton-Raphson
+					{}
+
+			// reconstruction
+				// flag control points
+					void activate_control_point() // one cp is active, cp's neighbours are relevant
+					{}
+
+					void activate_patch() // all relevant cps are active
+					{}
+
+					void activate_knotspan() // some cps are relevant, inner cps are active (if any)
+					{}
+				// setup system
+					void initialize_lse() // parameters: type of norm, if one cp at a time
+					{}
+				// regularization techniques
+
+				// boundary conditions
+			
+				// functions exposed to user
+					void map_to_cad_space_5()
+					{}
+
+
+		////////////////////////////////////////////////////////
 		
 		/////////////// ONE CONTROL POINT AT A TIME: exploitation of NURBS locality ///////////////
 			// cp: control point to move
