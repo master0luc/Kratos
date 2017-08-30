@@ -26,6 +26,7 @@
 //Utilities
 #include "custom_utilities/sprism_neighbours.hpp"
 #include "custom_utilities/eigenvector_to_solution_step_variable_transfer_utility.hpp"
+#include "custom_utilities/composite_property_assignment.hpp"
 
 namespace Kratos
 {
@@ -51,6 +52,17 @@ void TransferEigenvector2(
     rThisUtil.Transfer(rModelPart,iEigenMode,step);
 }
 
+inline
+void CompositePropertyAssignmentExecute(
+	CompositePropertyAssignment& rThisUtil,
+	ModelPart& rModelPart,
+	Vector3 GlobalFiberDirection,
+	Vector3 normalVector,
+	ProcessInfo& rCurrentProcessInfo)
+{
+	rThisUtil.Execute(rModelPart, GlobalFiberDirection, normalVector, rCurrentProcessInfo);
+}
+
 void  AddCustomUtilitiesToPython()
 {
     using namespace boost::python;
@@ -69,6 +81,10 @@ void  AddCustomUtilitiesToPython()
     .def("Transfer",TransferEigenvector1)
     .def("Transfer",TransferEigenvector2)
     ;
+
+	class_<CompositePropertyAssignment>("CompositePropertyAssignment")
+	.def("Execute", CompositePropertyAssignmentExecute)
+	;
 
 }
 
