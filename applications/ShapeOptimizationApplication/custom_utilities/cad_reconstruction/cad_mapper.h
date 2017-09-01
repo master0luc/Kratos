@@ -54,6 +54,8 @@
 #include <string>
 #include <algorithm>
 #include <math.h>
+#include <map>
+#include <list>
 
 // ------------------------------------------------------------------------------
 // External includes
@@ -79,6 +81,7 @@
 #include "brep_element.h"
 #include "cad_model_reader.h"
 #include "shape_optimization_application.h"
+#include "data_point.h"
 // ==============================================================================
 
 namespace Kratos
@@ -108,10 +111,21 @@ class CADMapper
 	typedef std::vector<BoundaryLoop> BoundaryLoopVector;
 
 	// for tree search
-	typedef std::vector<double> DistanceVector;
-    typedef std::vector<double>::iterator DistanceIterator;
+	struct CADPointParameters{
+		double u;
+		double v;
+		// unsigned int patch_itr;
+		Patch patch;
+		};
+
+	typedef std::map< NodeType::Pointer, CADPointParameters > PointCloud;
 	typedef std::vector<NodeType::Pointer>::iterator NodeIterator;
+    typedef std::vector<double>::iterator DistanceIterator;
+	typedef Bucket< 3, NodeType, NodeVector, NodeType::Pointer, NodeIterator, DistanceIterator > BucketType;
+	typedef Tree< KDTreePartition<BucketType> > tree;
+	typedef std::vector<double> DistanceVector;
     typedef ModelPart::ConditionsContainerType ConditionsArrayType;
+	typedef std::list<DataPoint> DataPointsList;
 
 	// For handling of python data
 	typedef boost::python::extract<double> extractDouble;
@@ -3837,31 +3851,39 @@ class CADMapper
 
 
 		///////////////////////// MODULAR CODE ///////////////////////////////
+			// define point cloud
+				void use_all_FE_nodes_as_data_points()
+				{
+					for(ModelPart::NodesContainerType::iterator node_i = mr_fe_model_part.NodesBegin(); node_i!=mr_fe_model_part.NodesEnd(); node_i++)
+					{
+						
+						NodeType::Pointer node_ptr = mr_fe_model_part.pGetNode( node_i->GetId() );
+						DataPoint data_point(node_ptr);
+						m_data_points.push_back(data_point);
+					}
+
+				}
 			// parametrisation
 				void parametrisation(const unsigned int u_resolution, const unsigned int v_resolution)
 				{
 					std::cout << "\n> Starting computation of nearest points..." << std::endl;
 		
 					NodeVector list_of_cad_nodes;
-					DoubleVector list_of_us_of_cad_nodes;
-					DoubleVector list_of_vs_of_cad_nodes;
-					IntVector list_of_patch_itrs_of_cad_nodes;
-					create_point_cloud(u_resolution, v_resolution,
-									   list_of_patch_itrs_of_cad_nodes,
-									   list_of_us_of_cad_nodes,
-									   list_of_vs_of_cad_nodes,
-									   list_of_cad_nodes);
+					create_point_cloud(u_resolution, v_resolution, list_of_cad_nodes);
 
-					create_KD_tree();
-					compute_nearest_neighbours();
-					compute_nearest_points_2();
+					// create KD-Tree
+					std::cout << "\n> Starting construction of search-tree..." << std::endl;
+					boost::timer timer;
+					int bucket_size = 20;
+					tree nodes_tree(list_of_cad_nodes.begin(), list_of_cad_nodes.end(), bucket_size);
+					std::cout << "> Time needed for constructing search-tree: " << timer.elapsed() << " s" << std::endl;
+
+					compute_nearest_neighbours(nodes_tree);
+					compute_nearest_points_Newton_Raphson();
 				}
-				
+
 				// auxiliary functions
 					void create_point_cloud(const unsigned int u_resolution, const unsigned int v_resolution,
-											IntVector& list_of_patch_itrs_of_cad_nodes,
-											DoubleVector& list_of_us_of_cad_nodes,
-											DoubleVector& list_of_vs_of_cad_nodes,
 											NodeVector& list_of_cad_nodes)
 					{
 						//
@@ -3914,31 +3936,64 @@ class CADMapper
 									{
 										++cad_node_counter;					
 										// compute unique point in CAD-model for given u&v
-										Point<3> cad_point_coordinates;
-										surface.EvaluateSurfacePoint(cad_point_coordinates, u_i, v_j);
+										Point<3> cad_point;
+										surface.EvaluateSurfacePoint(cad_point, u_i, v_j);
 
 										// Add id to point --> node. Add node to list of CAD nodes
-										NodeType::Pointer new_cad_node = Node<3>::Pointer(new Node<3>(cad_node_counter, cad_point_coordinates));
+										NodeType::Pointer cad_node_ptr = Node<3>::Pointer(new Node<3>(cad_node_counter, cad_point));
 
-										// Store for cad node the corresponding cad information in separate vectors
-										list_of_patch_itrs_of_cad_nodes.push_back(patch_itr);
-										list_of_us_of_cad_nodes.push_back(u_i);
-										list_of_vs_of_cad_nodes.push_back(v_j);
-										list_of_cad_nodes.push_back(new_cad_node);
+										// // Store for cad node the corresponding cad information in separate vectors
+										list_of_cad_nodes.push_back(cad_node_ptr);
+										m_point_cloud[cad_node_ptr] = {u_i, v_j, patch};
 									}
 								}
 							}
 						}						
 					}
 
-					void create_KD_tree()
-					{}
+					void compute_nearest_neighbours(tree& nodes_tree)
+					{
 
-					void compute_nearest_neighbours()
-					{}
+						std::cout << "\n> Starting to identify neighboring CAD points..." << std::endl;
+						boost::timer timer;
 
-					void compute_nearest_points_2() // Newton-Raphson
-					{}
+						// loop over all data points (knowing XYZ in undeformed configuration, find an approximation of patch, u, v of corresponding CAD point)
+						for(DataPointsList::iterator data_point_i = m_data_points.begin(); data_point_i != m_data_points.end(); data_point_i++)
+						{
+							NodeType::Pointer data_point_node_ptr = data_point_i->getNodePtr();
+							// Search nearest cad neighbor of current data point
+							NodeType::Pointer neighbour = nodes_tree.SearchNearestPoint( *data_point_node_ptr );
+
+							// Store CAD information of neighbour
+							data_point_i->setPatch(m_point_cloud[neighbour].patch);
+							// data_point_i->setU(m_point_cloud[neighbour].u);
+							// data_point_i->setV(m_point_cloud[neighbour].v);
+							data_point_i->updateUAndV(m_point_cloud[neighbour].u, m_point_cloud[neighbour].v);
+
+							// only for debugging
+								m_list_of_neighbour_points.push_back(neighbour);
+								m_list_of_u_of_neighbour_points.push_back(m_point_cloud[neighbour].u);
+								m_list_of_v_of_neighbour_points.push_back(m_point_cloud[neighbour].v);
+								// m_list_of_span_u_of_neighbour_points.push_back(span_u_of_np);
+								// m_list_of_span_v_of_neighbour_points.push_back(span_v_of_np);				
+								// m_list_of_patch_of_neighbour_points.push_back(patch_itr_of_nearest_point);
+						}
+						
+						std::cout << "> Time needed for identify neighboring CAD points: " << timer.elapsed() << " s" << std::endl;
+					}
+
+					void compute_nearest_points_Newton_Raphson()
+					{
+						// Specify a tolerance and a maximum number of iteration for the Newton-Raphson optimizer
+						double tol = 1e-5;
+						unsigned int max_itr = 50;
+
+						// Loop over data points and find for each the closest cad point
+						for(DataPointsList::iterator data_point_i = m_data_points.begin(); data_point_i != m_data_points.end(); data_point_i++)
+						{
+							data_point_i->optimize_parametrisation(tol, max_itr);
+						}
+					}
 
 			// reconstruction
 				// flag control points
@@ -4517,6 +4572,9 @@ class CADMapper
 	DoubleVector m_list_of_updated_z_external;
 	CompressedMatrixType m_lhs_external;
 	Vector m_rhs_external;
+	// clean:
+	PointCloud m_point_cloud;
+	DataPointsList m_data_points;
 	
 	const Condition::GeometryType::IntegrationMethod m_integration_method = GeometryData::GI_GAUSS_5;
 
