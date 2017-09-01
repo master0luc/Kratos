@@ -115,6 +115,10 @@ public:
 	//    KRATOS_CLASS_POINTER_DEFINITION[Patch];
 
 	/// Default constructor.
+	Patch()
+	{
+	}
+
 	Patch(unsigned int patch_id, NURBSSurface nurbs_surface, BoundaryLoopVector boundary_loops ) 
 	: m_patch_id(patch_id),
 	  m_nurbs_surface(nurbs_surface),

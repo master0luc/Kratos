@@ -104,7 +104,7 @@ public:
 	//    KRATOS_CLASS_POINTER_DEFINITION[BoundaryLoop];
 
 	/// Default constructor.
-	BoundaryLoop(BoundaryEdgeVector boundary_edges, bool is_inner_loop) 
+	BoundaryLoop(BoundaryEdgeVector boundary_edges, bool is_inner_loop=false) 
 	: m_boundary_edges(boundary_edges),
 	  m_is_inner_loop(is_inner_loop)
 	{

@@ -74,7 +74,7 @@ public:
     KRATOS_CLASS_POINTER_DEFINITION(ControlPoint);
 
     /// Default constructor.
-    ControlPoint( double X, double Y, double Z, double W, unsigned int global_id)
+    ControlPoint( double X=0, double Y=0, double Z=0, double W=-1, unsigned int global_id=0)
     {
     	m_coordinates.push_back( X );
     	m_coordinates.push_back( Y );

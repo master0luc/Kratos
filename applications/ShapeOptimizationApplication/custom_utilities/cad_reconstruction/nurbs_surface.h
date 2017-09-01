@@ -119,6 +119,10 @@ public:
 	//    KRATOS_CLASS_POINTER_DEFINITION[NURBSSurface];
 
 	/// Default constructor.
+	NURBSSurface()
+	{
+	}
+
 	NURBSSurface(DoubleVector knot_vector_u, DoubleVector knot_vector_v, int p, int q, ControlPointVector control_points) 
 	: m_knot_vector_u(knot_vector_u),
 	  m_knot_vector_v(knot_vector_v),
