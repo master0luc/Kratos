@@ -172,11 +172,21 @@ public:
     void SetRelevantForMapping()
     {
     	m_is_relevant_for_mapping = true;
-    }   
+    }
+
+    void SetActive()
+    {
+        m_is_active = true;
+    }
 
     bool IsRelevantForMapping()
     {
     	return m_is_relevant_for_mapping;
+    }    
+
+    bool IsActive()
+    {
+    	return m_is_active;
     }    
 
     /// Destructor.
@@ -219,6 +229,7 @@ private:
     unsigned int m_global_id;
     int m_mapping_matrix_id = -1;
     bool m_is_relevant_for_mapping = false;
+    bool m_is_active = false;
 
 
 }; // Class ControlPoint

@@ -79,6 +79,8 @@ public:
     // ==========================================================================
     typedef std::vector<int> IntVector;
 	typedef Node<3> NodeType;
+    typedef std::vector<ControlPoint> ControlPointVector;
+
 
     /// Pointer definition of DataPoint
     KRATOS_CLASS_POINTER_DEFINITION(DataPoint);
@@ -139,6 +141,23 @@ public:
             return m_v;
         }
 
+        ControlPointVector& getControlPoints()
+        {
+            return m_patch.GetSurface().GetControlPoints();
+        }
+
+        matrix<int> getRelavantControlPointsIds()
+        {
+            return m_patch.GetSurface().GetRelevantControlPointsIndexes(-1, -1, m_u, m_v);
+        }
+
+        matrix<double> EvaluateNURBSFunctions()
+        {
+            matrix<double> R_data_point;
+            m_patch.GetSurface().EvaluateNURBSFunctions(-1, -1, m_u, m_v, R_data_point);
+            return R_data_point;
+        }
+
     void setPatch(Patch& patch)
     {
         m_patch = patch;
@@ -154,6 +173,11 @@ public:
     //     m_v = v;
     // }
 
+    void flagControlPointsAsRelevantAndActive()
+    {
+        m_patch.GetSurface().FlagControlPointsAsRelevantAndActive(-1, -1, m_u, m_v);
+    }
+    
     void updateUAndV(double u, double v)
     {
         m_u = u;

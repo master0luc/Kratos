@@ -3994,20 +3994,128 @@ class CADMapper
 							data_point_i->optimize_parametrisation(tol, max_itr);
 						}
 					}
-
+				//
 			// reconstruction
 				// flag control points
 					void activate_control_point() // one cp is active, cp's neighbours are relevant
-					{}
+					{
+						// cp active
+						// cp relevant
+						// neighbourhood relevant
+					}
 
-					void activate_patch() // all relevant cps are active
-					{}
+					void activate_patch(Patch patch) // all relevant cps are active
+					{
+						// loop over data points
+						for(DataPointsList::iterator data_point_i = m_data_points.begin(); data_point_i != m_data_points.end(); data_point_i++)
+						{
+							// if data point in patch
+							double u = data_point_i->getU();
+							double v = data_point_i->getV();
+
+							if(patch.CheckIfPointIsInside(u,v))
+							{
+								// flag cps as relevant and active
+								data_point_i->flagControlPointsAsRelevantAndActive();
+							}
+						}	
+					}
 
 					void activate_knotspan() // some cps are relevant, inner cps are active (if any)
 					{}
+
+					void assign_mapping_matrix_ids()
+					{
+						m_n_active_control_points = 0;
+
+						for(unsigned int patch_itr = 0; patch_itr < m_patches.size(); patch_itr++)
+						{
+							ControlPointVector cps =  m_patches[patch_itr].GetSurface().GetControlPoints();
+
+							for(ControlPointVector::iterator cp_i = cps.begin(); cp_i != cps.end(); cp_i++)
+							{
+								if(cp_i->IsActive())
+								{
+									cp_i->SetMappingMatrixId(m_n_active_control_points);
+									m_n_active_control_points++;
+								}
+							}	
+						}
+						
+					}
+
 				// setup system
 					void initialize_lse() // parameters: type of norm, if one cp at a time
-					{}
+					{
+						// Initialize lhs matrices
+							m_lhs_x.resize(m_n_active_control_points, m_n_active_control_points);
+							m_lhs_y.resize(m_n_active_control_points, m_n_active_control_points);
+							m_lhs_z.resize(m_n_active_control_points, m_n_active_control_points);
+							m_lhs_x.clear();
+							m_lhs_y.clear();
+							m_lhs_z.clear();
+
+						// Initialize rhs vectors
+							m_rhs_x.resize(m_n_active_control_points);	
+							m_rhs_y.resize(m_n_active_control_points);	
+							m_rhs_z.resize(m_n_active_control_points);	
+							m_rhs_x.clear();
+							m_rhs_y.clear();
+							m_rhs_z.clear();
+
+						// Loop over data points
+							for(DataPointsList::iterator data_point_i = m_data_points.begin(); data_point_i != m_data_points.end(); data_point_i++)
+							{
+								// HOW TO DIRECTLY LOOP OVER DATA POINTS WHICH HAVE AT LEAST AN ACTIVE CP???
+								//
+								// get relevant control points and correspoinding NURBS function values
+								matrix<double> R_data_point = data_point_i->EvaluateNURBSFunctions();
+								matrix<unsigned int> cp_ids = data_point_i->getRelavantControlPointsIds();
+								ControlPointVector CP = data_point_i->getControlPoints();
+
+								for(unsigned int i=0; i<cp_ids.size1(); i++)
+								{
+									for(unsigned int j=0; j<cp_ids.size2(); j++)
+									{
+										ControlPoint cp_ij = CP[cp_ids(i,j)];
+										if(cp_ij.IsActive())
+										{
+											double R_ij = R_data_point(i,j);
+											unsigned int mapping_matrix_id_ij = cp_ij.GetMappingMatrixId();
+
+											for(unsigned int k=0; k<cp_ids.size1(); k++)
+											{
+												for(unsigned int l=0; l<cp_ids.size2(); l++)
+												{
+													ControlPoint cp_kl = CP[cp_ids(k,l)];
+													double R_kl = R_data_point(k,l);
+													if(cp_kl.IsActive())
+													{
+														unsigned int mapping_matrix_id_kl = cp_kl.GetMappingMatrixId();
+														// contribution to LHS
+														m_lhs_x(mapping_matrix_id_ij, mapping_matrix_id_kl) += R_ij*R_kl;
+														m_lhs_y(mapping_matrix_id_ij, mapping_matrix_id_kl) += R_ij*R_kl;
+														m_lhs_z(mapping_matrix_id_ij, mapping_matrix_id_kl) += R_ij*R_kl;
+													}
+													else
+													{
+														// dirichlet BC contribution
+														m_rhs_x(mapping_matrix_id_ij) -= R_ij*R_kl*cp_kl.getX();
+														m_rhs_y(mapping_matrix_id_ij) -= R_ij*R_kl*cp_kl.getY();
+														m_rhs_z(mapping_matrix_id_ij) -= R_ij*R_kl*cp_kl.getZ();
+													}
+												}
+											}
+
+											// contribution to RHS
+											m_rhs_x(mapping_matrix_id_ij) += R_ij * data_point_i->getX();
+											m_rhs_y(mapping_matrix_id_ij) += R_ij * data_point_i->getY();
+											m_rhs_z(mapping_matrix_id_ij) += R_ij * data_point_i->getZ();
+										}
+									}
+								}
+							}						
+					}
 				// regularization techniques
 
 				// boundary conditions
@@ -4562,6 +4670,8 @@ class CADMapper
 	Vector m_rhs_x;
 	Vector m_rhs_y;
 	Vector m_rhs_z;
+	// MODULAR //
+	unsigned int m_n_active_control_points;
 	// EXTERNAL: separating FE-mesh data from computation //
 	double m_number_of_points_external = 0;
 	IntVector m_list_of_patch_ids_external;
