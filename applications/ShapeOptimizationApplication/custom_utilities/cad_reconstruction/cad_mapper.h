@@ -101,7 +101,7 @@ class CADMapper
     typedef std::vector<double> DoubleVector;
     typedef std::vector<int> IntVector;
     typedef std::vector<ControlPoint> ControlPointVector;
-	typedef std::vector<Patch> PatchVector;
+	typedef std::vector<Patch::Pointer> PatchVector;
 	typedef std::vector<BREPElement> BREPElementVector;
 	typedef std::vector<BREPGaussPoint> BREPGaussPointVector;
 	typedef Node<3> NodeType;
@@ -115,7 +115,7 @@ class CADMapper
 		double u;
 		double v;
 		// unsigned int patch_itr;
-		Patch patch;
+		Patch::Pointer patch_ptr;
 		};
 
 	typedef std::map< NodeType::Pointer, CADPointParameters > PointCloud;
@@ -160,7 +160,7 @@ class CADMapper
 
 		// Create map to identify position in patch_vector for a given patch_id
 		for (unsigned int patch_itr = 0; patch_itr < m_patches.size(); patch_itr++)
-			m_patch_position_in_patch_vector[m_patches[patch_itr].GetId()] = patch_itr;
+			m_patch_position_in_patch_vector[m_patches[patch_itr]->GetId()] = patch_itr;
 		
 		// Read cad geometry data into the loal c++ containers if available
 		if(len(mr_cad_integration_data.keys())>0)
@@ -193,9 +193,9 @@ class CADMapper
 			for (unsigned int patch_itr = 0; patch_itr < m_patches.size(); patch_itr++)
 			{
 				// Get relevant data
-				unsigned int patch_id =  m_patches[patch_itr].GetId();
-				DoubleVector& knot_vec_u_i = m_patches[patch_itr].GetSurface().GetKnotVectorU();
-				DoubleVector& knot_vec_v_i = m_patches[patch_itr].GetSurface().GetKnotVectorV();
+				unsigned int patch_id =  m_patches[patch_itr]->GetId();
+				DoubleVector& knot_vec_u_i = m_patches[patch_itr]->GetSurface().GetKnotVectorU();
+				DoubleVector& knot_vec_v_i = m_patches[patch_itr]->GetSurface().GetKnotVectorV();
 				std::cout << "\n> Processing Patch with brep_id " << patch_id << std::endl;
 
 				// Pre-calculations
@@ -225,14 +225,14 @@ class CADMapper
 						array_1d<double, 2> point_of_interest;
 						point_of_interest[0] = u_i;
 						point_of_interest[1] = v_j;
-						bool point_is_inside = m_patches[patch_itr].CheckIfPointIsInside(point_of_interest);
+						bool point_is_inside = m_patches[patch_itr]->CheckIfPointIsInside(point_of_interest);
 
 						if(point_is_inside)
 						{
 							// compute unique point in CAD-model for given u&v
 							++cad_node_counter;					
 							Point<3> cad_point_coordinates;
-							m_patches[patch_itr].GetSurface().EvaluateSurfacePoint(cad_point_coordinates, u_i, v_j);
+							m_patches[patch_itr]->GetSurface().EvaluateSurfacePoint(cad_point_coordinates, u_i, v_j);
 
 							// Add id to point --> node. Add node to list of CAD nodes
 							NodeType::Pointer new_cad_node = Node < 3 > ::Pointer(new Node<3>(cad_node_counter, cad_point_coordinates));
@@ -326,7 +326,7 @@ class CADMapper
 						Q_minus_P(2) = Q_k(2) - P(2);
 
 						// The distance is used to compute Hessian and gradient
-						m_patches[patch_itr_of_nearest_point].GetSurface().EvaluateGradientsForClosestPointSearch(Q_minus_P, myHessian, myGradient , u_k, v_k);
+						m_patches[patch_itr_of_nearest_point]->GetSurface().EvaluateGradientsForClosestPointSearch(Q_minus_P, myHessian, myGradient , u_k, v_k);
 
 						// u_k and v_k are updated
 						MathUtils<double>::InvertMatrix( myHessian, InvH, det_H );
@@ -335,7 +335,7 @@ class CADMapper
 						v_k -= deltau(1);
 
 						// Q is updated
-						m_patches[patch_itr_of_nearest_point].GetSurface().EvaluateSurfacePoint(newtonRaphPoint, u_k, v_k);
+						m_patches[patch_itr_of_nearest_point]->GetSurface().EvaluateSurfacePoint(newtonRaphPoint, u_k, v_k);
 						Q_k(0) = newtonRaphPoint[0];
 						Q_k(1) = newtonRaphPoint[1];
 						Q_k(2) = newtonRaphPoint[2];
@@ -359,12 +359,12 @@ class CADMapper
 					nearest_point->Z() = Q_k(2);
 
 					// Compute and store span of each parameter to avoid redundant computations later
-					IntVector knot_span_nearest_point = m_patches[patch_itr_of_nearest_point].GetSurface().GetKnotSpan(u_of_nearest_point, v_of_nearest_point);
+					IntVector knot_span_nearest_point = m_patches[patch_itr_of_nearest_point]->GetSurface().GetKnotSpan(u_of_nearest_point, v_of_nearest_point);
 
 					// Set flag to mark control point as relevant for mapping
 					int span_u_of_np = knot_span_nearest_point[0];
 					int span_v_of_np = knot_span_nearest_point[1];
-					m_patches[patch_itr_of_nearest_point].GetSurface().FlagControlPointsForMapping(span_u_of_np, span_v_of_np, u_of_nearest_point, v_of_nearest_point);
+					m_patches[patch_itr_of_nearest_point]->GetSurface().FlagControlPointsForMapping(span_u_of_np, span_v_of_np, u_of_nearest_point, v_of_nearest_point);
 
 					// Store information about nearest point in vector for recovery in the same loop later when the mapping matrix is constructed
 					list_of_nearest_points.push_back(nearest_point);
@@ -390,14 +390,14 @@ class CADMapper
 					// Flag control points on master patch
 					unsigned int master_patch_id = brep_gp_i->GetPatchId();
 					Vector location = brep_gp_i->GetLocation();
-					m_patches[m_patch_position_in_patch_vector[master_patch_id]].GetSurface().FlagControlPointsForMapping(-1, -1, location[0], location[1]);
+					m_patches[m_patch_position_in_patch_vector[master_patch_id]]->GetSurface().FlagControlPointsForMapping(-1, -1, location[0], location[1]);
 
 					// Flag control points on slave patch if brep element is a coupling element
 					if(brep_elem_i->HasCouplingCondition())
 					{
 						unsigned int slave_patch_id = brep_gp_i->GetSlavePatchId();
 						location = brep_gp_i->GetSlaveLocation();
-						m_patches[m_patch_position_in_patch_vector[slave_patch_id]].GetSurface().FlagControlPointsForMapping(-1, -1, location[0], location[1]);
+						m_patches[m_patch_position_in_patch_vector[slave_patch_id]]->GetSurface().FlagControlPointsForMapping(-1, -1, location[0], location[1]);
 					}
 				}
 			}
@@ -410,7 +410,7 @@ class CADMapper
 			unsigned int mapping_matrix_id = 0;
 			for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 			{
-				for (ControlPointVector::iterator cp_i = patch_i->GetSurface().GetControlPoints().begin(); cp_i != patch_i->GetSurface().GetControlPoints().end(); ++cp_i)
+				for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 				{
 					if(cp_i->IsRelevantForMapping())
 					{
@@ -475,14 +475,14 @@ class CADMapper
 					
 					// Get CAD-shape-function-value for all control points affecting the nearest cad point
 					matrix<double> R_CAD_Pi;
-					m_patches[patch_itr_of_nearest_point].GetSurface().EvaluateNURBSFunctions( span_u_of_nearest_point,
+					m_patches[patch_itr_of_nearest_point]->GetSurface().EvaluateNURBSFunctions( span_u_of_nearest_point,
 																							span_v_of_nearest_point,
 																							u_of_nearest_point, 
 																							v_of_nearest_point,
 																							R_CAD_Pi );
 					
 					// Get the corresponding ids of control points in the mapping matrix
-					matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_itr_of_nearest_point].GetSurface().GetMappingMatrixIds( span_u_of_nearest_point, 
+					matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_itr_of_nearest_point]->GetSurface().GetMappingMatrixIds( span_u_of_nearest_point, 
 																																		span_v_of_nearest_point, 
 																																		u_of_nearest_point, 
 																																		v_of_nearest_point );
@@ -581,8 +581,8 @@ class CADMapper
 				// Read information from Gauss point
 				unsigned int master_patch_id = brep_gp_i->GetPatchId();
 				unsigned int slave_patch_id = brep_gp_i->GetSlavePatchId();
-				Patch& master_patch = m_patches[m_patch_position_in_patch_vector[master_patch_id]];
-				Patch& slave_patch = m_patches[m_patch_position_in_patch_vector[slave_patch_id]];
+				Patch::Pointer master_patch = m_patches[m_patch_position_in_patch_vector[master_patch_id]];
+				Patch::Pointer slave_patch = m_patches[m_patch_position_in_patch_vector[slave_patch_id]];
 				double gp_i_weight = brep_gp_i->GetWeight();
 				Vector location_on_master_patch = brep_gp_i->GetLocation();
 				Vector location_on_slave_patch = brep_gp_i->GetSlaveLocation();
@@ -593,17 +593,17 @@ class CADMapper
 				matrix<double> R_gpi_master;
 				double u_m = location_on_master_patch(0);
 				double v_m = location_on_master_patch(1);
-				master_patch.GetSurface().EvaluateNURBSFunctions(-1,-1,u_m, v_m, R_gpi_master);
-				matrix<unsigned int> mapping_matrix_ids_gpi_master = master_patch.GetSurface().GetMappingMatrixIds(-1,-1,u_m, v_m);
+				master_patch->GetSurface().EvaluateNURBSFunctions(-1,-1,u_m, v_m, R_gpi_master);
+				matrix<unsigned int> mapping_matrix_ids_gpi_master = master_patch->GetSurface().GetMappingMatrixIds(-1,-1,u_m, v_m);
 
 				matrix<double> R_gpi_slave;
 				double u_s = location_on_slave_patch(0);
 				double v_s = location_on_slave_patch(1);
-				slave_patch.GetSurface().EvaluateNURBSFunctions(-1,-1,u_s, v_s, R_gpi_slave);	
-				matrix<unsigned int> mapping_matrix_ids_gpi_slave = slave_patch.GetSurface().GetMappingMatrixIds(-1,-1,u_s, v_s);							
+				slave_patch->GetSurface().EvaluateNURBSFunctions(-1,-1,u_s, v_s, R_gpi_slave);	
+				matrix<unsigned int> mapping_matrix_ids_gpi_slave = slave_patch->GetSurface().GetMappingMatrixIds(-1,-1,u_s, v_s);							
 
 				// Compute Jacobian J1
-				matrix<double> g_master = master_patch.GetSurface().GetBaseVectors(-1,-1,u_m,v_m);
+				matrix<double> g_master = master_patch->GetSurface().GetBaseVectors(-1,-1,u_m,v_m);
 				Vector g1 = ZeroVector(3);
 				g1(0) = g_master(0,0);
 				g1(1) = g_master(1,0);
@@ -740,8 +740,8 @@ class CADMapper
 		}
 
 		// --------------------------------------------------------------------------
-		void apply_rotation_coupling( Patch &master_patch,
-									Patch &slave_patch,
+		void apply_rotation_coupling( Patch::Pointer master_patch,
+									Patch::Pointer slave_patch,
 									double u_m, double v_m,
 									double u_s, double v_s,
 									Vector &tangent_on_master_patch,
@@ -757,8 +757,8 @@ class CADMapper
 			std::vector<Vector> t1r_m, t1r_s, t2r_m, t2r_s, t3r_m, t3r_s;				
 
 			// Compute geometric quantities
-			master_patch.GetSurface().ComputeVariationOfLocalCSY( u_m, v_m, tangent_on_master_patch, T1_m, T2_m, T3_m, t1r_m, t2r_m, t3r_m );
-			slave_patch.GetSurface().ComputeVariationOfLocalCSY( u_s, v_s, tangent_on_slave_patch, T1_s, T2_s, T3_s, t1r_s, t2r_s, t3r_s );
+			master_patch->GetSurface().ComputeVariationOfLocalCSY( u_m, v_m, tangent_on_master_patch, T1_m, T2_m, T3_m, t1r_m, t2r_m, t3r_m );
+			slave_patch->GetSurface().ComputeVariationOfLocalCSY( u_s, v_s, tangent_on_slave_patch, T1_s, T2_s, T3_s, t1r_s, t2r_s, t3r_s );
 
 			// Check if master and slave tangent point in same direction. If yes, we have to subtract in the following.
 			int sign_factor = 1;
@@ -889,8 +889,8 @@ class CADMapper
 		}
 
 		// --------------------------------------------------------------------------
-		void enforce_tangent_continuity( Patch& master_patch,
-										Patch& slave_patch,
+		void enforce_tangent_continuity( Patch::Pointer master_patch,
+										Patch::Pointer slave_patch,
 										double u_m, double v_m,
 										double u_s, double v_s,
 										Vector& tangent_on_master_patch,
@@ -912,7 +912,7 @@ class CADMapper
 			std::cout << "Called: cad_mapper::enforce_tangent_continuity()" << std::endl;
 
 			// Compute geometric quantities
-			master_patch.GetSurface().ComputeSecondVariationOfLocalCSY( u_m, v_m, 
+			master_patch->GetSurface().ComputeSecondVariationOfLocalCSY( u_m, v_m, 
 																		tangent_on_master_patch, 
 																		T1_m, T2_m, T3_m, 
 																		T1_der_m, T2_der_m, T3_der_m,
@@ -920,7 +920,7 @@ class CADMapper
 																		t1_der_r_m, t2_der_r_m, t3_der_r_m,
 																		t1rs_m, t2rs_m, t3rs_m,
 																		t1_der_rs_m, t2_der_rs_m, t3_der_rs_m );
-			slave_patch.GetSurface().ComputeSecondVariationOfLocalCSY( u_s, v_s, 
+			slave_patch->GetSurface().ComputeSecondVariationOfLocalCSY( u_s, v_s, 
 																	tangent_on_slave_patch, 
 																	T1_s, T2_s, T3_s, 
 																	T1_der_s, T2_der_s, T3_der_s,
@@ -1134,7 +1134,7 @@ class CADMapper
 			{
 				// Read information from Gauss point
 				unsigned int master_patch_id = brep_gp_i->GetPatchId();
-				Patch& master_patch = m_patches[m_patch_position_in_patch_vector[master_patch_id]];
+				Patch::Pointer master_patch = m_patches[m_patch_position_in_patch_vector[master_patch_id]];
 				double gp_i_weight = brep_gp_i->GetWeight();
 				Vector location_on_master_patch = brep_gp_i->GetLocation();
 				Vector tangent_on_master_patch = brep_gp_i->GetTangent();
@@ -1143,11 +1143,11 @@ class CADMapper
 				matrix<double> R_gpi_master;
 				double u_m = location_on_master_patch(0);
 				double v_m = location_on_master_patch(1);
-				master_patch.GetSurface().EvaluateNURBSFunctions(-1,-1,u_m, v_m, R_gpi_master);
-				matrix<unsigned int> mapping_matrix_ids_gpi_master = master_patch.GetSurface().GetMappingMatrixIds(-1,-1,u_m, v_m);						
+				master_patch->GetSurface().EvaluateNURBSFunctions(-1,-1,u_m, v_m, R_gpi_master);
+				matrix<unsigned int> mapping_matrix_ids_gpi_master = master_patch->GetSurface().GetMappingMatrixIds(-1,-1,u_m, v_m);						
 
 				// Compute Jacobian J1
-				matrix<double> g_master = master_patch.GetSurface().GetBaseVectors(-1,-1,u_m,v_m);
+				matrix<double> g_master = master_patch->GetSurface().GetBaseVectors(-1,-1,u_m,v_m);
 				Vector g1 = ZeroVector(3);
 				g1(0) = g_master(0,0);
 				g1(1) = g_master(1,0);
@@ -1334,8 +1334,8 @@ class CADMapper
 				for (unsigned int patch_itr = 0; patch_itr < m_patches.size(); patch_itr++)
 				{
 					// Get relevant data
-					DoubleVector& knot_vec_u_i = m_patches[patch_itr].GetSurface().GetKnotVectorU();
-					DoubleVector& knot_vec_v_i = m_patches[patch_itr].GetSurface().GetKnotVectorV();
+					DoubleVector& knot_vec_u_i = m_patches[patch_itr]->GetSurface().GetKnotVectorU();
+					DoubleVector& knot_vec_v_i = m_patches[patch_itr]->GetSurface().GetKnotVectorV();
 
 					// Pre-calculations
 					unsigned int knot_vector_u_dimension = knot_vec_u_i.size();
@@ -1366,13 +1366,13 @@ class CADMapper
 							array_1d<double, 2> point_of_interest;
 							point_of_interest[0] = u_i;
 							point_of_interest[1] = v_j;
-							bool point_is_inside = m_patches[patch_itr].CheckIfPointIsInside(point_of_interest);
+							bool point_is_inside = m_patches[patch_itr]->CheckIfPointIsInside(point_of_interest);
 
 							if(point_is_inside)
 							{
 								// compute point in CAD-model for given u&v				
 								Point<3> cad_point;
-								m_patches[patch_itr].GetSurface().EvaluateSurfacePoint(cad_point, u_i, v_j);
+								m_patches[patch_itr]->GetSurface().EvaluateSurfacePoint(cad_point, u_i, v_j);
 
 								// Check and set a max value for irrelevant points outside the trimmed surface
 								if(std::abs(cad_point.X())>max_coordinate)
@@ -1392,8 +1392,8 @@ class CADMapper
 			else // if specific patch defined
 			{
 				// Get relevant data
-				DoubleVector& knot_vec_u_i = m_patches[specific_patch].GetSurface().GetKnotVectorU();
-				DoubleVector& knot_vec_v_i = m_patches[specific_patch].GetSurface().GetKnotVectorV();
+				DoubleVector& knot_vec_u_i = m_patches[specific_patch]->GetSurface().GetKnotVectorU();
+				DoubleVector& knot_vec_v_i = m_patches[specific_patch]->GetSurface().GetKnotVectorV();
 
 				// Pre-calculations
 				unsigned int knot_vector_u_dimension = knot_vec_u_i.size();
@@ -1422,13 +1422,13 @@ class CADMapper
 						array_1d<double, 2> point_of_interest;
 						point_of_interest[0] = u_i;
 						point_of_interest[1] = v_j;
-						bool point_is_inside = m_patches[specific_patch].CheckIfPointIsInside(point_of_interest);
+						bool point_is_inside = m_patches[specific_patch]->CheckIfPointIsInside(point_of_interest);
 
 						if(point_is_inside)
 						{
 							// compute point in CAD-model for given u&v				
 							Point<3> cad_point;
-							m_patches[specific_patch].GetSurface().EvaluateSurfacePoint(cad_point, u_i, v_j);
+							m_patches[specific_patch]->GetSurface().EvaluateSurfacePoint(cad_point, u_i, v_j);
 
 							// Check and set a max value for irrelevant points outside the trimmed surface
 							if(std::abs(cad_point.X())>max_coordinate)
@@ -1465,7 +1465,7 @@ class CADMapper
 				//Loop over all patches
 				for (unsigned int patch_itr = 0; patch_itr < m_patches.size(); patch_itr++)
 				{
-					BoundaryLoopVector boundary_loops = m_patches[patch_itr].GetBoundaryLoops();
+					BoundaryLoopVector boundary_loops = m_patches[patch_itr]->GetBoundaryLoops();
 
 					// Loop over all boundary loops of current patch
 					for(BoundaryLoopVector::iterator loop_i =  boundary_loops.begin(); loop_i!=boundary_loops.end(); loop_i++)
@@ -1500,7 +1500,7 @@ class CADMapper
 			}
 			else // if specific_patch defined
 			{
-				BoundaryLoopVector boundary_loops = m_patches[specific_patch].GetBoundaryLoops();
+				BoundaryLoopVector boundary_loops = m_patches[specific_patch]->GetBoundaryLoops();
 
 				// Loop over all boundary loops of current patch
 				for(BoundaryLoopVector::iterator loop_i =  boundary_loops.begin(); loop_i!=boundary_loops.end(); loop_i++)
@@ -1540,12 +1540,12 @@ class CADMapper
 		}	
 		
 		// --------------------------------------------------------------------------
-		void output_control_point_displacements()
+		void output_control_point_displacements(std::string output_filename)
 		{
 			// Outputs the displacements of the control points in a format that may be read by Gid
 
 			std::cout << "\n> Starting to write displacement of control points..." << std::endl;
-			std::ofstream output_file("control_point_displacements.post.res");
+			std::ofstream output_file(output_filename);
 
 			output_file << "Rhino Post Results File 1.0" << std::endl;
 			output_file << "Result \"Displacement\" \"Load Case\" 0 Vector OnNodes" << std::endl;
@@ -1554,7 +1554,7 @@ class CADMapper
 			unsigned int cp_itr = 0;
 			for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 			{
-				for (ControlPointVector::iterator cp_i = patch_i->GetSurface().GetControlPoints().begin(); cp_i != patch_i->GetSurface().GetControlPoints().end(); ++cp_i)
+				for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 				{
 					// It is important to iterate outside to stick to the carat settings
 					++cp_itr;
@@ -1588,7 +1588,7 @@ class CADMapper
 				//Loop over all patches
 				for (unsigned int patch_itr = 0; patch_itr < m_patches.size(); patch_itr++)
 				{
-					BoundaryLoopVector boundary_loops = m_patches[patch_itr].GetBoundaryLoops();
+					BoundaryLoopVector boundary_loops = m_patches[patch_itr]->GetBoundaryLoops();
 
 					// Loop over all boundary loops of current patch
 					for(BoundaryLoopVector::iterator loop_i =  boundary_loops.begin(); loop_i!=boundary_loops.end(); loop_i++)
@@ -1618,13 +1618,13 @@ class CADMapper
 								array_1d<double, 2> point_of_interest;
 								point_of_interest[0] = edge_point[0];
 								point_of_interest[1] = edge_point[1];
-								bool point_is_inside = m_patches[patch_itr].CheckIfPointIsInside(point_of_interest);
+								bool point_is_inside = m_patches[patch_itr]->CheckIfPointIsInside(point_of_interest);
 
 								if(point_is_inside)
 								{
 									// compute point in CAD-model for given u&v				
 									Point<3> cad_point;
-									m_patches[patch_itr].GetSurface().EvaluateSurfacePoint(cad_point, edge_point[0], edge_point[1]);
+									m_patches[patch_itr]->GetSurface().EvaluateSurfacePoint(cad_point, edge_point[0], edge_point[1]);
 
 									// Check and set a max value for irrelevant points outside the trimmed surface
 									if(std::abs(cad_point.X())>max_coordinate)
@@ -1646,7 +1646,7 @@ class CADMapper
 			else // if specific_patch defined
 			{}
 			// {
-			// 	BoundaryLoopVector boundary_loops = m_patches[specific_patch].GetBoundaryLoops();
+			// 	BoundaryLoopVector boundary_loops = m_patches[specific_patch]->GetBoundaryLoops();
 
 			// 	// Loop over all boundary loops of current patch
 			// 	for(BoundaryLoopVector::iterator loop_i =  boundary_loops.begin(); loop_i!=boundary_loops.end(); loop_i++)
@@ -1709,24 +1709,24 @@ class CADMapper
 					{
 						// Read information from Gauss point
 						unsigned int master_patch_id = brep_gp_i->GetPatchId();
-						Patch& master_patch = m_patches[m_patch_position_in_patch_vector[master_patch_id]];
+						Patch::Pointer master_patch = m_patches[m_patch_position_in_patch_vector[master_patch_id]];
 						Vector location_on_master_patch = brep_gp_i->GetLocation();
 						matrix<double> R_gpi_master;
 						double u_m = location_on_master_patch(0);
 						double v_m = location_on_master_patch(1);
 						Point<3> cad_point_master;
-						master_patch.GetSurface().EvaluateSurfacePoint(cad_point_master, u_m, v_m);
+						master_patch->GetSurface().EvaluateSurfacePoint(cad_point_master, u_m, v_m);
 						file_to_write << cad_point_master.X() << " " << cad_point_master.Y() << " " << cad_point_master.Z() << std::endl;
 
 						if(brep_elem_i->HasCouplingCondition())
 						{
 							unsigned int slave_patch_id = brep_gp_i->GetSlavePatchId();
-							Patch& slave_patch = m_patches[m_patch_position_in_patch_vector[slave_patch_id]];
+							Patch::Pointer slave_patch = m_patches[m_patch_position_in_patch_vector[slave_patch_id]];
 							Vector location_on_slave_patch = brep_gp_i->GetSlaveLocation();
 							double u_s = location_on_slave_patch(0);
 							double v_s = location_on_slave_patch(1);
 							Point<3> cad_point_slave;
-							slave_patch.GetSurface().EvaluateSurfacePoint(cad_point_slave, u_s, v_s);
+							slave_patch->GetSurface().EvaluateSurfacePoint(cad_point_slave, u_s, v_s);
 							file_to_write << cad_point_slave.X() << " " << cad_point_slave.Y() << " " << cad_point_slave.Z() << std::endl;
 
 							// store information needed to evaluate C0-continuity
@@ -1734,7 +1734,7 @@ class CADMapper
 							SlavePointVector.push_back( cad_point_slave );
 
 							// evaluate C1-continuity
-							matrix<double> g_master = master_patch.GetSurface().GetBaseVectors(-1,-1,u_m,v_m);
+							matrix<double> g_master = master_patch->GetSurface().GetBaseVectors(-1,-1,u_m,v_m);
 							Vector g1_m = ZeroVector(3);
 							g1_m(0) = g_master(0,0);
 							g1_m(1) = g_master(1,0);
@@ -1744,7 +1744,7 @@ class CADMapper
 							g2_m(1) = g_master(1,1);
 							g2_m(2) = g_master(2,1);
 
-							matrix<double> g_slave = slave_patch.GetSurface().GetBaseVectors(-1,-1,u_s,v_s);
+							matrix<double> g_slave = slave_patch->GetSurface().GetBaseVectors(-1,-1,u_s,v_s);
 							Vector g1_s = ZeroVector(3);
 							g1_s(0) = g_slave(0,0);
 							g1_s(1) = g_slave(1,0);
@@ -1814,9 +1814,9 @@ class CADMapper
 			for (unsigned int patch_itr = 0; patch_itr < m_patches.size(); patch_itr++)
 			{
 				// Get relevant data
-				unsigned int patch_id =  m_patches[patch_itr].GetId();
-				DoubleVector& knot_vec_u_i = m_patches[patch_itr].GetSurface().GetKnotVectorU();
-				DoubleVector& knot_vec_v_i = m_patches[patch_itr].GetSurface().GetKnotVectorV();
+				unsigned int patch_id =  m_patches[patch_itr]->GetId();
+				DoubleVector& knot_vec_u_i = m_patches[patch_itr]->GetSurface().GetKnotVectorU();
+				DoubleVector& knot_vec_v_i = m_patches[patch_itr]->GetSurface().GetKnotVectorV();
 				std::cout << "\n> Processing Patch with brep_id " << patch_id << std::endl;
 
 				// Pre-calculations
@@ -1846,14 +1846,14 @@ class CADMapper
 						array_1d<double, 2> point_of_interest;
 						point_of_interest[0] = u_i;
 						point_of_interest[1] = v_j;
-						bool point_is_inside = m_patches[patch_itr].CheckIfPointIsInside(point_of_interest);
+						bool point_is_inside = m_patches[patch_itr]->CheckIfPointIsInside(point_of_interest);
 
 						if(point_is_inside)
 						{
 							// compute unique point in CAD-model for given u&v
 							++cad_node_counter;					
 							Point<3> cad_point_coordinates;
-							m_patches[patch_itr].GetSurface().EvaluateSurfacePoint(cad_point_coordinates, u_i, v_j);
+							m_patches[patch_itr]->GetSurface().EvaluateSurfacePoint(cad_point_coordinates, u_i, v_j);
 
 							// Add id to point --> node. Add node to list of CAD nodes
 							NodeType::Pointer new_cad_node = Node < 3 > ::Pointer(new Node<3>(cad_node_counter, cad_point_coordinates));
@@ -1906,7 +1906,7 @@ class CADMapper
 				double u_of_nearest_point = list_of_us_of_cad_nodes[nearest_point->Id()-1];
 				double v_of_nearest_point = list_of_vs_of_cad_nodes[nearest_point->Id()-1];
 				int patch_itr_of_nearest_point = list_of_patch_itrs_of_cad_nodes[nearest_point->Id()-1];
-				IntVector knot_span_nearest_point = m_patches[patch_itr_of_nearest_point].GetSurface().GetKnotSpan(u_of_nearest_point, v_of_nearest_point);
+				IntVector knot_span_nearest_point = m_patches[patch_itr_of_nearest_point]->GetSurface().GetKnotSpan(u_of_nearest_point, v_of_nearest_point);
 				int span_u_of_np = knot_span_nearest_point[0];
 				int span_v_of_np = knot_span_nearest_point[1];
 
@@ -1950,7 +1950,7 @@ class CADMapper
 						Q_minus_P(2) = Q_k(2) - P(2);
 
 						// The distance is used to compute Hessian and gradient
-						m_patches[patch_itr_of_nearest_point].GetSurface().EvaluateGradientsForClosestPointSearch(Q_minus_P, myHessian, myGradient , u_k, v_k);
+						m_patches[patch_itr_of_nearest_point]->GetSurface().EvaluateGradientsForClosestPointSearch(Q_minus_P, myHessian, myGradient , u_k, v_k);
 
 						// u_k and v_k are updated
 						MathUtils<double>::InvertMatrix( myHessian, InvH, det_H );
@@ -1959,7 +1959,7 @@ class CADMapper
 						v_k -= deltau(1);
 
 						// Q is updated
-						m_patches[patch_itr_of_nearest_point].GetSurface().EvaluateSurfacePoint(newtonRaphPoint, u_k, v_k);
+						m_patches[patch_itr_of_nearest_point]->GetSurface().EvaluateSurfacePoint(newtonRaphPoint, u_k, v_k);
 						Q_k(0) = newtonRaphPoint[0];
 						Q_k(1) = newtonRaphPoint[1];
 						Q_k(2) = newtonRaphPoint[2];
@@ -1983,12 +1983,12 @@ class CADMapper
 					nearest_point->Z() = Q_k(2);
 
 				// Compute and store span of each parameter to avoid redundant computations later
-				knot_span_nearest_point = m_patches[patch_itr_of_nearest_point].GetSurface().GetKnotSpan(u_of_nearest_point, v_of_nearest_point);
+				knot_span_nearest_point = m_patches[patch_itr_of_nearest_point]->GetSurface().GetKnotSpan(u_of_nearest_point, v_of_nearest_point);
 
 				// Set flag to mark control point as relevant for mapping
 				span_u_of_np = knot_span_nearest_point[0];
 				span_v_of_np = knot_span_nearest_point[1];
-				m_patches[patch_itr_of_nearest_point].GetSurface().FlagControlPointsForMapping(span_u_of_np, span_v_of_np, u_of_nearest_point, v_of_nearest_point);
+				m_patches[patch_itr_of_nearest_point]->GetSurface().FlagControlPointsForMapping(span_u_of_np, span_v_of_np, u_of_nearest_point, v_of_nearest_point);
 
 				// Store information about nearest point in vector for recovery in the same loop later when the mapping matrix is constructed
 				m_list_of_nearest_points.push_back(nearest_point);
@@ -2012,14 +2012,14 @@ class CADMapper
 					// Flag control points on master patch
 					unsigned int master_patch_id = brep_gp_i->GetPatchId();
 					Vector location = brep_gp_i->GetLocation();
-					m_patches[m_patch_position_in_patch_vector[master_patch_id]].GetSurface().FlagControlPointsForMapping(-1, -1, location[0], location[1]);
+					m_patches[m_patch_position_in_patch_vector[master_patch_id]]->GetSurface().FlagControlPointsForMapping(-1, -1, location[0], location[1]);
 
 					// Flag control points on slave patch if brep element is a coupling element
 					if(brep_elem_i->HasCouplingCondition())
 					{
 						unsigned int slave_patch_id = brep_gp_i->GetSlavePatchId();
 						location = brep_gp_i->GetSlaveLocation();
-						m_patches[m_patch_position_in_patch_vector[slave_patch_id]].GetSurface().FlagControlPointsForMapping(-1, -1, location[0], location[1]);
+						m_patches[m_patch_position_in_patch_vector[slave_patch_id]]->GetSurface().FlagControlPointsForMapping(-1, -1, location[0], location[1]);
 					}
 				}
 			}
@@ -2030,6 +2030,7 @@ class CADMapper
 		void print_nearest_points(std::string output_filename)
 		{
 			std::cout << "\n> Starting writing results of compute_nearest_points() to file..." << std::endl;
+			std::cout << "> WARNING: x y z coordinates of nearest neighbour are wrong!!!" << std::endl;
 
 			// Open file to write all points in
 			std::ofstream file_to_write(output_filename);
@@ -2068,7 +2069,7 @@ class CADMapper
 				v_i = m_list_of_v_of_nearest_points[i];
 				patch_itr = m_list_of_patch_of_nearest_points[i];
 				Point<3> cad_point;
-				m_patches[patch_itr].GetSurface().EvaluateSurfacePoint(cad_point, u_i, v_i);
+				m_patches[patch_itr]->GetSurface().EvaluateSurfacePoint(cad_point, u_i, v_i);
 				
 
 				// write to file
@@ -2084,10 +2085,10 @@ class CADMapper
 									<< m_list_of_u_of_neighbour_points[i] << " "
 									<< m_list_of_v_of_neighbour_points[i] << " "
 
-									<< m_patches[m_list_of_patch_of_neighbour_points[i]].GetSurface().GetKnotVectorU().front() << " "
-									<< m_patches[m_list_of_patch_of_neighbour_points[i]].GetSurface().GetKnotVectorU().back() << " "
-									<< m_patches[m_list_of_patch_of_neighbour_points[i]].GetSurface().GetKnotVectorV().front() << " "
-									<< m_patches[m_list_of_patch_of_neighbour_points[i]].GetSurface().GetKnotVectorV().back() << " "
+									<< m_patches[m_list_of_patch_of_neighbour_points[i]]->GetSurface().GetKnotVectorU().front() << " "
+									<< m_patches[m_list_of_patch_of_neighbour_points[i]]->GetSurface().GetKnotVectorU().back() << " "
+									<< m_patches[m_list_of_patch_of_neighbour_points[i]]->GetSurface().GetKnotVectorV().front() << " "
+									<< m_patches[m_list_of_patch_of_neighbour_points[i]]->GetSurface().GetKnotVectorV().back() << " "
 
 									<< m_list_of_neighbour_points[i]->X() << " "
 									<< m_list_of_neighbour_points[i]->Y() << " "
@@ -2114,10 +2115,10 @@ class CADMapper
 									<< m_list_of_u_of_neighbour_points[i] << " "
 									<< m_list_of_v_of_neighbour_points[i] << " "
 
-									<< m_patches[m_list_of_patch_of_neighbour_points[i]].GetSurface().GetKnotVectorU().front() << " "
-									<< m_patches[m_list_of_patch_of_neighbour_points[i]].GetSurface().GetKnotVectorU().back() << " "
-									<< m_patches[m_list_of_patch_of_neighbour_points[i]].GetSurface().GetKnotVectorV().front() << " "
-									<< m_patches[m_list_of_patch_of_neighbour_points[i]].GetSurface().GetKnotVectorV().back() << " "
+									<< m_patches[m_list_of_patch_of_neighbour_points[i]]->GetSurface().GetKnotVectorU().front() << " "
+									<< m_patches[m_list_of_patch_of_neighbour_points[i]]->GetSurface().GetKnotVectorU().back() << " "
+									<< m_patches[m_list_of_patch_of_neighbour_points[i]]->GetSurface().GetKnotVectorV().front() << " "
+									<< m_patches[m_list_of_patch_of_neighbour_points[i]]->GetSurface().GetKnotVectorV().back() << " "
 
 									<< m_list_of_neighbour_points[i]->X() << " "
 									<< m_list_of_neighbour_points[i]->Y() << " "
@@ -2140,6 +2141,76 @@ class CADMapper
 			std::cout << "\n> Finished writing results" << std::endl;
 			
 		}
+
+		void print_nearest_points_2(std::string output_filename) // modular code version of print_nearest_points()
+		{
+			std::cout << "\n> Starting writing results of parametrisation() to file..." << std::endl;
+
+			// Open file to write all points in
+			std::ofstream file_to_write(output_filename);
+			// write header
+			file_to_write	<< "data point | nearest neighbour| Newton-Raphson point" << std::endl;
+			file_to_write 	<< "x" << " "
+							<< "y" << " "
+							<< "z" << " "
+							<< "|" << " "
+							<< "patch-id" << " "
+							<< "u" << " "
+							<< "v" << " "
+							<< "u_min" << " "
+							<< "u_max" << " "
+							<< "v_min" << " "
+							<< "v_max" << " "
+							<< "x" << " "
+							<< "y" << " "
+							<< "z" << " "
+							<< "|" << " "
+							<< "patch-id" << " "
+							<< "u" << " "
+							<< "v" << " "
+							<< "x" << " "
+							<< "y" << " "
+							<< "z" << std::endl;
+			// write points
+			int i = 0;
+			for(DataPointsList::iterator data_point_i = m_data_points.begin(); data_point_i != m_data_points.end(); data_point_i++)
+			{
+				// write to file
+								// print FE-node
+					file_to_write 	<< data_point_i->getX() << " "
+									<< data_point_i->getY() << " "
+									<< data_point_i->getZ() << " "
+								// print neighbour
+									<< data_point_i->getPatch()->GetId() - 1<< " "
+
+									<< m_list_of_u_of_neighbour_points[i] << " "
+									<< m_list_of_v_of_neighbour_points[i] << " "
+
+									<< data_point_i->getPatch()->GetSurface().GetKnotVectorU().front() << " "
+									<< data_point_i->getPatch()->GetSurface().GetKnotVectorU().back() << " "
+									<< data_point_i->getPatch()->GetSurface().GetKnotVectorV().front() << " "
+									<< data_point_i->getPatch()->GetSurface().GetKnotVectorV().back() << " "
+
+									<< m_list_of_neighbour_points[i]->X() << " "
+									<< m_list_of_neighbour_points[i]->Y() << " "
+									<< m_list_of_neighbour_points[i]->Z() << " "
+								// print nearest point
+									<< data_point_i->getPatch()->GetId() - 1<< " "
+
+									<< data_point_i->getU() << " "
+									<< data_point_i->getV() << " "
+
+									<< data_point_i->getCADPoint().X() << " "
+									<< data_point_i->getCADPoint().Y() << " "
+									<< data_point_i->getCADPoint().Z() << std::endl;
+				i++;
+			}
+
+			// Close file
+			file_to_write.close();
+			std::cout << "\n> Finished writing results" << std::endl;
+			
+		}
 		// LHS indirect, RHS indirect
 			void compute_a_matrix()  // toBeChecked
 			{
@@ -2152,7 +2223,7 @@ class CADMapper
 				unsigned int mapping_matrix_id = 0;
 				for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 				{
-					for (ControlPointVector::iterator cp_i = patch_i->GetSurface().GetControlPoints().begin(); cp_i != patch_i->GetSurface().GetControlPoints().end(); ++cp_i)
+					for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 					{
 						if(cp_i->IsRelevantForMapping())
 						{
@@ -2195,14 +2266,14 @@ class CADMapper
 						
 						// Get CAD-shape-function-value for all control points affecting the nearest cad point
 						matrix<double> R_CAD_Pi;
-						m_patches[patch_itr_of_nearest_point].GetSurface().EvaluateNURBSFunctions( span_u_of_nearest_point,
+						m_patches[patch_itr_of_nearest_point]->GetSurface().EvaluateNURBSFunctions( span_u_of_nearest_point,
 																								span_v_of_nearest_point,
 																								u_of_nearest_point, 
 																								v_of_nearest_point,
 																								R_CAD_Pi );
 						
 						// Get the corresponding id of control points in the matrix
-						matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_itr_of_nearest_point].GetSurface().GetMappingMatrixIds( span_u_of_nearest_point, span_v_of_nearest_point, u_of_nearest_point, v_of_nearest_point);
+						matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_itr_of_nearest_point]->GetSurface().GetMappingMatrixIds( span_u_of_nearest_point, span_v_of_nearest_point, u_of_nearest_point, v_of_nearest_point);
 
 						// Assemble a matrix
 						for(unsigned int i=0; i<mapping_matrix_ids_cad.size2();i++)
@@ -2228,7 +2299,7 @@ class CADMapper
 				Vector x_CP = ZeroVector(3*m_n_relevant_control_points);
 				for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 				{
-					for (ControlPointVector::iterator cp_i = patch_i->GetSurface().GetControlPoints().begin(); cp_i != patch_i->GetSurface().GetControlPoints().end(); ++cp_i)
+					for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 					{
 						if(cp_i->IsRelevantForMapping())
 						{
@@ -2335,7 +2406,7 @@ class CADMapper
 				Vector x_CP_old = ZeroVector(3*m_n_relevant_control_points);
 				for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 				{
-					for (ControlPointVector::iterator cp_i = patch_i->GetSurface().GetControlPoints().begin(); cp_i != patch_i->GetSurface().GetControlPoints().end(); ++cp_i)
+					for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 					{
 						if(cp_i->IsRelevantForMapping())
 						{
@@ -2402,7 +2473,7 @@ class CADMapper
 				unsigned int mapping_matrix_id = 0;
 				for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 				{
-					for (ControlPointVector::iterator cp_i = patch_i->GetSurface().GetControlPoints().begin(); cp_i != patch_i->GetSurface().GetControlPoints().end(); ++cp_i)
+					for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 					{
 						if(cp_i->IsRelevantForMapping())
 						{
@@ -2444,14 +2515,14 @@ class CADMapper
 						
 						// Get CAD-shape-function-value for all control points affecting the nearest cad point
 						matrix<double> R_CAD_Pi;
-						m_patches[patch_itr_of_nearest_point].GetSurface().EvaluateNURBSFunctions( span_u_of_nearest_point,
+						m_patches[patch_itr_of_nearest_point]->GetSurface().EvaluateNURBSFunctions( span_u_of_nearest_point,
 																								span_v_of_nearest_point,
 																								u_of_nearest_point, 
 																								v_of_nearest_point,
 																								R_CAD_Pi );
 						
 						// Get the corresponding id of control points in the matrix
-						matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_itr_of_nearest_point].GetSurface().GetMappingMatrixIds( span_u_of_nearest_point, span_v_of_nearest_point, u_of_nearest_point, v_of_nearest_point);
+						matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_itr_of_nearest_point]->GetSurface().GetMappingMatrixIds( span_u_of_nearest_point, span_v_of_nearest_point, u_of_nearest_point, v_of_nearest_point);
 
 						// Assemble a matrix
 						for(unsigned int i=0; i<mapping_matrix_ids_cad.size1(); i++)
@@ -2527,7 +2598,7 @@ class CADMapper
 				Vector x_CP_old = ZeroVector(3*m_n_relevant_control_points);
 				for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 				{
-					for (ControlPointVector::iterator cp_i = patch_i->GetSurface().GetControlPoints().begin(); cp_i != patch_i->GetSurface().GetControlPoints().end(); ++cp_i)
+					for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 					{
 						if(cp_i->IsRelevantForMapping())
 						{
@@ -2584,7 +2655,7 @@ class CADMapper
 						unsigned int mapping_matrix_id = 0;
 						for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 						{
-							for (ControlPointVector::iterator cp_i = patch_i->GetSurface().GetControlPoints().begin(); cp_i != patch_i->GetSurface().GetControlPoints().end(); ++cp_i)
+							for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 							{
 								if(cp_i->IsRelevantForMapping())
 								{
@@ -2629,14 +2700,14 @@ class CADMapper
 							
 							// Get CAD-shape-function-value for all control points affecting the nearest cad point
 							matrix<double> R_CAD_Pi;
-							m_patches[patch_itr_of_nearest_point].GetSurface().EvaluateNURBSFunctions( span_u_of_nearest_point,
+							m_patches[patch_itr_of_nearest_point]->GetSurface().EvaluateNURBSFunctions( span_u_of_nearest_point,
 																									span_v_of_nearest_point,
 																									u_of_nearest_point, 
 																									v_of_nearest_point,
 																									R_CAD_Pi );
 							
 							// Get the corresponding id of control points in the matrix
-							matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_itr_of_nearest_point].GetSurface().GetMappingMatrixIds( span_u_of_nearest_point, span_v_of_nearest_point, u_of_nearest_point, v_of_nearest_point);
+							matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_itr_of_nearest_point]->GetSurface().GetMappingMatrixIds( span_u_of_nearest_point, span_v_of_nearest_point, u_of_nearest_point, v_of_nearest_point);
 
 							// Assemble a matrix
 							for(unsigned int i=0; i<mapping_matrix_ids_cad.size1(); i++)
@@ -2693,14 +2764,14 @@ class CADMapper
 							
 							// Get CAD-shape-function-value for all control points affecting the nearest cad point
 							matrix<double> R_CAD_Pi;
-							m_patches[patch_itr_of_nearest_point].GetSurface().EvaluateNURBSFunctions( span_u_of_nearest_point,
+							m_patches[patch_itr_of_nearest_point]->GetSurface().EvaluateNURBSFunctions( span_u_of_nearest_point,
 																									span_v_of_nearest_point,
 																									u_of_nearest_point, 
 																									v_of_nearest_point,
 																									R_CAD_Pi );
 							
 							// Get the corresponding id of control points in the vector
-							matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_itr_of_nearest_point].GetSurface().GetMappingMatrixIds( span_u_of_nearest_point, span_v_of_nearest_point, u_of_nearest_point, v_of_nearest_point);
+							matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_itr_of_nearest_point]->GetSurface().GetMappingMatrixIds( span_u_of_nearest_point, span_v_of_nearest_point, u_of_nearest_point, v_of_nearest_point);
 
 							// Assemble a matrix
 							for(unsigned int i=0; i<mapping_matrix_ids_cad.size1(); i++)
@@ -2729,6 +2800,8 @@ class CADMapper
 					// 1: compute lhs and rhs
 						compute_lhs_small(); // computes m_lhs_x, m_lhs_y, m_lhs_z
 						compute_rhs_small(); // computes m_rhs_x, m_rhs_y, m_rhs_z
+						print_mapping_ids(true); ///////////////////////////////////////////////////////////////////////////////////////////
+						print_lhs(true); ///////////////////////////////////////////////////////////////////////////////////////////
 					// 2: apply regularization
 						if(alpha > 0) alpha_criterion(alpha);
 						if(beta  > 0)  beta_criterion(beta );
@@ -2760,7 +2833,7 @@ class CADMapper
 						Vector ds = ZeroVector(3*m_n_relevant_control_points);
 						for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 						{
-							for (ControlPointVector::iterator cp_i = patch_i->GetSurface().GetControlPoints().begin(); cp_i != patch_i->GetSurface().GetControlPoints().end(); ++cp_i)
+							for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 							{
 								if(cp_i->IsRelevantForMapping())
 								{
@@ -2815,9 +2888,9 @@ class CADMapper
 					for (unsigned int patch_itr = 0; patch_itr < m_patches.size(); patch_itr++)
 					{
 						// Get relevant data
-						unsigned int patch_id =  m_patches[patch_itr].GetId();
-						DoubleVector& knot_vec_u_i = m_patches[patch_itr].GetSurface().GetKnotVectorU();
-						DoubleVector& knot_vec_v_i = m_patches[patch_itr].GetSurface().GetKnotVectorV();
+						unsigned int patch_id =  m_patches[patch_itr]->GetId();
+						DoubleVector& knot_vec_u_i = m_patches[patch_itr]->GetSurface().GetKnotVectorU();
+						DoubleVector& knot_vec_v_i = m_patches[patch_itr]->GetSurface().GetKnotVectorV();
 						std::cout << "\n> Processing Patch with brep_id " << patch_id << std::endl;
 
 						// Pre-calculations
@@ -2847,14 +2920,14 @@ class CADMapper
 								array_1d<double, 2> point_of_interest;
 								point_of_interest[0] = u_i;
 								point_of_interest[1] = v_j;
-								bool point_is_inside = m_patches[patch_itr].CheckIfPointIsInside(point_of_interest);
+								bool point_is_inside = m_patches[patch_itr]->CheckIfPointIsInside(point_of_interest);
 
 								if(point_is_inside)
 								{
 									// compute unique point in CAD-model for given u&v
 									++cad_node_counter;					
 									Point<3> cad_point_coordinates;
-									m_patches[patch_itr].GetSurface().EvaluateSurfacePoint(cad_point_coordinates, u_i, v_j);
+									m_patches[patch_itr]->GetSurface().EvaluateSurfacePoint(cad_point_coordinates, u_i, v_j);
 
 									// Add id to point --> node. Add node to list of CAD nodes
 									NodeType::Pointer new_cad_node = Node < 3 > ::Pointer(new Node<3>(cad_node_counter, cad_point_coordinates));
@@ -2908,7 +2981,7 @@ class CADMapper
 						// loop over patches
 						for (unsigned int patch_cp = 0; patch_cp < m_patches.size(); patch_cp++)
 						{
-							NURBSSurface surface = m_patches[patch_cp].GetSurface();
+							NURBSSurface surface = m_patches[patch_cp]->GetSurface();
 							ControlPointVector CP = surface.GetControlPoints();
 
 							// loop over relevant control points
@@ -2999,7 +3072,7 @@ class CADMapper
 					// 	// loop over patches
 					// 	for (unsigned int patch_cp = 0; patch_cp < m_patches.size(); patch_cp++)
 					// 	{
-					// 		NURBSSurface surface = m_patches[patch_cp].GetSurface();
+					// 		NURBSSurface surface = m_patches[patch_cp]->GetSurface();
 					// 		ControlPointVector CP = surface.GetControlPoints();
 
 					// 		// loop over relevant control points
@@ -3083,7 +3156,7 @@ class CADMapper
 						int cp_id;
 						for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 						{
-							for (ControlPointVector::iterator cp_i = patch_i->GetSurface().GetControlPoints().begin(); cp_i != patch_i->GetSurface().GetControlPoints().end(); ++cp_i)
+							for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 							{
 								if(cp_i->IsRelevantForMapping())
 								{
@@ -3159,8 +3232,8 @@ class CADMapper
 							// Read information from Gauss point
 							unsigned int master_patch_id = brep_gp_i->GetPatchId();
 							unsigned int slave_patch_id = brep_gp_i->GetSlavePatchId();
-							Patch& master_patch = m_patches[m_patch_position_in_patch_vector[master_patch_id]];
-							Patch& slave_patch = m_patches[m_patch_position_in_patch_vector[slave_patch_id]];
+							Patch::Pointer master_patch = m_patches[m_patch_position_in_patch_vector[master_patch_id]];
+							Patch::Pointer slave_patch = m_patches[m_patch_position_in_patch_vector[slave_patch_id]];
 							double gp_i_weight = brep_gp_i->GetWeight();
 							Vector location_on_master_patch = brep_gp_i->GetLocation();
 							Vector location_on_slave_patch = brep_gp_i->GetSlaveLocation();
@@ -3171,17 +3244,17 @@ class CADMapper
 							matrix<double> R_gpi_master;
 							double u_m = location_on_master_patch(0);
 							double v_m = location_on_master_patch(1);
-							master_patch.GetSurface().EvaluateNURBSFunctions(-1,-1,u_m, v_m, R_gpi_master);
-							matrix<unsigned int> mapping_matrix_ids_gpi_master = master_patch.GetSurface().GetMappingMatrixIds(-1,-1,u_m, v_m);
+							master_patch->GetSurface().EvaluateNURBSFunctions(-1,-1,u_m, v_m, R_gpi_master);
+							matrix<unsigned int> mapping_matrix_ids_gpi_master = master_patch->GetSurface().GetMappingMatrixIds(-1,-1,u_m, v_m);
 
 							matrix<double> R_gpi_slave;
 							double u_s = location_on_slave_patch(0);
 							double v_s = location_on_slave_patch(1);
-							slave_patch.GetSurface().EvaluateNURBSFunctions(-1,-1,u_s, v_s, R_gpi_slave);	
-							matrix<unsigned int> mapping_matrix_ids_gpi_slave = slave_patch.GetSurface().GetMappingMatrixIds(-1,-1,u_s, v_s);							
+							slave_patch->GetSurface().EvaluateNURBSFunctions(-1,-1,u_s, v_s, R_gpi_slave);	
+							matrix<unsigned int> mapping_matrix_ids_gpi_slave = slave_patch->GetSurface().GetMappingMatrixIds(-1,-1,u_s, v_s);							
 
 							// Compute Jacobian J1
-							matrix<double> g_master = master_patch.GetSurface().GetBaseVectors(-1,-1,u_m,v_m);
+							matrix<double> g_master = master_patch->GetSurface().GetBaseVectors(-1,-1,u_m,v_m);
 							Vector g1 = ZeroVector(3);
 							g1(0) = g_master(0,0);
 							g1(1) = g_master(1,0);
@@ -3315,8 +3388,8 @@ class CADMapper
 							}
 						}
 					}
-				void apply_rotation_coupling_small( Patch &master_patch,
-													Patch &slave_patch,
+				void apply_rotation_coupling_small( Patch::Pointer master_patch,
+													Patch::Pointer slave_patch,
 													double u_m, double v_m,
 													double u_s, double v_s,
 													Vector &tangent_on_master_patch,
@@ -3332,8 +3405,8 @@ class CADMapper
 							std::vector<Vector> t1r_m, t1r_s, t2r_m, t2r_s, t3r_m, t3r_s;				
 
 						// Compute geometric quantities
-							master_patch.GetSurface().ComputeVariationOfLocalCSY( u_m, v_m, tangent_on_master_patch, T1_m, T2_m, T3_m, t1r_m, t2r_m, t3r_m );
-							slave_patch.GetSurface().ComputeVariationOfLocalCSY( u_s, v_s, tangent_on_slave_patch, T1_s, T2_s, T3_s, t1r_s, t2r_s, t3r_s );
+							master_patch->GetSurface().ComputeVariationOfLocalCSY( u_m, v_m, tangent_on_master_patch, T1_m, T2_m, T3_m, t1r_m, t2r_m, t3r_m );
+							slave_patch->GetSurface().ComputeVariationOfLocalCSY( u_s, v_s, tangent_on_slave_patch, T1_s, T2_s, T3_s, t1r_s, t2r_s, t3r_s );
 
 						// Check if master and slave tangent point in same direction. If yes, we have to subtract in the following.
 							int sign_factor = 1;
@@ -3462,8 +3535,8 @@ class CADMapper
 								}
 							}
 					}
-				void enforce_tangent_continuity_small( Patch& master_patch,
-												Patch& slave_patch,
+				void enforce_tangent_continuity_small( Patch::Pointer master_patch,
+												Patch::Pointer slave_patch,
 												double u_m, double v_m,
 												double u_s, double v_s,
 												Vector& tangent_on_master_patch,
@@ -3485,7 +3558,7 @@ class CADMapper
 						std::cout << "Called: cad_mapper::enforce_tangent_continuity()" << std::endl;
 
 						// Compute geometric quantities
-							master_patch.GetSurface().ComputeSecondVariationOfLocalCSY( u_m, v_m, 
+							master_patch->GetSurface().ComputeSecondVariationOfLocalCSY( u_m, v_m, 
 																						tangent_on_master_patch, 
 																						T1_m, T2_m, T3_m, 
 																						T1_der_m, T2_der_m, T3_der_m,
@@ -3493,7 +3566,7 @@ class CADMapper
 																						t1_der_r_m, t2_der_r_m, t3_der_r_m,
 																						t1rs_m, t2rs_m, t3rs_m,
 																						t1_der_rs_m, t2_der_rs_m, t3_der_rs_m );
-							slave_patch.GetSurface().ComputeSecondVariationOfLocalCSY( u_s, v_s, 
+							slave_patch->GetSurface().ComputeSecondVariationOfLocalCSY( u_s, v_s, 
 																					tangent_on_slave_patch, 
 																					T1_s, T2_s, T3_s, 
 																					T1_der_s, T2_der_s, T3_der_s,
@@ -3697,8 +3770,8 @@ class CADMapper
 									// Read information from Gauss point
 										unsigned int master_patch_id = brep_gp_i->GetPatchId();
 										unsigned int slave_patch_id = brep_gp_i->GetSlavePatchId();
-										Patch& master_patch = m_patches[m_patch_position_in_patch_vector[master_patch_id]];
-										Patch& slave_patch = m_patches[m_patch_position_in_patch_vector[slave_patch_id]];
+										Patch::Pointer master_patch = m_patches[m_patch_position_in_patch_vector[master_patch_id]];
+										Patch::Pointer slave_patch = m_patches[m_patch_position_in_patch_vector[slave_patch_id]];
 										double gp_i_weight = brep_gp_i->GetWeight();
 										Vector location_on_master_patch = brep_gp_i->GetLocation();
 										Vector location_on_slave_patch = brep_gp_i->GetSlaveLocation();
@@ -3709,21 +3782,21 @@ class CADMapper
 										matrix<double> R_gpi_master;
 										double u_m = location_on_master_patch(0);
 										double v_m = location_on_master_patch(1);
-										master_patch.GetSurface().EvaluateNURBSFunctions(-1,-1,u_m, v_m, R_gpi_master);
-										ControlPointVector cps_master = master_patch.GetSurface().GetControlPoints();
-										matrix<unsigned int> cp_ids_gpi_master = master_patch.GetSurface().
+										master_patch->GetSurface().EvaluateNURBSFunctions(-1,-1,u_m, v_m, R_gpi_master);
+										ControlPointVector cps_master = master_patch->GetSurface().GetControlPoints();
+										matrix<unsigned int> cp_ids_gpi_master = master_patch->GetSurface().
 																				GetRelevantControlPointsIndexes(-1,-1,u_m, v_m);
 
 										matrix<double> R_gpi_slave;
 										double u_s = location_on_slave_patch(0);
 										double v_s = location_on_slave_patch(1);
-										slave_patch.GetSurface().EvaluateNURBSFunctions(-1,-1,u_s, v_s, R_gpi_slave);	
-										ControlPointVector cps_slave = slave_patch.GetSurface().GetControlPoints();
-										matrix<unsigned int> cp_ids_gpi_slave = slave_patch.GetSurface().
+										slave_patch->GetSurface().EvaluateNURBSFunctions(-1,-1,u_s, v_s, R_gpi_slave);	
+										ControlPointVector cps_slave = slave_patch->GetSurface().GetControlPoints();
+										matrix<unsigned int> cp_ids_gpi_slave = slave_patch->GetSurface().
 																				GetRelevantControlPointsIndexes(-1,-1,u_s, v_s);							
 
 									// Compute Jacobian J1
-										matrix<double> g_master = master_patch.GetSurface().GetBaseVectors(-1,-1,u_m,v_m);
+										matrix<double> g_master = master_patch->GetSurface().GetBaseVectors(-1,-1,u_m,v_m);
 										Vector g1 = ZeroVector(3);
 										g1(0) = g_master(0,0);
 										g1(1) = g_master(1,0);
@@ -3794,13 +3867,13 @@ class CADMapper
 										// Read information from Gauss point
 											// master u, v
 											unsigned int master_patch_id = brep_gp_i->GetPatchId();
-											Patch& master_patch = m_patches[m_patch_position_in_patch_vector[master_patch_id]];
+											Patch::Pointer master_patch = m_patches[m_patch_position_in_patch_vector[master_patch_id]];
 											Vector location_on_master_patch = brep_gp_i->GetLocation();
 											double u_m = location_on_master_patch(0);
 											double v_m = location_on_master_patch(1);
 											// slave u, v
 											unsigned int slave_patch_id = brep_gp_i->GetSlavePatchId();
-											Patch& slave_patch = m_patches[m_patch_position_in_patch_vector[slave_patch_id]];
+											Patch::Pointer slave_patch = m_patches[m_patch_position_in_patch_vector[slave_patch_id]];
 											Vector location_on_slave_patch = brep_gp_i->GetSlaveLocation();
 											double u_s = location_on_slave_patch(0);
 											double v_s = location_on_slave_patch(1);
@@ -3810,7 +3883,7 @@ class CADMapper
 											double gp_i_weight = brep_gp_i->GetWeight();
 
 										// Compute base vectors
-											matrix<double> g_master = master_patch.GetSurface().GetBaseVectors(-1,-1,u_m,v_m);
+											matrix<double> g_master = master_patch->GetSurface().GetBaseVectors(-1,-1,u_m,v_m);
 											Vector g1 = ZeroVector(3);
 											g1(0) = g_master(0,0);
 											g1(1) = g_master(1,0);
@@ -3823,7 +3896,7 @@ class CADMapper
 											g3(0) = g_master(0,2);
 											g3(1) = g_master(1,2);
 											g3(2) = g_master(2,2);
-											matrix<double> g_slave = slave_patch.GetSurface().GetBaseVectors(-1,-1,u_s,v_s);
+											matrix<double> g_slave = slave_patch->GetSurface().GetBaseVectors(-1,-1,u_s,v_s);
 											Vector g3_s = ZeroVector(3);
 											g3_s(0) = g_slave(0,2);
 											g3_s(1) = g_slave(1,2);
@@ -3851,6 +3924,83 @@ class CADMapper
 
 
 		///////////////////////// MODULAR CODE ///////////////////////////////
+		void print_mapping_ids(bool old_version=false)
+		{
+			if(old_version)
+			{
+				std::cout << "write cps of version 4" << std::endl;
+				std::ofstream file_to_write("cps_4.txt");
+				for(PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
+				{
+					file_to_write << "patch: " << (*patch_i)->GetId() << std::endl;
+					for(ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
+					{
+						if(cp_i->IsRelevantForMapping())
+						{
+							file_to_write << "\tcp " << cp_i->getGlobalId() << ": " << cp_i->GetMappingMatrixId() << std::endl;
+						}
+						else
+						{
+							file_to_write << "\tcp " << cp_i->getGlobalId() << ":" << std::endl;
+						}
+					}
+				}				
+				file_to_write.close();
+			}
+			else
+			{
+				std::cout << "write cps of version 5" << std::endl;				
+				std::ofstream file_to_write("cps_5.txt");
+				for(PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
+				{
+					file_to_write << "patch: " << (*patch_i)->GetId() << std::endl;
+					for(ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
+					{
+						if(cp_i->IsActive())
+						{
+							file_to_write << "\tcp " << cp_i->getGlobalId() << ": " << cp_i->GetMappingMatrixId() << std::endl;
+						}
+						else
+						{
+							file_to_write << "\tcp " << cp_i->getGlobalId() << ":" << std::endl;
+						}
+					}
+				}
+				file_to_write.close();
+			}
+		}
+		void print_lhs(bool old_version=false)
+		{
+			if(old_version)
+			{
+				std::cout << "write lhs of version 4" << std::endl;
+				std::ofstream file_to_write("lhs_4.txt");
+				for(unsigned int i=0; i<m_lhs_x.size1(); i++)
+				{
+					for(unsigned int j=0; j<m_lhs_x.size2(); j++)
+					{
+						file_to_write << m_lhs_x(i,j) << " ";
+					}
+					file_to_write << std::endl;
+				}		
+				file_to_write.close();
+			}
+			else
+			{
+				std::cout << "write lhs of version 5" << std::endl;				
+				std::ofstream file_to_write("lhs_5.txt");
+				for(unsigned int i=0; i<m_lhs_x.size1(); i++)
+				{
+					for(unsigned int j=0; j<m_lhs_x.size2(); j++)
+					{
+						file_to_write << m_lhs_x(i,j) << " ";
+					}
+					file_to_write << std::endl;
+				}	
+				file_to_write.close();
+			}
+		}
+		
 			// define point cloud
 				void use_all_FE_nodes_as_data_points()
 				{
@@ -3910,9 +4060,9 @@ class CADMapper
 						//Loop over all surface of all patches
 						for (unsigned int patch_itr = 0; patch_itr < m_patches.size(); patch_itr++)
 						{
-							Patch& patch = m_patches[patch_itr];
-							NURBSSurface& surface = patch.GetSurface();
-							std::cout << "\n> Processing Patch with brep_id " << patch.GetId() << std::endl;
+							Patch::Pointer patch_ptr = m_patches[patch_itr];
+							NURBSSurface& surface = patch_ptr->GetSurface();
+							std::cout << "\n> Processing Patch with brep_id " << patch_ptr->GetId() << std::endl;
 
 							// Get relevant data
 								double u_min = surface.GetKnotVectorU().front();
@@ -3932,7 +4082,7 @@ class CADMapper
 									double v_j = v_min + j*delta_v;
 
 									// Check if u_i and v_j represent a point inside the closed boundary loop
-									if(patch.CheckIfPointIsInside(u_i, v_j))
+									if(patch_ptr->CheckIfPointIsInside(u_i, v_j))
 									{
 										++cad_node_counter;					
 										// compute unique point in CAD-model for given u&v
@@ -3944,7 +4094,7 @@ class CADMapper
 
 										// // Store for cad node the corresponding cad information in separate vectors
 										list_of_cad_nodes.push_back(cad_node_ptr);
-										m_point_cloud[cad_node_ptr] = {u_i, v_j, patch};
+										m_point_cloud[cad_node_ptr] = {u_i, v_j, patch_ptr};
 									}
 								}
 							}
@@ -3965,7 +4115,7 @@ class CADMapper
 							NodeType::Pointer neighbour = nodes_tree.SearchNearestPoint( *data_point_node_ptr );
 
 							// Store CAD information of neighbour
-							data_point_i->setPatch(m_point_cloud[neighbour].patch);
+							data_point_i->setPatch(m_point_cloud[neighbour].patch_ptr);
 							// data_point_i->setU(m_point_cloud[neighbour].u);
 							// data_point_i->setV(m_point_cloud[neighbour].v);
 							data_point_i->updateUAndV(m_point_cloud[neighbour].u, m_point_cloud[neighbour].v);
@@ -3987,7 +4137,6 @@ class CADMapper
 						// Specify a tolerance and a maximum number of iteration for the Newton-Raphson optimizer
 						double tol = 1e-5;
 						unsigned int max_itr = 50;
-
 						// Loop over data points and find for each the closest cad point
 						for(DataPointsList::iterator data_point_i = m_data_points.begin(); data_point_i != m_data_points.end(); data_point_i++)
 						{
@@ -4004,16 +4153,17 @@ class CADMapper
 						// neighbourhood relevant
 					}
 
-					void activate_patch(Patch patch) // all relevant cps are active
+					void activate_patch(Patch::Pointer patch) // all relevant cps are active
 					{
+						double u, v;
 						// loop over data points
 						for(DataPointsList::iterator data_point_i = m_data_points.begin(); data_point_i != m_data_points.end(); data_point_i++)
 						{
-							// if data point in patch
-							double u = data_point_i->getU();
-							double v = data_point_i->getV();
-
-							if(patch.CheckIfPointIsInside(u,v))
+							u = data_point_i->getU();
+							v = data_point_i->getV();
+							if( data_point_i->getPatch()->GetId() == patch->GetId() &&
+							    patch->CheckIfPointIsInside(u, v)
+							  )
 							{
 								// flag cps as relevant and active
 								data_point_i->flagControlPointsAsRelevantAndActive();
@@ -4027,17 +4177,20 @@ class CADMapper
 					void assign_mapping_matrix_ids()
 					{
 						m_n_active_control_points = 0;
+						m_n_relevant_control_points = 0;
 
-						for(unsigned int patch_itr = 0; patch_itr < m_patches.size(); patch_itr++)
+						for(PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 						{
-							ControlPointVector cps =  m_patches[patch_itr].GetSurface().GetControlPoints();
-
-							for(ControlPointVector::iterator cp_i = cps.begin(); cp_i != cps.end(); cp_i++)
+							for(ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 							{
 								if(cp_i->IsActive())
 								{
 									cp_i->SetMappingMatrixId(m_n_active_control_points);
 									m_n_active_control_points++;
+								}
+								if(cp_i->IsRelevantForMapping())
+								{
+									m_n_relevant_control_points++;
 								}
 							}	
 						}
@@ -4122,7 +4275,78 @@ class CADMapper
 			
 				// functions exposed to user
 					void map_to_cad_space_5()
-					{}
+					{
+						std::cout << "\n> Starting to map to CAD space..." << std::endl;
+						boost::timer function_timer;
+
+						// 0:
+							for(PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
+							{
+								Patch::Pointer patch = (*patch_i);
+								std::cout << "activating patch " << patch->GetId() << std::endl;
+								activate_patch(patch);
+							}
+							assign_mapping_matrix_ids();
+							print_mapping_ids();
+							KRATOS_WATCH(m_n_relevant_control_points);
+							KRATOS_WATCH(m_n_active_control_points);
+						// 1: compute lhs and rhs
+							initialize_lse(); // computes m_lhs_x, m_lhs_y, m_lhs_z 
+												//			 m_rhs_x, m_rhs_y, m_rhs_z
+							print_lhs();
+						// 2: apply regularization
+							// if(alpha > 0) alpha_criterion(alpha);
+							// if(beta  > 0)  beta_criterion(beta );
+							// if(delta > 0) delta_criterion(delta);
+						// 2bis: apply B.C.s
+							// apply_boundary_conditions_small(penalty_factor_disp, penalty_factor_rot, edges_with_enforced_tangent_continuity);
+						// 3: solve for x_CP: updated position of CP
+							CompressedMatrixType compressed_lhs_x = m_lhs_x; //???
+							CompressedMatrixType compressed_lhs_y = m_lhs_y; //???
+							CompressedMatrixType compressed_lhs_z = m_lhs_z; //???
+
+							std::cout << "\t> Solving x... \n";	
+							Vector x_CP = ZeroVector(m_n_active_control_points);
+							m_linear_solver->Solve(compressed_lhs_x, x_CP, m_rhs_x);		
+							std::cout << "\t\t\t DONE" << std::endl;
+
+							std::cout << "\t> Solving y... \n";	
+							Vector y_CP = ZeroVector(m_n_active_control_points);
+							m_linear_solver->Solve(compressed_lhs_y, y_CP, m_rhs_y);		
+							std::cout << "\t\t\t DONE" << std::endl;
+
+							std::cout << "\t> Solving z... \n";	
+							Vector z_CP = ZeroVector(m_n_active_control_points);
+							m_linear_solver->Solve(compressed_lhs_z, z_CP, m_rhs_z);		
+							std::cout << "\t\t\t DONE" << std::endl;
+
+						// 4: update
+							std::cout << "\t> Updating control points positions... ";
+							m_cad_reader.UpdateControlPointsPositions(m_patches, x_CP, y_CP, z_CP);
+
+						std::cout << "\n> Mapping to CAD space finished in " << function_timer.elapsed() << " s." << std::endl;	
+
+						// 5: Test solution
+							Vector rhs_test = ZeroVector(m_n_active_control_points);
+							noalias(rhs_test) = prod(compressed_lhs_x,x_CP);
+							Vector rhs_difference = m_rhs_x - rhs_test;
+							double normalized_difference_in_rhs = norm_2(rhs_difference);
+							std::cout << "\n> Solution of linear system leads to a difference in the RHS_x of: normalized_difference_in_rhs = " << normalized_difference_in_rhs << std::endl;
+				
+							rhs_test = ZeroVector(m_n_active_control_points);
+							noalias(rhs_test) = prod(compressed_lhs_y,y_CP);
+							rhs_difference = m_rhs_y - rhs_test;
+							normalized_difference_in_rhs = norm_2(rhs_difference);
+							std::cout << "\n> Solution of linear system leads to a difference in the RHS_y of: normalized_difference_in_rhs = " << normalized_difference_in_rhs << std::endl;
+				
+							rhs_test = ZeroVector(m_n_active_control_points);
+							noalias(rhs_test) = prod(compressed_lhs_z,z_CP);
+							rhs_difference = m_rhs_z - rhs_test;
+							normalized_difference_in_rhs = norm_2(rhs_difference);
+							std::cout << "\n> Solution of linear system leads to a difference in the RHS_z of: normalized_difference_in_rhs = " << normalized_difference_in_rhs << std::endl;	
+
+
+					}
 
 
 		////////////////////////////////////////////////////////
@@ -4162,7 +4386,7 @@ class CADMapper
 						double u = m_list_of_u_external[i];
 						double v = m_list_of_v_external[i];
 						unsigned int patch_id = m_list_of_patch_ids_external[i];
-						m_patches[patch_id].GetSurface().FlagControlPointsForMapping(-1, 
+						m_patches[patch_id]->GetSurface().FlagControlPointsForMapping(-1, 
 																					-1,
 																					u,
 																					v);
@@ -4174,7 +4398,7 @@ class CADMapper
 					unsigned int mapping_matrix_id = 0;
 					for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 					{
-						for (ControlPointVector::iterator cp_i = patch_i->GetSurface().GetControlPoints().begin(); cp_i != patch_i->GetSurface().GetControlPoints().end(); ++cp_i)
+						for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 						{
 							if(cp_i->IsRelevantForMapping())
 							{
@@ -4202,14 +4426,14 @@ class CADMapper
 
 						// Get CAD-shape-function-value for all control points affecting the nearest cad point
 						matrix<double> R_CAD_Pi;
-						m_patches[patch_id].GetSurface().EvaluateNURBSFunctions( -1,
+						m_patches[patch_id]->GetSurface().EvaluateNURBSFunctions( -1,
 																				-1,
 																				u, 
 																				v,
 																				R_CAD_Pi );
 																							
 						// Get the corresponding id of control points in the matrix
-						matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_id].GetSurface().GetMappingMatrixIds( -1,
+						matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_id]->GetSurface().GetMappingMatrixIds( -1,
 																															-1,
 																															u,
 																															v);
@@ -4263,14 +4487,14 @@ class CADMapper
 
 						// Get CAD-shape-function-value for all control points affecting the nearest cad point
 						matrix<double> R_CAD_Pi;
-						m_patches[patch_id].GetSurface().EvaluateNURBSFunctions( -1,
+						m_patches[patch_id]->GetSurface().EvaluateNURBSFunctions( -1,
 																				-1,
 																				u, 
 																				v,
 																				R_CAD_Pi );
 					
 						// Get the corresponding id of control points in the matrix
-						matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_id].GetSurface().GetMappingMatrixIds( -1,
+						matrix<unsigned int> mapping_matrix_ids_cad = m_patches[patch_id]->GetSurface().GetMappingMatrixIds( -1,
 																															-1,
 																															u,
 																															v);
@@ -4319,7 +4543,7 @@ class CADMapper
 					Vector x_CP_old = ZeroVector(3*m_n_relevant_control_points);
 					for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 					{
-						for (ControlPointVector::iterator cp_i = patch_i->GetSurface().GetControlPoints().begin(); cp_i != patch_i->GetSurface().GetControlPoints().end(); ++cp_i)
+						for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 						{
 							if(cp_i->IsRelevantForMapping())
 							{
@@ -4357,7 +4581,7 @@ class CADMapper
 					u = m_list_of_u_external[i];
 					v = m_list_of_v_external[i];
 					Point<3> cad_point_coordinates;
-					m_patches[patch_id].GetSurface().EvaluateSurfacePoint(cad_point_coordinates, u, v);
+					m_patches[patch_id]->GetSurface().EvaluateSurfacePoint(cad_point_coordinates, u, v);
 
 					x = m_list_of_updated_x_external[i];
 					y = m_list_of_updated_y_external[i];
@@ -4466,7 +4690,7 @@ class CADMapper
 		double norm_2_gamma_prime_s = 0;
 
 		// compute gauss points
-		NURBSSurface surface = m_patches[patch_itr].GetSurface();
+		NURBSSurface surface = m_patches[patch_itr]->GetSurface();
 		int p = surface.GetDegP();
 		int q = surface.GetDegQ();
 		int deg = p*q-1; //2->3 //3->8

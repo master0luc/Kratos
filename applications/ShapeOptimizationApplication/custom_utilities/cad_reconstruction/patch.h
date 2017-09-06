@@ -112,7 +112,7 @@ public:
 	///@}
 
 	/// Pointer definition of Patch
-	//    KRATOS_CLASS_POINTER_DEFINITION[Patch];
+	KRATOS_CLASS_POINTER_DEFINITION(Patch);
 
 	/// Default constructor.
 	Patch()

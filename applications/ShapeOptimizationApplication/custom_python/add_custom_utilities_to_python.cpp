@@ -178,8 +178,14 @@ void  AddCustomUtilitiesToPython()
             .def("map_to_cad_space_4", &CADMapper::map_to_cad_space_4)  
             .def("apply_boundary_conditions_small", &CADMapper::apply_boundary_conditions_small)  
             .def("measure_g0_continuity", &CADMapper::measure_g0_continuity)  
-            .def("measure_g1_continuity", &CADMapper::measure_g1_continuity)  
+            .def("measure_g1_continuity", &CADMapper::measure_g1_continuity)
+            // MODULAR //
+            .def("use_all_FE_nodes_as_data_points", &CADMapper::use_all_FE_nodes_as_data_points)            
+            .def("parametrisation", &CADMapper::parametrisation)            
+            .def("print_nearest_points_2", &CADMapper::print_nearest_points_2)            
+            .def("map_to_cad_space_5", &CADMapper::map_to_cad_space_5)  
           
+
             // EXTERNAL: separating FE-mesh data from computation //
             .def("external_map_to_cad_space", &CADMapper::external_map_to_cad_space)            
             .def("set_point", &CADMapper::set_point)            

@@ -100,7 +100,7 @@ class CADModelReader
 public:
 	///@name Type Definitions
 	///@{
-	typedef std::vector<Patch> PatchVector;
+	typedef std::vector<Patch::Pointer> PatchVector;
     typedef boost::python::extract<double> extractDouble;
     typedef boost::python::extract<int> extractInt;
 	 typedef boost::python::extract<std::string> extractString;
@@ -255,8 +255,10 @@ public:
 			// 3. Step: Creat and add patch with unique Id
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			unsigned int patch_id = extractInt(mr_cad_geometry_in_json["faces"][i]["brep_id"]);
-			Patch patch(patch_id, surface, boundary_loops);
-			r_patches.push_back(patch);
+			// Patch patch(patch_id, surface, boundary_loops);
+			// r_patches.push_back(patch);
+			Patch::Pointer patch_ptr = Patch::Pointer( new Patch(patch_id, surface, boundary_loops) );
+			r_patches.push_back(patch_ptr);
 		}		
 		std::cout << "\n> Finished reading CAD geometry of given json-file..." << std::endl;	
 	}
@@ -408,7 +410,7 @@ public:
 
 		for (PatchVector::iterator patch_i = patches.begin(); patch_i != patches.end(); ++patch_i)
 		{
-			for (ControlPointVector::iterator cp_i = patch_i->GetSurface().GetControlPoints().begin(); cp_i != patch_i->GetSurface().GetControlPoints().end(); ++cp_i)
+			for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
 			{
 				if(cp_i->IsRelevantForMapping())
 				{
@@ -450,6 +452,59 @@ public:
 		}
 	}
 
+	// --------------------------------------------------------------------------
+	void UpdateControlPointsPositions(PatchVector& patches, Vector& x, Vector& y, Vector& z)
+	{
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// 1. Step: Update C++ data base
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		// Map to identify control point for given global id (needed for python update later)
+		std::map<unsigned int, ControlPoint*> control_point_corresponding_to_global_id;
+
+		for (PatchVector::iterator patch_i = patches.begin(); patch_i != patches.end(); ++patch_i)
+		{
+			for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
+			{
+				if(cp_i->IsActive())
+				{
+					// Updating c++ data base
+					unsigned int cp_mapping_matrix_id = cp_i->GetMappingMatrixId();
+					cp_i->setX( x[cp_mapping_matrix_id] );
+					cp_i->setY( y[cp_mapping_matrix_id] );
+					cp_i->setZ( z[cp_mapping_matrix_id] );
+
+				}
+				// Filling map to be used later
+				unsigned int cp_global_id = cp_i->getGlobalId();
+				control_point_corresponding_to_global_id[cp_global_id] = &(*cp_i);
+			}
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// 2. Step: Update pyhon data base
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		
+		// loop over patches / faces in cad geometry file
+		for (int i = 0; i < boost::python::len(mr_cad_geometry_in_json["faces"]); i++)
+		{
+			for (int cp_idx = 0; cp_idx < boost::python::len(mr_cad_geometry_in_json["faces"][i]["surface"][0]["control_points"]); cp_idx++)
+			{
+				unsigned int global_id = extractInt(mr_cad_geometry_in_json["faces"][i]["surface"][0]["control_points"][cp_idx][0]);
+
+				ControlPoint* cp_j = control_point_corresponding_to_global_id[global_id];
+
+				double sx = cp_j->getX();
+				double sy = cp_j->getY();
+				double sz = cp_j->getZ();
+
+				// Update python data base which is store as a reference (so it is also updated on python level)
+				mr_cad_geometry_in_json["faces"][i]["surface"][0]["control_points"][cp_idx][1][0] = sx;
+				mr_cad_geometry_in_json["faces"][i]["surface"][0]["control_points"][cp_idx][1][1] = sy;
+				mr_cad_geometry_in_json["faces"][i]["surface"][0]["control_points"][cp_idx][1][2] = sz;
+			}
+		}
+	}
 	// ==============================================================================
 	/// Turn back information as a string.
 	virtual std::string Info() const

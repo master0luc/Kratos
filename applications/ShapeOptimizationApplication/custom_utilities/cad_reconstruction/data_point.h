@@ -140,25 +140,35 @@ public:
         {
             return m_v;
         }
+        
+        Patch::Pointer getPatch()
+        {
+            return m_patch;
+        }
+
+        Point<3>& getCADPoint()
+        {
+            return m_cad_point;
+        }
 
         ControlPointVector& getControlPoints()
         {
-            return m_patch.GetSurface().GetControlPoints();
+            return m_patch->GetSurface().GetControlPoints();
         }
 
         matrix<int> getRelavantControlPointsIds()
         {
-            return m_patch.GetSurface().GetRelevantControlPointsIndexes(-1, -1, m_u, m_v);
+            return m_patch->GetSurface().GetRelevantControlPointsIndexes(-1, -1, m_u, m_v);
         }
 
         matrix<double> EvaluateNURBSFunctions()
         {
             matrix<double> R_data_point;
-            m_patch.GetSurface().EvaluateNURBSFunctions(-1, -1, m_u, m_v, R_data_point);
+            m_patch->GetSurface().EvaluateNURBSFunctions(-1, -1, m_u, m_v, R_data_point);
             return R_data_point;
         }
 
-    void setPatch(Patch& patch)
+    void setPatch(Patch::Pointer patch)
     {
         m_patch = patch;
     }
@@ -175,14 +185,14 @@ public:
 
     void flagControlPointsAsRelevantAndActive()
     {
-        m_patch.GetSurface().FlagControlPointsAsRelevantAndActive(-1, -1, m_u, m_v);
+        m_patch->GetSurface().FlagControlPointsAsRelevantAndActive(-1, -1, m_u, m_v);
     }
     
     void updateUAndV(double u, double v)
     {
         m_u = u;
         m_v = v;
-        m_patch.GetSurface().EvaluateSurfacePoint(m_cad_point, m_u, m_v);
+        m_patch->GetSurface().EvaluateSurfacePoint(m_cad_point, m_u, m_v);
     }
 
     Vector getDistanceToOriginalDataPointVector()
@@ -209,7 +219,7 @@ public:
             Vector Q_minus_P = getDistanceToOriginalDataPointVector();
 
             // The distance is used to compute Hessian and gradient
-            m_patch.GetSurface().EvaluateGradientsForClosestPointSearch(Q_minus_P,
+            m_patch->GetSurface().EvaluateGradientsForClosestPointSearch(Q_minus_P,
                                                                         hessian,
                                                                         gradient,
                                                                         m_u, m_v);
@@ -233,7 +243,7 @@ public:
     //
         // IntVector getKnotSpan()
         // {
-        //     return m_patch.GetSurface().GetKnotSpan(m_u, m_v);
+        //     return m_patch->GetSurface().GetKnotSpan(m_u, m_v);
         // }
 
         // double getX0()
@@ -303,7 +313,7 @@ private:
     // FE data
     NodeType::Pointer m_node_ptr;
     // CAD point data
-    Patch m_patch;
+    Patch::Pointer m_patch;
     double m_u, m_v;
     Point<3> m_cad_point; 
 
