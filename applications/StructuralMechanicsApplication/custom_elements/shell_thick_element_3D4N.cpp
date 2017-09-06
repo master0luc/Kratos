@@ -849,6 +849,90 @@ void ShellThickElement3D4N::GetValueOnIntegrationPoints(const Variable<Vector>& 
         std::vector<Vector>& rValues,
         const ProcessInfo& rCurrentProcessInfo)
 {
+	if (rVariable == LOCAL_AXIS_VECTOR_1)
+	{
+		// LOCAL_AXIS_VECTOR_1 output DOES NOT include the effect of section
+		// orientation, which rotates the entrire element section in-plane
+		// and is used in element stiffness calculation.
+
+		if (rValues.size() != 4)
+		{
+			rValues.resize(4);
+		}
+		
+		for (int i = 0; i < 4; ++i) rValues[i] = ZeroVector(3);
+		// Initialize common calculation variables
+		// Compute the local coordinate system.
+		ShellQ4_LocalCoordinateSystem localCoordinateSystem(
+			mpCoordinateTransformation->CreateReferenceCoordinateSystem());
+
+		for (size_t GP = 0; GP < 4; GP++)
+		{
+			rValues[GP] = localCoordinateSystem.Vx();
+		}
+	}
+	else if (rVariable == ORTHOTROPIC_FIBER_ORIENTATION_1)
+	{
+		// ORTHOTROPIC_FIBER_ORIENTATION_1 output DOES include the effect of 
+		// section orientation, which rotates the entrire element section 
+		// in-plane and is used in element stiffness calculation.
+
+		// Resize output
+		if (rValues.size() != 4)
+		{
+			rValues.resize(4);
+		}
+		for (int i = 0; i < 4; ++i) rValues[i] = ZeroVector(3);
+
+
+		// Initialize common calculation variables
+		// Compute the local coordinate system.
+		ShellQ4_LocalCoordinateSystem localCoordinateSystem(
+			mpCoordinateTransformation->CreateReferenceCoordinateSystem());
+
+		// Get local axis 1 in flattened LCS space
+		Vector3 localAxis1 = localCoordinateSystem.P2() - localCoordinateSystem.P1();
+
+		// Perform rotation of local axis 1 to fiber1 in flattened LCS space
+		Matrix localToFiberRotation = Matrix(3, 3, 0.0);
+		double fiberSectionRotation = mSections[0]->GetOrientationAngle();
+		double c = std::cos(fiberSectionRotation);
+		double s = std::sin(fiberSectionRotation);
+
+		localToFiberRotation(0, 0) = c;
+		localToFiberRotation(0, 1) = -s;
+		localToFiberRotation(1, 0) = s;
+		localToFiberRotation(1, 1) = c;
+		localToFiberRotation(2, 2) = 1.0;
+
+		Vector3 temp = prod(localToFiberRotation, localAxis1);
+
+		// Transform result back to global cartesian coords
+		// Includes warpage correction
+		/*
+		Matrix localToGlobalLarge;
+		localCoordinateSystem.ComputeLocalToGlobalTransformationMatrix(localToGlobalLarge);
+		Matrix localToGlobalSmall = Matrix(3, 3, 0.0);
+		for (size_t i = 0; i < 3; i++)
+		{
+		for (size_t j = 0; j < 3; j++)
+		{
+		localToGlobalSmall(i, j) = localToGlobalLarge(i, j);
+		}
+		}
+		*/
+		// Basic rotation without warpage correction
+		Matrix localToGlobalSmall = localCoordinateSystem.Orientation();
+
+		Vector3 fiberAxis1 = prod(trans(localToGlobalSmall), temp);
+		fiberAxis1 /= std::sqrt(inner_prod(fiberAxis1, fiberAxis1));
+
+		//write results
+		for (size_t dir = 0; dir < 1; dir++)
+		{
+			rValues[dir] = fiberAxis1;
+		}
+	}
 }
 
 void ShellThickElement3D4N::GetValueOnIntegrationPoints(const Variable<Matrix>& rVariable,
@@ -869,6 +953,30 @@ void ShellThickElement3D4N::GetValueOnIntegrationPoints(const Variable<array_1d<
         std::vector<array_1d<double,6> >& rValues,
         const ProcessInfo& rCurrentProcessInfo)
 {
+}
+
+void ShellThickElement3D4N::Calculate(const Variable<Matrix>& rVariable, Matrix & Output, const ProcessInfo & rCurrentProcessInfo)
+{
+	if (rVariable == LOCAL_ELEMENT_ORIENTATION)
+	{
+		Output.resize(3, 3, false);
+
+		// Compute the local coordinate system.
+		ShellQ4_LocalCoordinateSystem localCoordinateSystem(
+			mpCoordinateTransformation->CreateReferenceCoordinateSystem());
+		Output = localCoordinateSystem.Orientation();
+	}
+}
+
+void ShellThickElement3D4N::Calculate(const Variable<double>& rVariable, double & rotationAngle, const ProcessInfo & rCurrentProcessInfo)
+{
+	if (rVariable == ORTHOTROPIC_ORIENTATION_ASSIGNMENT)
+	{
+		if (rotationAngle != 0.0)
+		{
+			mOrthotropicSectionRotation = rotationAngle;
+		}
+	}
 }
 
 void ShellThickElement3D4N::SetCrossSectionsOnIntegrationPoints(std::vector< ShellCrossSection::Pointer >& crossSections)
@@ -946,8 +1054,17 @@ void ShellThickElement3D4N::SetupOrientationAngles()
             angle = -angle;
     }
 
-    for(CrossSectionContainerType::iterator it = mSections.begin(); it != mSections.end(); ++it)
-        (*it)->SetOrientationAngle(angle);
+	const Properties props = GetProperties();
+	if (props.Has(ORTHOTROPIC_ORIENTATION_ASSIGNMENT))
+	{
+		for (CrossSectionContainerType::iterator it = mSections.begin(); it != mSections.end(); ++it)
+			(*it)->SetOrientationAngle(mOrthotropicSectionRotation);
+	}
+	else
+	{
+		for (CrossSectionContainerType::iterator it = mSections.begin(); it != mSections.end(); ++it)
+			(*it)->SetOrientationAngle(angle);
+	}
 }
 
 void ShellThickElement3D4N::CalculateBMatrix(double xi, double eta,

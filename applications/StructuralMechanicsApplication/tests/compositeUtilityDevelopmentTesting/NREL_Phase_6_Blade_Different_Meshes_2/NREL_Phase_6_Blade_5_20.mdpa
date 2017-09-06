@@ -238,7 +238,7 @@ Begin Nodes
 212    -0.0446689996    -0.0299098297     4.7983061808 
 End Nodes
 
-Begin Elements ShellThickElement3D4N // main_mesh
+Begin Elements ShellThinElementCorotational3D4N // main_mesh
   1   0	1	6	61	60
   2   0	60	61	62	59
   3   0	59	62	63	58

@@ -242,7 +242,7 @@ namespace Kratos {
 					// use hard iterative approach
 
 					// create vector which we must be orthogonal to
-					orthogonal_vector = Vector(MathUtils<double>::CrossProduct(GlobalFiberDirection, normalVector));
+					orthogonal_vector = Vector(MathUtils<double>::CrossProduct(GlobalFiberDirection, correctedNormalVector));
 					//orthogonal_vector = Vector(MathUtils<double>::CrossProduct(GlobalFiberDirection, localAxis3));
 
 					theta = iterativelyDetermineBestAngle(localAxis1, localAxis3, orthogonal_vector,GlobalFiberDirection);
@@ -352,7 +352,7 @@ namespace Kratos {
 			}
 
 			// Make sure we are pointing in the right direction.
-			if (inner_prod(tempFiber, GlobalFiberDirection) < 0.0)
+			if (inner_prod(bestFiber, GlobalFiberDirection) < 0.0)
 			{
 				best_angle += KRATOS_M_PI;
 			}

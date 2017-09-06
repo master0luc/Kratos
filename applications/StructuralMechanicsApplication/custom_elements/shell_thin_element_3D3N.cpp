@@ -574,6 +574,69 @@ void ShellThinElement3D3N::GetValueOnIntegrationPoints(const Variable<Vector>& r
         std::vector<Vector>& rValues,
         const ProcessInfo& rCurrentProcessInfo)
 {
+	if (rVariable == LOCAL_AXIS_VECTOR_1)
+	{
+		// LOCAL_AXIS_VECTOR_1 output DOES NOT include the effect of section
+		// orientation, which rotates the entrire element section in-plane
+		// and is used in element stiffness calculation.
+
+		if (rValues.size() != OPT_NUM_GP)
+		{
+			rValues.resize(OPT_NUM_GP);
+		}
+		for (int i = 0; i < OPT_NUM_GP; ++i) rValues[i] = ZeroVector(3);
+		// Initialize common calculation variables
+		ShellT3_LocalCoordinateSystem localCoordinateSystem(mpCoordinateTransformation->CreateReferenceCoordinateSystem());
+
+		for (size_t GP = 0; GP < 1; GP++)
+		{
+			rValues[GP] = localCoordinateSystem.Vx();
+		}
+	}
+	else if (rVariable == ORTHOTROPIC_FIBER_ORIENTATION_1)
+	{
+		// ORTHOTROPIC_FIBER_ORIENTATION_1 output DOES include the effect of 
+		// section orientation, which rotates the entrire element section 
+		// in-plane and is used in the element stiffness calculation.
+
+		// Resize output
+		if (rValues.size() != OPT_NUM_GP)
+		{
+			rValues.resize(OPT_NUM_GP);
+		}
+		for (int i = 0; i < OPT_NUM_GP; ++i) rValues[i] = ZeroVector(3);
+
+		// Initialize common calculation variables
+		// Compute the local coordinate system.
+		ShellT3_LocalCoordinateSystem localCoordinateSystem(mpCoordinateTransformation->CreateReferenceCoordinateSystem());
+
+		// Get local axis 1 in flattened LCS space
+		Vector3 localAxis1 = localCoordinateSystem.P2() - localCoordinateSystem.P1();
+
+		// Perform rotation of local axis 1 to fiber1 in flattened LCS space
+		Matrix localToFiberRotation = Matrix(3, 3, 0.0);
+		double fiberSectionRotation = mSections[0]->GetOrientationAngle();
+		double c = std::cos(fiberSectionRotation);
+		double s = std::sin(fiberSectionRotation);
+		localToFiberRotation(0, 0) = c;
+		localToFiberRotation(0, 1) = -s;
+		localToFiberRotation(1, 0) = s;
+		localToFiberRotation(1, 1) = c;
+		localToFiberRotation(2, 2) = 1.0;
+
+		Vector3 temp = prod(localToFiberRotation, localAxis1);
+
+		// Transform result back to global cartesian coords and normalize
+		Matrix localToGlobalSmall = localCoordinateSystem.Orientation();
+		Vector3 fiberAxis1 = prod(trans(localToGlobalSmall), temp);
+		fiberAxis1 /= std::sqrt(inner_prod(fiberAxis1, fiberAxis1));
+
+		//write results
+		for (size_t dir = 0; dir < 1; dir++)
+		{
+			rValues[dir] = fiberAxis1;
+		}
+	}
 }
 
 void ShellThinElement3D3N::GetValueOnIntegrationPoints(const Variable<Matrix>& rVariable,
@@ -594,6 +657,29 @@ void ShellThinElement3D3N::GetValueOnIntegrationPoints(const Variable<array_1d<d
         std::vector<array_1d<double,6> >& rValues,
         const ProcessInfo& rCurrentProcessInfo)
 {
+}
+
+void ShellThinElement3D3N::Calculate(const Variable<Matrix>& rVariable, Matrix & Output, const ProcessInfo & rCurrentProcessInfo)
+{
+	if (rVariable == LOCAL_ELEMENT_ORIENTATION)
+	{
+		Output.resize(3, 3, false);
+
+		// Compute the local coordinate system.
+		ShellT3_LocalCoordinateSystem localCoordinateSystem(mpCoordinateTransformation->CreateReferenceCoordinateSystem());
+		Output = localCoordinateSystem.Orientation();
+	}
+}
+
+void ShellThinElement3D3N::Calculate(const Variable<double>& rVariable, double & rotationAngle, const ProcessInfo & rCurrentProcessInfo)
+{
+	if (rVariable == ORTHOTROPIC_ORIENTATION_ASSIGNMENT)
+	{
+		if (rotationAngle != 0.0)
+		{
+			mOrthotropicSectionRotation = rotationAngle;
+		}
+	}
 }
 
 void ShellThinElement3D3N::SetCrossSectionsOnIntegrationPoints(std::vector< ShellCrossSection::Pointer >& crossSections)
@@ -671,8 +757,18 @@ void ShellThinElement3D3N::SetupOrientationAngles()
             angle = -angle;
     }
 
-    for(CrossSectionContainerType::iterator it = mSections.begin(); it != mSections.end(); ++it)
-        (*it)->SetOrientationAngle(angle);
+	const Properties props = GetProperties();
+	if (props.Has(ORTHOTROPIC_ORIENTATION_ASSIGNMENT))
+	{
+		for (CrossSectionContainerType::iterator it = mSections.begin(); it != mSections.end(); ++it)
+			(*it)->SetOrientationAngle(mOrthotropicSectionRotation);
+	}
+	else
+	{
+		for (CrossSectionContainerType::iterator it = mSections.begin(); it != mSections.end(); ++it)
+			(*it)->SetOrientationAngle(angle);
+	}
+    
 }
 
 void ShellThinElement3D3N::InitializeCalculationData(CalculationData& data)

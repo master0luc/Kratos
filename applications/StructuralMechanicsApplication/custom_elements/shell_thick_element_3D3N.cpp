@@ -922,7 +922,10 @@ namespace Kratos
 			// orientation, which rotates the entrire element section in-plane
 			// and is used in element stiffness calculation.
 
-			rValues.resize(OPT_NUM_GP);
+			if (rValues.size() != OPT_NUM_GP)
+			{
+				rValues.resize(OPT_NUM_GP);
+			}
 			for (int i = 0; i < OPT_NUM_GP; ++i) rValues[i] = ZeroVector(3);
 			// Initialize common calculation variables
 			ShellT3_LocalCoordinateSystem localCoordinateSystem(mpCoordinateTransformation->CreateReferenceCoordinateSystem());
@@ -939,7 +942,10 @@ namespace Kratos
 			// in-plane and is used in the element stiffness calculation.
 
 			// Resize output
-			rValues.resize(OPT_NUM_GP);
+			if (rValues.size() != OPT_NUM_GP)
+			{
+				rValues.resize(OPT_NUM_GP);
+			}
 			for (int i = 0; i < OPT_NUM_GP; ++i) rValues[i] = ZeroVector(3);
 
 			// Initialize common calculation variables
@@ -1551,7 +1557,7 @@ namespace Kratos
 				angle = -angle;
 		}
 
-		Properties props = GetProperties();
+		const Properties props = GetProperties();
 		if (props.Has(ORTHOTROPIC_ORIENTATION_ASSIGNMENT))
 		{
 			for (CrossSectionContainerType::iterator it = mSections.begin(); it != mSections.end(); ++it)
