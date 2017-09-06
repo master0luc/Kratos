@@ -86,108 +86,126 @@ public:
         m_global_id = global_id;
     }
 
-    double getX()
-    {
-        return (m_coordinates[0] + m_displacements[0]);
-    }
+    /// getters
+        double getX()
+            {
+                return (m_coordinates[0] + m_displacements[0]);
+            }
 
-    double getY()
-    {
-     	return (m_coordinates[1] + m_displacements[1]);
-    }
+        double getY()
+            {
+                return (m_coordinates[1] + m_displacements[1]);
+            }   
 
-    double getZ()
-    {
-    	return (m_coordinates[2] + m_displacements[2]);
-    }
+        double getZ()
+            {
+                return (m_coordinates[2] + m_displacements[2]);
+            }
 
-    double getX0()
-    {
-    	return m_coordinates[0];
-    }
+        double getX0()
+            {
+                return m_coordinates[0];
+            }
 
-    double getY0()
-    {
-     	return m_coordinates[1];
-    }
+        double getY0()
+            {
+                return m_coordinates[1];
+            }
 
-    double getZ0()
-    {
-    	return m_coordinates[2];
-    }    
+        double getZ0()
+            {
+                return m_coordinates[2];
+            }    
 
-    double getdX()
-    {
-    	return m_displacements[0];
-    }
+        double getdX()
+            {
+                return m_displacements[0];
+            }
 
-    double getdY()
-    {
-     	return m_displacements[1];
-    }
+        double getdY()
+            {
+                return m_displacements[1];
+            }
 
-    double getdZ()
-    {
-    	return m_displacements[2];
-    }  
+        double getdZ()
+            {
+                return m_displacements[2];
+            }  
+        
+        double getWeight()
+            {
+                return m_w;
+            }
 
-    void setdX(double dX)
-    {
-        m_displacements[0] = dX;
-    }  
+        int getGlobalId()
+            {
+                return m_global_id;
+            }
 
-    void setdY(double dY)
-    {
-        m_displacements[1] = dY;
-    }  
+        int GetMappingMatrixId()
+            {
+                if(m_mapping_matrix_id<0)
+                    KRATOS_THROW_ERROR(std::logic_error, "No mapping matrix ID specified for current control point", m_mapping_matrix_id);
 
-    void setdZ(double dZ)
-    {
-        m_displacements[2] = dZ;
-    }          
+                return m_mapping_matrix_id;
+            }
 
-    double getWeight()
-    {
-    	return m_w;
-    }
+    /// setters
+        void setdX(double dX)
+            {
+                m_displacements[0] = dX;
+            }  
 
-    int getGlobalId()
-    {
-    	return m_global_id;
-    }
+        void setdY(double dY)
+            {
+                m_displacements[1] = dY;
+            }  
 
-    void SetMappingMatrixId(unsigned int id)
-    {
-        m_mapping_matrix_id = id;
-    }    
+        void setdZ(double dZ)
+            {
+                m_displacements[2] = dZ;
+            }  
+        void setX(double X)
+            {
+                m_displacements[0] = X - m_coordinates[0];
+            }
 
-    int GetMappingMatrixId()
-    {
-        if(m_mapping_matrix_id<0)
-            KRATOS_THROW_ERROR(std::logic_error, "No mapping matrix ID specified for current control point", m_mapping_matrix_id);
+        void setY(double Y)
+            {
+                m_displacements[1] = Y - m_coordinates[1];
+            }
 
-    	return m_mapping_matrix_id;
-    }
+        void setZ(double Z)
+            {
+                m_displacements[2] = Z - m_coordinates[2];
+            }
 
-    void SetRelevantForMapping()
-    {
-    	m_is_relevant_for_mapping = true;
-    }
+        void SetMappingMatrixId(unsigned int id)
+            {
+                m_mapping_matrix_id = id;
+            }    
 
-    void SetActive()
-    {
-        m_is_active = true;
-    }
 
-    bool IsRelevantForMapping()
-    {
-    	return m_is_relevant_for_mapping;
-    }    
+        void SetRelevantForMapping()
+            {
+                m_is_relevant_for_mapping = true;
+            }
 
-    bool IsActive()
-    {
-    	return m_is_active;
-    }    
+        void SetActive()
+            {
+                m_is_active = true;
+            }
+
+    // boolean
+        bool IsRelevantForMapping()
+            {
+                return m_is_relevant_for_mapping;
+            }    
+
+        bool IsActive()
+            {
+                return m_is_active;
+            }    
 
     /// Destructor.
     virtual ~ControlPoint()
