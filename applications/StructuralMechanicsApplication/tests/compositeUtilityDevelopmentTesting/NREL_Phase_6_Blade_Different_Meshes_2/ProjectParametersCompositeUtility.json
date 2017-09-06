@@ -1,0 +1,107 @@
+{
+    "problem_data"             : {
+        "problem_name"    : "NREL_Phase_6_Blade",
+        "model_part_name" : "Structure",
+        "domain_size"     : 3,
+        "parallel_type"   : "OpenMP",
+        "time_step"       : 1.1,
+        "start_time"      : 0.0,
+        "end_time"        : 1.0,
+        "echo_level"      : 0
+    },
+    "solver_settings"          : {
+        "solver_type"                        : "Static",
+        "echo_level"                         : 0,
+        "solution_type"                      : "Static",
+        "analysis_type"                      : "Linear",
+        "model_import_settings"              : {
+            "input_type"       : "mdpa",
+            "for Peter: Possible Names" :["NREL_Phase_6_Blade_3_22",
+                                          "NREL_Phase_6_Blade_5_20",
+                                          "NREL_Phase_6_Blade_5_40",
+                                          "NREL_Phase_6_Blade_7_60",
+                                          "NREL_Phase_6_Blade_8_30",
+                                          "NREL_Phase_6_Blade_10_100",
+                                          "NREL_Phase_6_Blade_Tri_005",
+                                          "NREL_Phase_6_Blade_Tri_01",
+                                          "NREL_Phase_6_Blade_Tri_015",
+                                          "NREL_Phase_6_Blade_Tri_02"],
+            "input_filename"   : "NREL_Phase_6_Blade_5_40",
+            "input_file_label" : 0
+        },
+		"material_import_settings"           : {
+            "materials_filename" : "StructuralMaterials.json"
+        },
+        "line_search"                        : false,
+        "convergence_criterion"              : "Residual_criterion",
+        "displacement_relative_tolerance"    : 0.0001,
+        "displacement_absolute_tolerance"    : 1e-9,
+        "residual_relative_tolerance"        : 0.0001,
+        "residual_absolute_tolerance"        : 1e-9,
+        "max_iteration"                      : 10,
+        "problem_domain_sub_model_part_list" : ["main_mesh"],
+        "processes_sub_model_part_list"      : ["root","mesh_surfaces"],
+        "rotation_dofs"                      : true
+    },
+    "constraints_process_list" : [{
+        "python_module" : "assign_vector_variable_process",
+        "kratos_module" : "KratosMultiphysics",
+        "help"          : "This process fixes the selected components of a given vector variable",
+        "process_name"  : "AssignVectorVariableProcess",
+        "Parameters"    : {
+            "mesh_id"         : 0,
+            "model_part_name" : "root",
+            "variable_name"   : "DISPLACEMENT",
+            "value"           : [0.0,0.0,0.0],
+            "interval"        : [0.0,"End"]
+        }
+    }],
+    "loads_process_list"       : [{
+        "python_module" : "assign_vector_by_direction_to_condition_process",
+        "kratos_module" : "KratosMultiphysics",
+        "help"          : "This process sets a vector variable value over a condition",
+        "check"         : "DirectorVectorNonZero direction",
+        "process_name"  : "AssignModulusAndDirectionToConditionsProcess",
+        "Parameters"    : {
+            "mesh_id"         : 0,
+            "model_part_name" : "mesh_surfaces",
+            "variable_name"   : "SURFACE_LOAD",
+            "modulus"         : 1.0,
+            "direction"       : [0.0,-1,0.0],
+            "interval"        : [0.0,"End"]
+        }
+    }],
+    "output_configuration"     : {
+        "result_file_configuration" : {
+            "gidpost_flags"       : {
+                "GiDPostMode"           : "GiD_PostBinary",
+                "WriteDeformedMeshFlag" : "WriteDeformed",
+                "WriteConditionsFlag"   : "WriteConditions",
+                "MultiFileFlag"         : "SingleFile"
+            },
+            "file_label"          : "step",
+            "output_control_type" : "step",
+            "output_frequency"    : 10,
+            "body_output"         : true,
+            "node_output"         : false,
+            "skin_output"         : false,
+            "plane_output"        : [],
+            "nodal_results"       : ["DISPLACEMENT","REACTION","ROTATION"],
+            "gauss_point_results" : ["LOCAL_AXIS_VECTOR_1","ORTHOTROPIC_FIBER_ORIENTATION_1"]
+        },
+        "point_data_configuration"  : []
+    },
+    "restart_options"          : {
+        "SaveRestart"      : false,
+        "RestartFrequency" : 0,
+        "LoadRestart"      : false,
+        "Restart_Step"     : 0
+    },
+    "constraints_data"         : {
+        "incremental_load"         : false,
+        "incremental_displacement" : false
+    },
+	"material_import_settings" : {
+        "materials_filename" : "StructuralMaterials.json"
+    }
+}

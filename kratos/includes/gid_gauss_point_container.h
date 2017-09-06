@@ -296,6 +296,8 @@ public:
                                              ValuesOnIntPoint[index][1], ValuesOnIntPoint[index][2] );
                     }                    
                 }
+				// Resize first vector to [0] for test below
+				ValuesOnIntPoint[0].resize(0, false);
             }
             if( mMeshConditions.size() != 0 )
             {
@@ -304,6 +306,13 @@ public:
                 {
                     it->GetValueOnIntegrationPoints( rVariable, ValuesOnIntPoint,
                                                      r_model_part.GetProcessInfo() );
+
+					if (ValuesOnIntPoint[0].size() == 0)
+					{
+						// If we aren't getting any results, break
+						break;
+					}
+
                     for(unsigned int i=0; i<mIndexContainer.size(); i++)
                     {
                         int index = mIndexContainer[i];

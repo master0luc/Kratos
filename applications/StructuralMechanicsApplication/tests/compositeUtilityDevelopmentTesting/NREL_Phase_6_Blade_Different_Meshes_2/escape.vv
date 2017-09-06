@@ -1,0 +1,96 @@
+BeginZE escape.vv
+   x -2.01724672317504883 2.15738654136657715
+   y 1.09476757049560547 -0.733385443687438965
+   z -5.394134521484375 -0.256394386291503906
+   e 2.49907660484313965
+   v -0.138261221255478683 0.914446933316112043 0.288100635664774452
+   r 0.248332001920688245
+   m -0.838430345058441162 -0.395954310894012451 0.374506592750549316 0 -0.109775885939598083 0.795763731002807617 0.595574855804443359 0 -0.533839166164398193 0.458236128091812134 -0.710658729076385498 0 0 0 0 1
+   c 0.105409413576126099 0.0119624286890029907 2.82526445388793945
+   pd 0
+   pno 0
+   pfo 0
+   pf 4
+   pv 0
+   NowUse 2
+   DrawingType 3
+   LightVector 90 90 150 0
+   OGLShadow(UseShadows) 0
+   OGLShadow(RenderMode) RenderNice
+   OGLShadow(ShadowBias) -0.002
+   OGLShadow(AmbientShadows) 1
+   OGLShadow(UseFBO) 0
+   OGLShadow(FBOSize) 2048
+   OGLShadow(DimmedLightFactor) 0.02
+   OGLStereo(UseStereo) 0
+   OGLStereo(RelativeEyeDistance) 1
+   OGLStereo(FlipEyes) 0
+   OGLStereo(StereoMode) AnaglyphColors
+   OGLStereo(EyeDistance) 0.075
+   OGLStereo(LeftEyeDistance) 1 0 0 1
+   OGLStereo(RightEyeDistance) 0 1 1 1
+EndZE escape.vv
+
+BeginMirror
+   Mirror 0 Angle 0.0 AngleFake -15.0 SizeFactor 2.0 HeightOffset 0.25 Color #d9e5f24d Backlight Off EdgeStyle No Type Scene DrawMode Mirror
+EndMirror
+
+
+BeginPostState
+BeginSingleMesh
+  Num meshes: 0
+  Num sets: 3
+  Num cuts: 0
+  Set: 0
+  State: On
+    Name: "Kratos_Quadrilateral3D4_Mesh_1"
+    IdSet: 2
+    Color Type: 0
+    Color Ambient: 0 0 0.3 0.5
+    Color Diffuse: 0 0 1 0.5
+    Color Specular: 1 1 1 0.5
+    Color Shininess: 0.5
+    Property Massive: 1
+    Property Transparent: 0
+    Property Style: 3932222
+    Property Edge Width: 1
+    Property Vector Filter Factor: 0
+    Property Stream Arrow: 0
+  EndSet: 0
+  Set: 1
+  State: On
+    Name: "Kratos_Quadrilateral3D4_Mesh_0"
+    IdSet: 1
+    Color Type: 0
+    Color Ambient: 0.2 0.2 0.2 0.5
+    Color Diffuse: 0.6 0.6 0.6 0.5
+    Color Specular: 1 1 1 0.5
+    Color Shininess: 0.5
+    Property Massive: 1
+    Property Transparent: 0
+    Property Style: 3932222
+    Property Edge Width: 1
+    Property Vector Filter Factor: 0
+    Property Stream Arrow: 0
+  EndSet: 1
+  Set: 2
+  State: On
+    Name: "Kratos_Triangle3D3_Mesh_2"
+    IdSet: 3
+    Color Type: 0
+    Color Ambient: 0.3 0 0.3 0.5
+    Color Diffuse: 1 0 1 0.5
+    Color Specular: 1 1 1 0.5
+    Color Shininess: 0.5
+    Property Massive: 1
+    Property Transparent: 0
+    Property Style: 3932222
+    Property Edge Width: 1
+    Property Vector Filter Factor: 0
+    Property Stream Arrow: 0
+  EndSet: 2
+EndSingleMesh
+  Post_Prefs_Vector_Size: 0 32 32 32
+  ResultView: {Id 27} {Display Vectors} Kratos 20.1 ORTHOTROPIC_FIBER_ORIENTATION_1//quad4_element_gp |ORTHOTROPIC_FIBER_ORIENTATION_1| 0.10000000149011612 4 0
+EndPostState
+
