@@ -63,6 +63,20 @@ void CompositePropertyAssignmentExecute(
 	rThisUtil.Execute(rModelPart, GlobalFiberDirection, normalVector, rCurrentProcessInfo);
 }
 
+inline
+void CompositePropertyAssignmentExecuteCustomCS(
+	CompositePropertyAssignment& rThisUtil,
+	ModelPart& rModelPart,
+	Vector3 lc1,
+	Vector3 lc2,
+	int normalAxisNumber,
+	double normalRotationDegrees,
+	bool suppressOrthogonalError,
+	ProcessInfo& rCurrentProcessInfo)
+{
+	rThisUtil.ExecuteCustomCS(rModelPart, lc1, lc2, normalAxisNumber, normalRotationDegrees, suppressOrthogonalError, rCurrentProcessInfo);
+}
+
 void  AddCustomUtilitiesToPython()
 {
     using namespace boost::python;
@@ -84,8 +98,8 @@ void  AddCustomUtilitiesToPython()
 
 	class_<CompositePropertyAssignment>("CompositePropertyAssignment")
 	.def("Execute", CompositePropertyAssignmentExecute)
+	.def("ExecuteCustomCS", CompositePropertyAssignmentExecuteCustomCS)
 	;
-
 }
 
 }  // namespace Python.

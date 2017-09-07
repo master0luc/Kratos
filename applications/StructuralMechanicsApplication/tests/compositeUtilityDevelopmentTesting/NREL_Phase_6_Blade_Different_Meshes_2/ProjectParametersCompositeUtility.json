@@ -26,7 +26,7 @@
                                           "NREL_Phase_6_Blade_Tri_01",
                                           "NREL_Phase_6_Blade_Tri_015",
                                           "NREL_Phase_6_Blade_Tri_02"],
-            "input_filename"   : "NREL_Phase_6_Blade_7_60",
+            "input_filename"   : "NREL_Phase_6_Blade_5_40",
             "input_file_label" : 0
         },
 		"material_import_settings"           : {

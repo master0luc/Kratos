@@ -30,9 +30,20 @@ solver.AddVariables()
 
 ## Read the model - note that SetBufferSize is done here
 solver.ImportModelPart()
-fiberVector = [0.0,0.0,1.0]
-normalVector = [0,1,0]
-CompositePropertyAssignment().Execute(main_model_part.GetSubModelPart("main_mesh"),fiberVector,normalVector,main_model_part.ProcessInfo)
+
+## Example of CompositePropertyAssignment utility 1
+#fiberVector = [0.0,0.0,1.0]
+#normalVector = [0,1,0]
+#CompositePropertyAssignment().Execute(main_model_part.GetSubModelPart("main_mesh"),fiberVector,normalVector,main_model_part.ProcessInfo)
+
+## Example of CompositePropertyAssignment utility 2
+lcs1 = [0,0,1]
+lcs2 = [1,0,0]
+userAxisNormalToShell = 3
+rotationDegreesAboutUserNormalAxis = 45.0
+suppressOrthogonalError = True
+CompositePropertyAssignment().ExecuteCustomCS(main_model_part.GetSubModelPart("main_mesh"),lcs1,lcs2,userAxisNormalToShell,rotationDegreesAboutUserNormalAxis,suppressOrthogonalError,main_model_part.ProcessInfo)
+
 
 
 ## Add AddDofs
