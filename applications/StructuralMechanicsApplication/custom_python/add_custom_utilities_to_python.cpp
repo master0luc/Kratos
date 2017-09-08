@@ -56,25 +56,9 @@ inline
 void CompositePropertyAssignmentExecute(
 	CompositePropertyAssignment& rThisUtil,
 	ModelPart& rModelPart,
-	Vector3 GlobalFiberDirection,
-	Vector3 normalVector,
-	ProcessInfo& rCurrentProcessInfo)
+	Parameters MethodParameters)
 {
-	rThisUtil.Execute(rModelPart, GlobalFiberDirection, normalVector, rCurrentProcessInfo);
-}
-
-inline
-void CompositePropertyAssignmentExecuteCustomCS(
-	CompositePropertyAssignment& rThisUtil,
-	ModelPart& rModelPart,
-	Vector3 lc1,
-	Vector3 lc2,
-	int normalAxisNumber,
-	double normalRotationDegrees,
-	bool suppressOrthogonalError,
-	ProcessInfo& rCurrentProcessInfo)
-{
-	rThisUtil.ExecuteCustomCS(rModelPart, lc1, lc2, normalAxisNumber, normalRotationDegrees, suppressOrthogonalError, rCurrentProcessInfo);
+	rThisUtil.Execute(rModelPart, MethodParameters);
 }
 
 void  AddCustomUtilitiesToPython()
@@ -97,8 +81,7 @@ void  AddCustomUtilitiesToPython()
     ;
 
 	class_<CompositePropertyAssignment>("CompositePropertyAssignment")
-	.def("Execute", CompositePropertyAssignmentExecute)
-	.def("ExecuteCustomCS", CompositePropertyAssignmentExecuteCustomCS)
+	.def("Execute", &CompositePropertyAssignment::Execute)
 	;
 }
 

@@ -23,6 +23,7 @@
 // Project includes
 #include "includes/define.h"
 #include "includes/model_part.h"
+#include "includes/kratos_parameters.h"
 
 // Application includes
 #include "structural_mechanics_application_variables.h"
@@ -44,7 +45,7 @@ namespace Kratos {
 	///@}
 	///@name Kratos Classes
 	///@{
-	/// Transfer eigenvectors to solution step variables for GiD output or solution initialization.
+	/// TODO write a proper description
 	/**
 	* Example Python Code:
 	* # Eigenvectors are first computed and stored in the nodal variable EIGENVECTOR_MATRIX.
@@ -72,173 +73,88 @@ namespace Kratos {
 		///@}
 		///@name Operations
 		///@{
-		void Execute(ModelPart& rSubModelpart, Vector3 GlobalFiberDirection, Vector3 normalVector, ProcessInfo& rCurrentProcessInfo)
-		{
-			// Check to see if the composite orientation assignment has already
-			// been performed on the current modelPart
-			// Just look at the first element to save time
-			const ElementsIteratorType& firstElement = rSubModelpart.ElementsBegin();
-			Properties elementProperties = (*firstElement).GetProperties();
 
-			if (elementProperties.Has(ORTHOTROPIC_ORIENTATION_ASSIGNMENT))
-			{
-				// the composite orientation assignment has already been done
-			}
-			else
-			{
-				// perform the composite orientation assignment
-				compositeOrientationAssignment(rSubModelpart,
-					GlobalFiberDirection, normalVector, rCurrentProcessInfo);
-			}
-		}
+        void Execute(ModelPart& rSubModelpart, Parameters MethodParameters)
+        {
+            // TODO do more checks on valid input
+            // TODO if needed use the echo_level. If not we can remove it
+            MethodParameters.ValidateAndAssignDefaults(mDefaultParameters);
+            const std::string method_name = MethodParameters["method"].GetString();
+            if (method_name == "")
+            {
+                KRATOS_ERROR << "Please specify a method name" << std::endl;
+            }
 
-		void ExecuteCustomCS(ModelPart& rSubModelpart, const Vector3 lc1, const Vector3 lc2, const int normalAxisNumber, const double normalRotationDegrees, const bool suppressOrthogonalError, ProcessInfo& rCurrentProcessInfo)
-		{
-			// Check to see if the composite orientation assignment has already
-			// been performed on the current modelPart
-			// Just look at the first element to save time
-			const ElementsIteratorType& firstElement = rSubModelpart.ElementsBegin();
-			Properties elementProperties = (*firstElement).GetProperties();
+            auto specific_parameters = MethodParameters["method_specific_settings"];
 
-			if (elementProperties.Has(ORTHOTROPIC_ORIENTATION_ASSIGNMENT))
-			{
-				// the composite orientation assignment has already been done
-			}
-			else
-			{
-				// Check inputs
-				if (abs(inner_prod(lc1,lc2)) > 1E-6)
-				{
-					KRATOS_ERROR <<
-						"Local axis 1 and 2 of the user specified CS must be orthogonal" << std::endl;
-				}
+            if (method_name == "simple")
+            {
+                if (specific_parameters.Has("cs_axis_1"))
+                {
+                    specific_parameters.ValidateAndAssignDefaults(mSimpleMethodCSDefaultParameters);
 
-				// Create a copy of the User Coordinate System (UCS)
-				Vector ucs1 = Vector(lc1);
-				ucs1 /= std::sqrt(inner_prod(ucs1, ucs1));
-				Vector ucs2 = Vector(lc2);
-				ucs2 /= std::sqrt(inner_prod(ucs2, ucs2));
-				Vector ucs3 = Vector(MathUtils<double>::CrossProduct(ucs1, ucs2));
+                    Vector3 cs_axis_1;
+                    Vector3 cs_axis_2;
+    
+                    CheckAndReadVectors(specific_parameters, "cs_axis_1", cs_axis_1);
+                    CheckAndReadVectors(specific_parameters, "cs_axis_2", cs_axis_2);
+                    // TODO check axis for orthogonality(?)
 
-				// Declare working variables
-				Matrix LCSOrientation, R;
-				Vector localGlobalFiberDirection, rotation_axis;
-				Vector shellLocalAxis1 = ZeroVector(3);
-				Vector shellLocalAxis2 = ZeroVector(3);
-				Vector shellLocalAxis3 = ZeroVector(3);
-				Properties::Pointer pElementProps;
+                    const double rotation_angle = specific_parameters["cs_rotation_angle"].GetDouble();
+                    if (rotation_angle > 360.0) // TODO check for all directions
+                    {
+                        KRATOS_ERROR << "Rotation angle is too large" << std::endl;
+                    }
 
+                    if (specific_parameters["cs_normal_axis"].GetInt() == 0)
+                    {
+                        KRATOS_ERROR << "The normal axis has to be specified" << std::endl;
+                    }
+                    // TODO check if the input is valid (i.e. 1,2 or 3)
 
-				// Consider what UCS axis the user said was most normal to the shell
-				Vector& ucsNormal = ucs3;
-				Vector& ucsToBeProjectedOntoShell = ucs1;
-				if (normalAxisNumber == 1)
-				{
-					// ucs1 is normal to shell
-					// thus, ucs2 will be projected on to the shell
-					ucsNormal = ucs1;
-					ucsToBeProjectedOntoShell = ucs2;
-				}
-				else if (normalAxisNumber == 2)
-				{
-					// ucs2 is normal to shell
-					// thus, ucs3 will be projected on to the shell
-					ucsNormal = ucs2;
-					ucsToBeProjectedOntoShell = ucs3;
-				}
-				else if (normalAxisNumber == 3)
-				{
-					// already done
-				}
-				else
-				{
-					KRATOS_ERROR <<
-						"Normal axis number must be 1, 2 or 3." << std::endl;
-				}
+                    std::cout << "Using the simple method with user-defined cs" << std::endl;
+
+                    const int normal_axis_number = specific_parameters["cs_normal_axis"].GetInt();
+
+                    ExecuteCustomCS(rSubModelpart, cs_axis_1, cs_axis_2, 
+                                    normal_axis_number, rotation_angle);
+                }
+                else 
+                {
+                    specific_parameters.ValidateAndAssignDefaults(mSimpleMethodDefaultParameters);
+                    Vector3 global_fiber_direction;
+                    Vector3 normal_vector;
+    
+                    CheckAndReadVectors(specific_parameters, "global_fiber_direction", global_fiber_direction);
+                    CheckAndReadVectors(specific_parameters, "normal_vector", normal_vector);
+
+                    std::cout << "Using the simple method" << std::endl;   
+                    ExecuteOLD(rSubModelpart, global_fiber_direction, normal_vector, 4);                 
+                }
+            }
+            else if (method_name == "advanced")
+            {
+                specific_parameters.ValidateAndAssignDefaults(mAdvancedMethodDefaultParameters);   
+                
+                Vector3 global_fiber_direction;
+                Vector3 normal_vector;
+
+                CheckAndReadVectors(specific_parameters, "global_fiber_direction", global_fiber_direction);
+                CheckAndReadVectors(specific_parameters, "normal_vector", normal_vector);
+
+                const int level = specific_parameters["smoothness_level"].GetInt();
+
+                std::cout << "Using the advanced method" << std::endl;
+
+                ExecuteOLD(rSubModelpart, global_fiber_direction, normal_vector, level);
+            }
+            else
+            {
+                KRATOS_ERROR << "Method \"" << method_name << "\" does not exist" << std::endl;
+            }
+        }
 
 
-				// Rotate the UCS by the given angle about the user specified 
-				// normal-most axis
-				double rotationAngleRad = normalRotationDegrees / 180.0 * KRATOS_M_PI;
-				R = setUpRotationMatrix(rotationAngleRad, ucsNormal);
-				ucsToBeProjectedOntoShell = prod(R, ucsToBeProjectedOntoShell);
-
-
-				// Loop over all elements in part
-				for (auto& element : rSubModelpart.Elements())
-				{
-					// get current element properties
-					pElementProps = element.pGetProperties();
-
-					// get local orientation of GlobalFiberDirection
-					element.Calculate(LOCAL_ELEMENT_ORIENTATION, LCSOrientation, rCurrentProcessInfo);
-
-					// get element local axis vectors (global cartesian)
-					for (size_t i = 0; i < 3; i++)
-					{
-						shellLocalAxis1[i] = LCSOrientation(0, i);
-						shellLocalAxis2[i] = LCSOrientation(1, i);
-						shellLocalAxis3[i] = LCSOrientation(2, i);
-					}
-
-
-					// normalise local axis vectors (global cartesian)
-					shellLocalAxis1 /= std::sqrt(inner_prod(shellLocalAxis1, shellLocalAxis1));
-					shellLocalAxis2 /= std::sqrt(inner_prod(shellLocalAxis2, shellLocalAxis2));
-					shellLocalAxis3 /= std::sqrt(inner_prod(shellLocalAxis3, shellLocalAxis3));
-
-
-
-					if (!suppressOrthogonalError)
-					{
-						// Check that this user specified normal axis isn't actually 
-						// orthogonal to the shell normal
-						if (abs(inner_prod(ucsNormal, shellLocalAxis3)) < 1E-6)
-						{
-							KRATOS_ERROR << "The user axis (axis" << normalAxisNumber << "=" << ucsNormal << ") you said was normal to the shell is actually orthogonal to shell element "  << element.Id() << "(shell normal = " << shellLocalAxis3 << ")" << std::endl;
-						}
-					}
-									
-
-
-					// Project the vector onto the shell surface
-					// http://www.euclideanspace.com/maths/geometry/elements/plane/lineOnPlane/index.htm
-					// Projected vector = A
-					// Surface normal = B
-					Vector& A = ucsToBeProjectedOntoShell;
-					const Vector& B = shellLocalAxis3;
-					double B_length = std::sqrt(inner_prod(B, B));
-					Vector ACrossB = Vector(MathUtils<double>::CrossProduct(A, B));
-					ACrossB /= B_length;
-					Vector projectedResult = Vector(MathUtils<double>::CrossProduct(B, ACrossB));
-					projectedResult /= B_length;
-
-
-					// Find the angle between our projected result and the 
-					// current shell localAxis1
-					double cosTheta = inner_prod(shellLocalAxis1, projectedResult);
-					double theta = std::acos(cosTheta);
-					// make sure the angle is positively defined according to right
-					// hand rule
-					double dotCheck = inner_prod(shellLocalAxis2, projectedResult);
-					if (dotCheck < 0.0)
-					{
-						// theta is currently negative, flip to positive definition
-						theta *= -1.0;
-					}
-
-
-					// set required rotation in element
-					pElementProps = element.pGetProperties();
-					pElementProps->SetValue(ORTHOTROPIC_ORIENTATION_ASSIGNMENT, theta);
-					element.Calculate(ORTHOTROPIC_ORIENTATION_ASSIGNMENT, theta, rCurrentProcessInfo);
-
-				}// sub-modelpart element loop
-
-
-
-			}
-		}
 
 		///@}
 		///@name Access
@@ -280,17 +196,214 @@ namespace Kratos {
 		///@}
 		///@name Member Variables
 		///@{
+        Parameters mDefaultParameters = Parameters( R"(
+        {
+            "method"                   : "",
+            "method_specific_settings" : {},
+            "echo_level"               : 0
+        }  )" );
+        
+        Parameters mSimpleMethodDefaultParameters = Parameters( R"(
+        {
+            "global_fiber_direction" : [0,0,0],
+            "normal_vector"   : [0,0,0]
+        }  )" );
+        
+        Parameters mSimpleMethodCSDefaultParameters = Parameters( R"(
+        {
+            "cs_axis_1" : [0,0,0],
+            "cs_axis_2" : [0,0,0],
+            "cs_rotation_angle" : 0,
+            "cs_normal_axis" : 0
+        }  )" );
+        
+        Parameters mAdvancedMethodDefaultParameters = Parameters( R"(
+        {
+            "global_fiber_direction" : [0,0,0],
+            "normal_vector"   : [0,0,0],
+            "smoothness_level" : 2
+        }  )" );
 		///@}
 		///@name Private Operators
 		///@{
 		///@}
 		///@name Private Operations
 		///@{
-		void compositeOrientationAssignment(ModelPart& rSubModelpart, Vector3 GlobalFiberDirection, Vector3 normalVector, ProcessInfo& rCurrentProcessInfo)
-		{
-			// Select approach -------------------------------------------------
-			int caseId = 3;
 
+        void ExecuteOLD(ModelPart& rSubModelpart, Vector3 GlobalFiberDirection, Vector3 normalVector, const int Level)
+        {
+            // Check to see if the composite orientation assignment has already
+            // been performed on the current modelPart
+            // Just look at the first element to save time
+            const ElementsIteratorType& firstElement = rSubModelpart.ElementsBegin();
+            Properties elementProperties = (*firstElement).GetProperties();
+
+            if (elementProperties.Has(ORTHOTROPIC_ORIENTATION_ASSIGNMENT))
+            {
+                // the composite orientation assignment has already been done
+            }
+            else
+            {
+                // perform the composite orientation assignment
+                compositeOrientationAssignment(rSubModelpart,
+                    GlobalFiberDirection, normalVector, Level);
+            }
+        }
+
+        void ExecuteCustomCS(ModelPart& rSubModelpart, const Vector3 lc1, const Vector3 lc2, 
+                             const int normalAxisNumber, const double normalRotationDegrees)
+        {
+            auto current_process_info = rSubModelpart.GetProcessInfo();
+            // Check to see if the composite orientation assignment has already
+            // been performed on the current modelPart
+            // Just look at the first element to save time
+            const ElementsIteratorType& firstElement = rSubModelpart.ElementsBegin();
+            Properties elementProperties = (*firstElement).GetProperties();
+
+            if (elementProperties.Has(ORTHOTROPIC_ORIENTATION_ASSIGNMENT))
+            {
+                // the composite orientation assignment has already been done
+            }
+            else
+            {
+                // Check inputs
+                if (abs(inner_prod(lc1,lc2)) > 1E-6)
+                {
+                    KRATOS_ERROR <<
+                        "Local axis 1 and 2 of the user specified CS must be orthogonal" << std::endl;
+                }
+
+                // Create a copy of the User Coordinate System (UCS)
+                Vector ucs1 = Vector(lc1);
+                ucs1 /= std::sqrt(inner_prod(ucs1, ucs1));
+                Vector ucs2 = Vector(lc2);
+                ucs2 /= std::sqrt(inner_prod(ucs2, ucs2));
+                Vector ucs3 = Vector(MathUtils<double>::CrossProduct(ucs1, ucs2));
+
+                // Declare working variables
+                Matrix LCSOrientation, R;
+                Vector localGlobalFiberDirection, rotation_axis;
+                Vector shellLocalAxis1 = ZeroVector(3);
+                Vector shellLocalAxis2 = ZeroVector(3);
+                Vector shellLocalAxis3 = ZeroVector(3);
+                Properties::Pointer pElementProps;
+
+
+                // Consider what UCS axis the user said was most normal to the shell
+                Vector& ucsNormal = ucs3;
+                Vector& ucsToBeProjectedOntoShell = ucs1;
+                if (normalAxisNumber == 1)
+                {
+                    // ucs1 is normal to shell
+                    // thus, ucs2 will be projected on to the shell
+                    ucsNormal = ucs1;
+                    ucsToBeProjectedOntoShell = ucs2;
+                }
+                else if (normalAxisNumber == 2)
+                {
+                    // ucs2 is normal to shell
+                    // thus, ucs3 will be projected on to the shell
+                    ucsNormal = ucs2;
+                    ucsToBeProjectedOntoShell = ucs3;
+                }
+                else if (normalAxisNumber == 3)
+                {
+                    // already done
+                }
+                else
+                {
+                    KRATOS_ERROR <<
+                        "Normal axis number must be 1, 2 or 3." << std::endl;
+                }
+
+
+                // Rotate the UCS by the given angle about the user specified 
+                // normal-most axis
+                double rotationAngleRad = normalRotationDegrees / 180.0 * KRATOS_M_PI;
+                R = setUpRotationMatrix(rotationAngleRad, ucsNormal);
+                ucsToBeProjectedOntoShell = prod(R, ucsToBeProjectedOntoShell);
+
+
+                // Loop over all elements in part
+                for (auto& element : rSubModelpart.Elements())
+                {
+                    // get current element properties
+                    pElementProps = element.pGetProperties();
+
+                    // get local orientation of GlobalFiberDirection
+                    element.Calculate(LOCAL_ELEMENT_ORIENTATION, LCSOrientation, current_process_info);
+
+                    // get element local axis vectors (global cartesian)
+                    for (size_t i = 0; i < 3; i++)
+                    {
+                        shellLocalAxis1[i] = LCSOrientation(0, i);
+                        shellLocalAxis2[i] = LCSOrientation(1, i);
+                        shellLocalAxis3[i] = LCSOrientation(2, i);
+                    }
+
+
+                    // normalise local axis vectors (global cartesian)
+                    shellLocalAxis1 /= std::sqrt(inner_prod(shellLocalAxis1, shellLocalAxis1));
+                    shellLocalAxis2 /= std::sqrt(inner_prod(shellLocalAxis2, shellLocalAxis2));
+                    shellLocalAxis3 /= std::sqrt(inner_prod(shellLocalAxis3, shellLocalAxis3));
+
+
+
+                    // TODO make this a warning
+                    // Check that this user specified normal axis isn't actually 
+                    // orthogonal to the shell normal
+                    if (abs(inner_prod(ucsNormal, shellLocalAxis3)) < 1E-6)
+                    {
+                        KRATOS_ERROR << "The user axis (axis" << normalAxisNumber << "=" << ucsNormal << ") you said was normal to the shell is actually orthogonal to shell element "  << element.Id() << "(shell normal = " << shellLocalAxis3 << ")" << std::endl;
+                    }
+                    
+
+                    // Project the vector onto the shell surface
+                    // http://www.euclideanspace.com/maths/geometry/elements/plane/lineOnPlane/index.htm
+                    // Projected vector = A
+                    // Surface normal = B
+                    Vector& A = ucsToBeProjectedOntoShell;
+                    const Vector& B = shellLocalAxis3;
+                    double B_length = std::sqrt(inner_prod(B, B));
+                    Vector ACrossB = Vector(MathUtils<double>::CrossProduct(A, B));
+                    ACrossB /= B_length;
+                    Vector projectedResult = Vector(MathUtils<double>::CrossProduct(B, ACrossB));
+                    projectedResult /= B_length;
+
+
+                    // Find the angle between our projected result and the 
+                    // current shell localAxis1
+                    double cosTheta = inner_prod(shellLocalAxis1, projectedResult);
+                    double theta = std::acos(cosTheta);
+                    // make sure the angle is positively defined according to right
+                    // hand rule
+                    double dotCheck = inner_prod(shellLocalAxis2, projectedResult);
+                    if (dotCheck < 0.0)
+                    {
+                        // theta is currently negative, flip to positive definition
+                        theta *= -1.0;
+                    }
+
+
+                    // set required rotation in element
+                    pElementProps = element.pGetProperties();
+                    pElementProps->SetValue(ORTHOTROPIC_ORIENTATION_ASSIGNMENT, theta);
+                    element.Calculate(ORTHOTROPIC_ORIENTATION_ASSIGNMENT, theta, current_process_info);
+
+                }// sub-modelpart element loop
+
+
+
+            }
+        }
+
+
+
+        void compositeOrientationAssignment(ModelPart& rSubModelpart, Vector3 GlobalFiberDirection, 
+                                            Vector3 normalVector, const int Level)
+		{
+            auto current_process_info = rSubModelpart.GetProcessInfo();
+			
 			// case 1
 			// (strictly fulfills alignment via hard orthogonality)
 			//
@@ -325,7 +438,31 @@ namespace Kratos {
 			// Shell local axis 1 is the projection of Global X vector onto the shell surface.
 			// If the Global X vector is normal to the shell surface, 
 			// the shell local 1-direction is the projection of the 
-			// Global Z vector onto the shell surface
+            // Global Z vector onto the shell surface
+            
+            // Select approach -------------------------------------------------
+            int caseId = 0;
+            if (Level == 1)
+            {
+                caseId = 1; 
+            }
+            else if (Level == 2)
+            {
+                caseId = 2; 
+            }
+            else if (Level == 3)
+            {
+                caseId = 2; 
+                perform_normal_alignment = false;
+            }
+            else if (Level == 4)
+            {
+                caseId = 3; 
+            }
+            else
+            {
+                KRATOS_ERROR << "Wrong Level!" << std::endl;
+            }
 
 			std::cout << "Using composite alignment method ";
 			switch (caseId)
@@ -334,7 +471,7 @@ namespace Kratos {
 				std::cout << caseId << " (strictly fulfills alignment via hard orthogonality)" << std::endl;
 				break;
 			case 2:
-				std::cout << caseId << " (generally aligns with global fiber)" << std::endl;
+				std::cout << caseId << " (generally aligns with global fiber); normal_alignment=" << perform_normal_alignment << std::endl;
 				break;
 			case 3:
 				std::cout << caseId << " (Abaqus default projection to Global Cartesian axis)" << std::endl;
@@ -390,7 +527,7 @@ namespace Kratos {
 				pElementProps = element.pGetProperties();
 
 				// get local orientation of GlobalFiberDirection
-				element.Calculate(LOCAL_ELEMENT_ORIENTATION, LCSOrientation, rCurrentProcessInfo);
+				element.Calculate(LOCAL_ELEMENT_ORIENTATION, LCSOrientation, current_process_info);
 
 				// get element local axis vectors (global cartesian)
 				for (size_t i = 0; i < 3; i++)
@@ -494,7 +631,7 @@ namespace Kratos {
 				// set required rotation in element
 				pElementProps = element.pGetProperties();
 				pElementProps->SetValue(ORTHOTROPIC_ORIENTATION_ASSIGNMENT, theta);
-				element.Calculate(ORTHOTROPIC_ORIENTATION_ASSIGNMENT, theta, rCurrentProcessInfo);
+				element.Calculate(ORTHOTROPIC_ORIENTATION_ASSIGNMENT, theta, current_process_info);
 
 				// add option to write out angles so they don't have to be computed next time
 					// or maybe this should be a separate python call
@@ -638,7 +775,27 @@ namespace Kratos {
 			//rotationMatrix(3,3) = 1.0;
 
 			return rotationMatrix;
-		}
+        }
+        
+        void CheckAndReadVectors(Parameters ThisParameters, const std::string KeyName, Vector3& rVector)
+        {
+            // Note: The parameters have already been validated
+
+            if (ThisParameters[KeyName].size() != 3)
+            {
+                KRATOS_ERROR << "\" "<< KeyName << "\" is not of size 3" << std::endl;
+            }
+            
+            // This is a workaround until we have the "GetVector" Method
+            rVector[0] = ThisParameters[KeyName][0].GetDouble();
+            rVector[1] = ThisParameters[KeyName][1].GetDouble();
+            rVector[2] = ThisParameters[KeyName][2].GetDouble();
+
+            if (inner_prod(rVector, rVector) < 1E-6)
+			{
+				KRATOS_ERROR <<	"Vector \" "<< KeyName << "\" has zero length" << std::endl;
+			}
+        }
 
 		///@}
 		///@name Private  Access

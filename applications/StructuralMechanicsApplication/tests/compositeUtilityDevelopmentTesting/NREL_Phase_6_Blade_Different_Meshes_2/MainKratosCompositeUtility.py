@@ -31,18 +31,84 @@ solver.AddVariables()
 ## Read the model - note that SetBufferSize is done here
 solver.ImportModelPart()
 
+composite_property_alignment_settings_11 = Parameters("""
+{
+    "method": "simple",
+    "method_specific_settings" : {
+        "global_fiber_direction" : [0,0,1],
+        "normal_vector"   : [1,0,0]
+    }
+}
+""")
+composite_property_alignment_settings_12 = Parameters("""
+{
+    "method": "simple",
+    "method_specific_settings" : {
+        "cs_axis_1" : [0,0,1],
+        "cs_axis_2" : [1,0,0],
+        "cs_normal_axis" : 3
+    }
+}
+""")
+composite_property_alignment_settings_13 = Parameters("""
+{
+    "method": "simple",
+    "method_specific_settings" : {
+        "cs_axis_1" : [0,0,1],
+        "cs_axis_2" : [1,0,0],
+        "cs_rotation_angle" : 15,
+        "cs_normal_axis" : 3        
+    }
+}
+""")
+
+composite_property_alignment_settings_21 = Parameters("""
+{
+    "method": "advanced",
+    "method_specific_settings" : {
+        "global_fiber_direction" : [0,0,1],
+        "normal_vector"   : [1,0,0],
+        "smoothness_level" : 1
+    }
+}
+""")
+
+composite_property_alignment_settings_22 = Parameters("""
+{
+    "method": "advanced",
+    "method_specific_settings" : {
+        "global_fiber_direction" : [0,0,1],
+        "normal_vector"   : [1,0,0]
+    }
+}
+""")
+
+composite_property_alignment_settings_23 = Parameters("""
+{
+    "method": "advanced",
+    "method_specific_settings" : {
+        "global_fiber_direction" : [0,0,1],
+        "normal_vector"   : [1,0,0],
+        "smoothness_level" : 3        
+    }
+}
+""")
+
+CompositePropertyAssignment().Execute(main_model_part.GetSubModelPart("main_mesh"), composite_property_alignment_settings_11)
+
+
 ## Example of CompositePropertyAssignment utility 1
 #fiberVector = [0.0,0.0,1.0]
 #normalVector = [0,1,0]
 #CompositePropertyAssignment().Execute(main_model_part.GetSubModelPart("main_mesh"),fiberVector,normalVector,main_model_part.ProcessInfo)
 
 ## Example of CompositePropertyAssignment utility 2
-lcs1 = [0,0,1]
-lcs2 = [1,0,0]
-userAxisNormalToShell = 3
-rotationDegreesAboutUserNormalAxis = 45.0
-suppressOrthogonalError = True
-CompositePropertyAssignment().ExecuteCustomCS(main_model_part.GetSubModelPart("main_mesh"),lcs1,lcs2,userAxisNormalToShell,rotationDegreesAboutUserNormalAxis,suppressOrthogonalError,main_model_part.ProcessInfo)
+# lcs1 = [0,0,1]
+# lcs2 = [1,0,0]
+# userAxisNormalToShell = 3
+# rotationDegreesAboutUserNormalAxis = 45.0
+# suppressOrthogonalError = True
+# CompositePropertyAssignment().ExecuteCustomCS(main_model_part.GetSubModelPart("main_mesh"),lcs1,lcs2,userAxisNormalToShell,rotationDegreesAboutUserNormalAxis,suppressOrthogonalError,main_model_part.ProcessInfo)
 
 
 
