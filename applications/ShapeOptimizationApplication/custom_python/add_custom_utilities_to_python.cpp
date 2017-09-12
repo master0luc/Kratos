@@ -183,9 +183,14 @@ void  AddCustomUtilitiesToPython()
             .def("use_all_FE_nodes_as_data_points", &CADMapper::use_all_FE_nodes_as_data_points)            
             .def("parametrisation", &CADMapper::parametrisation)            
             .def("print_nearest_points_2", &CADMapper::print_nearest_points_2)            
-            .def("map_to_cad_space_5", &CADMapper::map_to_cad_space_5)  
+            .def("apply_regularization_schemes", &CADMapper::apply_regularization_schemes)  
+            .def("apply_penalty_factors", &CADMapper::apply_penalty_factors)  
+            .def("map_all_patches", &CADMapper::map_all_patches)  
+            .def("map_patch_by_patch", &CADMapper::map_patch_by_patch)  
+            .def("map_boundary_conditions", &CADMapper::map_boundary_conditions)  
+            .def("crazy_step_back", &CADMapper::crazy_step_back)  
+            .def("map_boundary_conditions_augmented_Lagrange", &CADMapper::map_boundary_conditions_augmented_Lagrange)  
           
-
             // EXTERNAL: separating FE-mesh data from computation //
             .def("external_map_to_cad_space", &CADMapper::external_map_to_cad_space)            
             .def("set_point", &CADMapper::set_point)            

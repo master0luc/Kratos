@@ -206,7 +206,13 @@ public:
             {
                 return m_is_active;
             }    
-
+    
+    void Reset()
+        {
+            m_is_active = false;
+            m_is_relevant_for_mapping = false;
+            m_mapping_matrix_id = -1;
+        }
     /// Destructor.
     virtual ~ControlPoint()
     {

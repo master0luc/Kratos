@@ -1319,7 +1319,7 @@ class CADMapper
 		// --------------------------------------------------------------------------
 		void output_surface_points(std::string output_filename, const unsigned int u_resolution, const unsigned int v_resolution, int specific_patch )
 		{
-			std::cout << "\n> Starting writing surface points of given CAD geometry to file..." << std::endl;
+			std::cout << "\n> Writing to file some surface points..." << std::endl;
 		
 			// Set a max value for the coordinte output to avoid clutter through points that are plotted outside the trimmed surface
 			double max_coordinate = 1000;
@@ -1348,8 +1348,6 @@ class CADMapper
 
 					double delta_u = (u_max-u_min) / u_resolution;
 					double delta_v = (v_max-v_min) / v_resolution;
-					KRATOS_WATCH(delta_u);
-					KRATOS_WATCH(delta_v);
 
 					// Loop over all u & v according to specified resolution
 					for(unsigned int i=0; i<=u_resolution; i++)
@@ -1448,7 +1446,7 @@ class CADMapper
 			// Close file
 			file_to_write.close();
 
-			std::cout << "\n> Finished writing surface points of given CAD geometry to file..." << std::endl;
+			std::cout << "\t\t\t DONE" << std::endl;
 		}	
 
 		// --------------------------------------------------------------------------
@@ -1544,7 +1542,7 @@ class CADMapper
 		{
 			// Outputs the displacements of the control points in a format that may be read by Gid
 
-			std::cout << "\n> Starting to write displacement of control points..." << std::endl;
+			std::cout << "\n> Writing control points displacements..." << std::endl;
 			std::ofstream output_file(output_filename);
 
 			output_file << "Rhino Post Results File 1.0" << std::endl;
@@ -1565,10 +1563,9 @@ class CADMapper
 			}
 
 			output_file << "End Values" << std::endl;
-
 			output_file.close();
 
-			std::cout << "\n> Fished writing displacements of control points..." << std::endl;
+			std::cout << "\t\t\t DONE" << std::endl;			
 		}
 
 		// --------------------------------------------------------------------------
@@ -1918,69 +1915,69 @@ class CADMapper
 				m_list_of_span_v_of_neighbour_points.push_back(span_v_of_np);				
 				m_list_of_patch_of_neighbour_points.push_back(patch_itr_of_nearest_point);
 
-				// Perform Newton-Raphson for detailed search
-					// Initialize P: point on the mesh
-					Vector P = ZeroVector(3);
-					P(0) = i_coord[0]; 
-					P(1) = i_coord[1];
-					P(2) = i_coord[2];
-					// Initialize Q_k: point on the CAD surface
-					Vector Q_k = ZeroVector(3);
-					Q_k(0) = nearest_point->X();
-					Q_k(1) = nearest_point->Y();
-					Q_k(2) = nearest_point->Z();
-					// Initialize what's needed in the Newton-Raphson iteration				
-					Vector Q_minus_P = ZeroVector(3); // Distance between current Q_k and P
-					Matrix myHessian = ZeroMatrix(2,2);
-					Vector myGradient = ZeroVector(2);
-					double det_H = 0;
-					Matrix InvH = ZeroMatrix(2,2);				
-					double u_k = u_of_nearest_point;
-					double v_k = v_of_nearest_point;
-					Point<3> newtonRaphPoint;
+				// // Perform Newton-Raphson for detailed search
+				// 	// Initialize P: point on the mesh
+				// 	Vector P = ZeroVector(3);
+				// 	P(0) = i_coord[0]; 
+				// 	P(1) = i_coord[1];
+				// 	P(2) = i_coord[2];
+				// 	// Initialize Q_k: point on the CAD surface
+				// 	Vector Q_k = ZeroVector(3);
+				// 	Q_k(0) = nearest_point->X();
+				// 	Q_k(1) = nearest_point->Y();
+				// 	Q_k(2) = nearest_point->Z();
+				// 	// Initialize what's needed in the Newton-Raphson iteration				
+				// 	Vector Q_minus_P = ZeroVector(3); // Distance between current Q_k and P
+				// 	Matrix myHessian = ZeroMatrix(2,2);
+				// 	Vector myGradient = ZeroVector(2);
+				// 	double det_H = 0;
+				// 	Matrix InvH = ZeroMatrix(2,2);				
+				// 	double u_k = u_of_nearest_point;
+				// 	double v_k = v_of_nearest_point;
+				// 	Point<3> newtonRaphPoint;
 
-					double norm_deltau = 100000000;
-					unsigned int k = 0;
-					unsigned int max_itr = 50;
-					while (norm_deltau > 1e-5)
-					{
-						// The distance between Q (on the CAD surface) and P (on the FE-mesh) is evaluated
-						Q_minus_P(0) = Q_k(0) - P(0);
-						Q_minus_P(1) = Q_k(1) - P(1);
-						Q_minus_P(2) = Q_k(2) - P(2);
+				// 	double norm_deltau = 100000000;
+				// 	unsigned int k = 0;
+				// 	unsigned int max_itr = 50;
+				// 	while (norm_deltau > 1e-5)
+				// 	{
+				// 		// The distance between Q (on the CAD surface) and P (on the FE-mesh) is evaluated
+				// 		Q_minus_P(0) = Q_k(0) - P(0);
+				// 		Q_minus_P(1) = Q_k(1) - P(1);
+				// 		Q_minus_P(2) = Q_k(2) - P(2);
 
-						// The distance is used to compute Hessian and gradient
-						m_patches[patch_itr_of_nearest_point]->GetSurface().EvaluateGradientsForClosestPointSearch(Q_minus_P, myHessian, myGradient , u_k, v_k);
+				// 		// The distance is used to compute Hessian and gradient
+				// 		m_patches[patch_itr_of_nearest_point]->GetSurface().EvaluateGradientsForClosestPointSearch(Q_minus_P, myHessian, myGradient , u_k, v_k);
 
-						// u_k and v_k are updated
-						MathUtils<double>::InvertMatrix( myHessian, InvH, det_H );
-						Vector deltau = prod(InvH,myGradient);
-						u_k -= deltau(0);
-						v_k -= deltau(1);
+				// 		// u_k and v_k are updated
+				// 		MathUtils<double>::InvertMatrix( myHessian, InvH, det_H );
+				// 		Vector deltau = prod(InvH,myGradient);
+				// 		u_k -= deltau(0);
+				// 		v_k -= deltau(1);
 
-						// Q is updated
-						m_patches[patch_itr_of_nearest_point]->GetSurface().EvaluateSurfacePoint(newtonRaphPoint, u_k, v_k);
-						Q_k(0) = newtonRaphPoint[0];
-						Q_k(1) = newtonRaphPoint[1];
-						Q_k(2) = newtonRaphPoint[2];
-						norm_deltau = norm_2(deltau);
+				// 		// Q is updated
+				// 		m_patches[patch_itr_of_nearest_point]->GetSurface().EvaluateSurfacePoint(newtonRaphPoint, u_k, v_k);
+				// 		Q_k(0) = newtonRaphPoint[0];
+				// 		Q_k(1) = newtonRaphPoint[1];
+				// 		Q_k(2) = newtonRaphPoint[2];
+				// 		norm_deltau = norm_2(deltau);
 
-						k++;
+				// 		k++;
 
-						if(k>max_itr)
-						{
-							std::cout << "WARNING!!! Newton-Raphson to find closest point did not converge in the following number of iterations: " << k-1 << std::endl;
-							KRATOS_WATCH(Q_k);
-							KRATOS_WATCH(P);
-						}
-					}
+				// 		if(k>max_itr)
+				// 		{
+				// 			std::cout << "WARNING!!! Newton-Raphson to find closest point did not converge in the following number of iterations: " << k-1 << std::endl;
+				// 			KRATOS_WATCH(Q_k);
+				// 			KRATOS_WATCH(P);
+				// 		}
+				// 	}
 
-					// Update nearest point
-					u_of_nearest_point = u_k;
-					v_of_nearest_point = v_k;
-					nearest_point->X() = Q_k(0);
-					nearest_point->Y() = Q_k(1);
-					nearest_point->Z() = Q_k(2);
+				// 	// Update nearest point
+				// 	u_of_nearest_point = u_k;
+				// 	v_of_nearest_point = v_k;
+				// 	nearest_point->X() = Q_k(0);
+				// 	nearest_point->Y() = Q_k(1);
+				// 	nearest_point->Z() = Q_k(2);
 
 				// Compute and store span of each parameter to avoid redundant computations later
 				knot_span_nearest_point = m_patches[patch_itr_of_nearest_point]->GetSurface().GetKnotSpan(u_of_nearest_point, v_of_nearest_point);
@@ -2144,7 +2141,7 @@ class CADMapper
 
 		void print_nearest_points_2(std::string output_filename) // modular code version of print_nearest_points()
 		{
-			std::cout << "\n> Starting writing results of parametrisation() to file..." << std::endl;
+			std::cout << "\n> Writing data for debugging..." << std::endl;
 
 			// Open file to write all points in
 			std::ofstream file_to_write(output_filename);
@@ -2208,8 +2205,8 @@ class CADMapper
 
 			// Close file
 			file_to_write.close();
-			std::cout << "\n> Finished writing results" << std::endl;
 			
+			std::cout << "\t\t\t DONE" << std::endl;
 		}
 		// LHS indirect, RHS indirect
 			void compute_a_matrix()  // toBeChecked
@@ -2801,7 +2798,6 @@ class CADMapper
 						compute_lhs_small(); // computes m_lhs_x, m_lhs_y, m_lhs_z
 						compute_rhs_small(); // computes m_rhs_x, m_rhs_y, m_rhs_z
 						print_mapping_ids(true); ///////////////////////////////////////////////////////////////////////////////////////////
-						print_lhs(true); ///////////////////////////////////////////////////////////////////////////////////////////
 					// 2: apply regularization
 						if(alpha > 0) alpha_criterion(alpha);
 						if(beta  > 0)  beta_criterion(beta );
@@ -3924,6 +3920,25 @@ class CADMapper
 
 
 		///////////////////////// MODULAR CODE ///////////////////////////////
+		/*
+			parametrisation + reconstruction:
+			parametrisation
+				input	- FE-nodes: (X0, Y0, Z0, X, Y, Z)
+						- user-defined nodes: (X0, Y0, Z0, X, Y, Z, (patch, u_approx, v_approx))
+						- data_points: (patch, u, v, X, Y, Z)
+				output	- data_points: (patch, u, v, X, Y, Z)
+
+				only FE-nodes need to be parametrised
+				user-defined nodes -> create data point -> optimise_parametrisation
+			
+			reconstruction
+				input	- data_points
+
+				setup	- activate correct CPs
+				setup	- without BCs - BCs penalty - BCs penalty 2-step - BCs augmented Lagrange - BCs augmented Lagrange 2-step
+
+				output	- updated CPs position
+		*/
 		void print_mapping_ids(bool old_version=false)
 		{
 			if(old_version)
@@ -3973,34 +3988,131 @@ class CADMapper
 		{
 			if(old_version)
 			{
-				std::cout << "write lhs of version 4" << std::endl;
-				std::ofstream file_to_write("lhs_4.txt");
-				for(unsigned int i=0; i<m_lhs_x.size1(); i++)
-				{
-					for(unsigned int j=0; j<m_lhs_x.size2(); j++)
-					{
-						file_to_write << m_lhs_x(i,j) << " ";
-					}
-					file_to_write << std::endl;
-				}		
-				file_to_write.close();
+				{				std::cout << "write lhs of version 4" << std::endl;
+								std::ofstream file_to_write("lhs_4x.txt");
+								for(unsigned int i=0; i<m_lhs_x.size1(); i++)
+								{
+									for(unsigned int j=0; j<m_lhs_x.size2(); j++)
+									{
+										file_to_write << m_lhs_x(i,j) << " ";
+									}
+									file_to_write << std::endl;
+								}		
+								file_to_write.close();
+				}
+				{				std::cout << "write lhs of version 4" << std::endl;
+								std::ofstream file_to_write("lhs_4y.txt");
+								for(unsigned int i=0; i<m_lhs_x.size1(); i++)
+								{
+									for(unsigned int j=0; j<m_lhs_x.size2(); j++)
+									{
+										file_to_write << m_lhs_y(i,j) << " ";
+									}
+									file_to_write << std::endl;
+								}		
+								file_to_write.close();
+				}
+				{				std::cout << "write lhs of version 4" << std::endl;
+								std::ofstream file_to_write("lhs_4z.txt");
+								for(unsigned int i=0; i<m_lhs_x.size1(); i++)
+								{
+									for(unsigned int j=0; j<m_lhs_x.size2(); j++)
+									{
+										file_to_write << m_lhs_z(i,j) << " ";
+									}
+									file_to_write << std::endl;
+								}		
+								file_to_write.close();
+				}
+				{				std::cout << "write rhs of version 4" << std::endl;
+								std::ofstream file_to_write("rhs_4x.txt");
+								for(unsigned int i=0; i<m_rhs_x.size(); i++)
+								{
+									file_to_write << m_rhs_x(i) << " ";
+								}		
+								file_to_write.close();
+				}				
+				{				std::cout << "write rhs of version 4" << std::endl;
+								std::ofstream file_to_write("rhs_4y.txt");
+								for(unsigned int i=0; i<m_rhs_y.size(); i++)
+								{
+									file_to_write << m_rhs_y(i) << " ";
+								}		
+								file_to_write.close();
+				}				
+				{				std::cout << "write rhs of version 4" << std::endl;
+								std::ofstream file_to_write("rhs_4z.txt");
+								for(unsigned int i=0; i<m_rhs_z.size(); i++)
+								{
+									file_to_write << m_rhs_z(i) << " ";
+								}		
+								file_to_write.close();
+				}				
 			}
 			else
 			{
-				std::cout << "write lhs of version 5" << std::endl;				
-				std::ofstream file_to_write("lhs_5.txt");
-				for(unsigned int i=0; i<m_lhs_x.size1(); i++)
-				{
-					for(unsigned int j=0; j<m_lhs_x.size2(); j++)
-					{
-						file_to_write << m_lhs_x(i,j) << " ";
-					}
-					file_to_write << std::endl;
-				}	
-				file_to_write.close();
+				{				std::cout << "write lhs of version 5" << std::endl;				
+								std::ofstream file_to_write("lhs_5x.txt");
+								for(unsigned int i=0; i<m_lhs_x.size1(); i++)
+								{
+									for(unsigned int j=0; j<m_lhs_x.size2(); j++)
+									{
+										file_to_write << m_lhs_x(i,j) << " ";
+									}
+									file_to_write << std::endl;
+								}	
+								file_to_write.close();
+				}
+				{				std::cout << "write lhs of version 5" << std::endl;				
+								std::ofstream file_to_write("lhs_5y.txt");
+								for(unsigned int i=0; i<m_lhs_x.size1(); i++)
+								{
+									for(unsigned int j=0; j<m_lhs_x.size2(); j++)
+									{
+										file_to_write << m_lhs_y(i,j) << " ";
+									}
+									file_to_write << std::endl;
+								}	
+								file_to_write.close();
+				}
+				{				std::cout << "write lhs of version 5" << std::endl;				
+								std::ofstream file_to_write("lhs_5z.txt");
+								for(unsigned int i=0; i<m_lhs_x.size1(); i++)
+								{
+									for(unsigned int j=0; j<m_lhs_x.size2(); j++)
+									{
+										file_to_write << m_lhs_z(i,j) << " ";
+									}
+									file_to_write << std::endl;
+								}	
+								file_to_write.close();
+				}
+				{				std::cout << "write rhs of version 5" << std::endl;
+								std::ofstream file_to_write("rhs_5x.txt");
+								for(unsigned int i=0; i<m_rhs_x.size(); i++)
+								{
+									file_to_write << m_rhs_x(i) << " ";
+								}		
+								file_to_write.close();
+				}				
+				{				std::cout << "write rhs of version 5" << std::endl;
+								std::ofstream file_to_write("rhs_5y.txt");
+								for(unsigned int i=0; i<m_rhs_y.size(); i++)
+								{
+									file_to_write << m_rhs_y(i) << " ";
+								}		
+								file_to_write.close();
+				}				
+				{				std::cout << "write rhs of version 5" << std::endl;
+								std::ofstream file_to_write("rhs_5z.txt");
+								for(unsigned int i=0; i<m_rhs_z.size(); i++)
+								{
+									file_to_write << m_rhs_z(i) << " ";
+								}		
+								file_to_write.close();
+				}
 			}
 		}
-		
 			// define point cloud
 				void use_all_FE_nodes_as_data_points()
 				{
@@ -4016,20 +4128,23 @@ class CADMapper
 			// parametrisation
 				void parametrisation(const unsigned int u_resolution, const unsigned int v_resolution)
 				{
-					std::cout << "\n> Starting computation of nearest points..." << std::endl;
+					std::cout << "\n\n\n ****************** PARAMETRISATION ******************" << std::endl;
+					boost::timer overall;
 		
 					NodeVector list_of_cad_nodes;
 					create_point_cloud(u_resolution, v_resolution, list_of_cad_nodes);
 
 					// create KD-Tree
-					std::cout << "\n> Starting construction of search-tree..." << std::endl;
+					std::cout << "\n\t> Constructing search-tree..." << std::endl;
 					boost::timer timer;
 					int bucket_size = 20;
 					tree nodes_tree(list_of_cad_nodes.begin(), list_of_cad_nodes.end(), bucket_size);
-					std::cout << "> Time needed for constructing search-tree: " << timer.elapsed() << " s" << std::endl;
+					std::cout << "\t\t\t DONE (" << timer.elapsed() << " s)" << std::endl;
 
 					compute_nearest_neighbours(nodes_tree);
 					compute_nearest_points_Newton_Raphson();
+
+					std::cout << "\n ****************** (" << overall.elapsed() << " s) ********************" << std::endl;
 				}
 
 				// auxiliary functions
@@ -4055,6 +4170,9 @@ class CADMapper
 							
 							// N.B. CAD nodes ids start with 1
 
+						std::cout << "\n\t> Creating point cloud..." << std::endl;
+						boost::timer timer;		
+
 						unsigned int cad_node_counter = 0;
 
 						//Loop over all surface of all patches
@@ -4062,7 +4180,6 @@ class CADMapper
 						{
 							Patch::Pointer patch_ptr = m_patches[patch_itr];
 							NURBSSurface& surface = patch_ptr->GetSurface();
-							std::cout << "\n> Processing Patch with brep_id " << patch_ptr->GetId() << std::endl;
 
 							// Get relevant data
 								double u_min = surface.GetKnotVectorU().front();
@@ -4099,12 +4216,14 @@ class CADMapper
 								}
 							}
 						}						
+			
+						std::cout << "\t\t\t DONE (" << timer.elapsed() << " s)" << std::endl;
 					}
 
 					void compute_nearest_neighbours(tree& nodes_tree)
 					{
 
-						std::cout << "\n> Starting to identify neighboring CAD points..." << std::endl;
+						std::cout << "\n\t> Computing nearest neighbours..." << std::endl;
 						boost::timer timer;
 
 						// loop over all data points (knowing XYZ in undeformed configuration, find an approximation of patch, u, v of corresponding CAD point)
@@ -4129,11 +4248,14 @@ class CADMapper
 								// m_list_of_patch_of_neighbour_points.push_back(patch_itr_of_nearest_point);
 						}
 						
-						std::cout << "> Time needed for identify neighboring CAD points: " << timer.elapsed() << " s" << std::endl;
+						std::cout << "\t\t\t DONE (" << timer.elapsed() << " s)" << std::endl;
 					}
 
 					void compute_nearest_points_Newton_Raphson()
 					{
+						std::cout << "\n\t> Optimising coordinates with Newton-Raphson..." << std::endl;
+						boost::timer timer;
+
 						// Specify a tolerance and a maximum number of iteration for the Newton-Raphson optimizer
 						double tol = 1e-5;
 						unsigned int max_itr = 50;
@@ -4142,81 +4264,141 @@ class CADMapper
 						{
 							data_point_i->optimize_parametrisation(tol, max_itr);
 						}
+
+						std::cout << "\t\t\t DONE (" << timer.elapsed() << " s)" << std::endl;
 					}
 				//
 			// reconstruction
 				// flag control points
 					void activate_control_point() // one cp is active, cp's neighbours are relevant
-					{
-						// cp active
-						// cp relevant
-						// neighbourhood relevant
-					}
+						{
+							// cp active
+							// cp relevant
+							// neighbourhood relevant
+						}
 
 					void activate_patch(Patch::Pointer patch) // all relevant cps are active
-					{
-						double u, v;
-						// loop over data points
-						for(DataPointsList::iterator data_point_i = m_data_points.begin(); data_point_i != m_data_points.end(); data_point_i++)
 						{
-							u = data_point_i->getU();
-							v = data_point_i->getV();
-							if( data_point_i->getPatch()->GetId() == patch->GetId() &&
-							    patch->CheckIfPointIsInside(u, v)
-							  )
+							double u, v;
+							// loop over data points
+							for(DataPointsList::iterator data_point_i = m_data_points.begin(); data_point_i != m_data_points.end(); data_point_i++)
 							{
-								// flag cps as relevant and active
-								data_point_i->flagControlPointsAsRelevantAndActive();
-							}
-						}	
-					}
-
-					void activate_knotspan() // some cps are relevant, inner cps are active (if any)
-					{}
-
-					void assign_mapping_matrix_ids()
-					{
-						m_n_active_control_points = 0;
-						m_n_relevant_control_points = 0;
-
-						for(PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
-						{
-							for(ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
-							{
-								if(cp_i->IsActive())
+								u = data_point_i->getU();
+								v = data_point_i->getV();
+								if( data_point_i->getPatch()->GetId() == patch->GetId() &&
+									patch->CheckIfPointIsInside(u, v)
+								  )
 								{
-									cp_i->SetMappingMatrixId(m_n_active_control_points);
-									m_n_active_control_points++;
-								}
-								if(cp_i->IsRelevantForMapping())
-								{
-									m_n_relevant_control_points++;
+									// flag cps as relevant and active
+									data_point_i->flagControlPointsAsRelevantAndActive();
 								}
 							}	
 						}
-						
-					}
 
+					void activate_knotspan() // some cps are relevant, inner cps are active (if any)
+						{}
+
+
+
+					void deactivate_all()
+						{
+							for(PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
+							{
+								for(ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
+								{
+									cp_i->Reset();
+								}	
+							}
+							m_n_active_control_points = 0;
+							m_n_relevant_control_points = 0;
+						}
+					
+					void activate_borders()
+						{
+							std::cout << "WARNING: in cad_mapper.h, void activate_borders() to be cleaned." << std::endl;
+							// Then we identify mapping relevant control points required from the specified boundary conditions
+							// Accordingly we check all Gauss points of all brep elements for their control points
+							for (BREPElementVector::iterator brep_elem_i = m_brep_elements.begin(); brep_elem_i != m_brep_elements.end(); ++brep_elem_i)
+							{
+								// Get Gauss points of current brep element
+								BREPGaussPointVector brep_gps = brep_elem_i->GetGaussPoints();
+
+								// Loop over all Gauss points of current brep element 
+								for (BREPGaussPointVector::iterator brep_gp_i = brep_gps.begin(); brep_gp_i != brep_gps.end(); ++brep_gp_i)
+								{
+									// Flag control points on master patch
+									unsigned int master_patch_id = brep_gp_i->GetPatchId();
+									Vector location = brep_gp_i->GetLocation();
+									m_patches[m_patch_position_in_patch_vector[master_patch_id]]->GetSurface().FlagControlPointsAsRelevantAndActive(-1, -1, location[0], location[1]);
+
+									// Flag control points on slave patch if brep element is a coupling element
+									if(brep_elem_i->HasCouplingCondition())
+									{
+										unsigned int slave_patch_id = brep_gp_i->GetSlavePatchId();
+										location = brep_gp_i->GetSlaveLocation();
+										m_patches[m_patch_position_in_patch_vector[slave_patch_id]]->GetSurface().FlagControlPointsAsRelevantAndActive(-1, -1, location[0], location[1]);
+									}
+								}
+							}
+						}
+					
+					void activate_all()
+						{
+
+
+							for(PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
+							{
+								Patch::Pointer patch = (*patch_i);
+								activate_patch(patch);
+							}
+						}
+
+				// assign ids
+					void assign_mapping_matrix_ids()
+						{
+							m_n_active_control_points = 0;
+							m_n_relevant_control_points = 0;
+
+							for(PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
+							{
+								for(ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
+								{
+									if(cp_i->IsActive())
+									{
+										cp_i->SetMappingMatrixId(m_n_active_control_points);
+										m_n_active_control_points++;
+									}
+									if(cp_i->IsRelevantForMapping())
+									{
+										m_n_relevant_control_points++;
+									}
+								}	
+							}
+							
+						}
 				// setup system
 					void initialize_lse() // parameters: type of norm, if one cp at a time
-					{
-						// Initialize lhs matrices
-							m_lhs_x.resize(m_n_active_control_points, m_n_active_control_points);
-							m_lhs_y.resize(m_n_active_control_points, m_n_active_control_points);
-							m_lhs_z.resize(m_n_active_control_points, m_n_active_control_points);
-							m_lhs_x.clear();
-							m_lhs_y.clear();
-							m_lhs_z.clear();
+						{
+							// Initialize lhs matrices
+								m_lhs_x.resize(m_n_active_control_points, m_n_active_control_points);
+								m_lhs_y.resize(m_n_active_control_points, m_n_active_control_points);
+								m_lhs_z.resize(m_n_active_control_points, m_n_active_control_points);
+								m_lhs_x.clear();
+								m_lhs_y.clear();
+								m_lhs_z.clear();
 
-						// Initialize rhs vectors
-							m_rhs_x.resize(m_n_active_control_points);	
-							m_rhs_y.resize(m_n_active_control_points);	
-							m_rhs_z.resize(m_n_active_control_points);	
-							m_rhs_x.clear();
-							m_rhs_y.clear();
-							m_rhs_z.clear();
-
-						// Loop over data points
+							// Initialize rhs vectors
+								m_rhs_x.resize(m_n_active_control_points);	
+								m_rhs_y.resize(m_n_active_control_points);	
+								m_rhs_z.resize(m_n_active_control_points);	
+								m_rhs_x.clear();
+								m_rhs_y.clear();
+								m_rhs_z.clear();
+						}
+				// 
+					void least_square_minimization_of_data_points()
+						{
+							// Loop over data points
 							for(DataPointsList::iterator data_point_i = m_data_points.begin(); data_point_i != m_data_points.end(); data_point_i++)
 							{
 								// HOW TO DIRECTLY LOOP OVER DATA POINTS WHICH HAVE AT LEAST AN ACTIVE CP???
@@ -4231,6 +4413,8 @@ class CADMapper
 									for(unsigned int j=0; j<cp_ids.size2(); j++)
 									{
 										ControlPoint cp_ij = CP[cp_ids(i,j)];
+
+										// modify the LSE iff at least one CP is active  
 										if(cp_ij.IsActive())
 										{
 											double R_ij = R_data_point(i,j);
@@ -4267,88 +4451,284 @@ class CADMapper
 										}
 									}
 								}
-							}						
-					}
+							}
+						}
+				// solve
+					void solve_update_and_test()
+						{
+							// solve for updated position of CP: x_CP, y_CP, z_CP
+								CompressedMatrixType compressed_lhs_x = m_lhs_x; //???
+								CompressedMatrixType compressed_lhs_y = m_lhs_y; //???
+								CompressedMatrixType compressed_lhs_z = m_lhs_z; //???
+
+								std::cout << "\n\t> Solving x... \n";	
+								Vector x_CP = ZeroVector(m_n_active_control_points);
+								m_linear_solver->Solve(compressed_lhs_x, x_CP, m_rhs_x);		
+								std::cout << "\t\t\t DONE" << std::endl;
+
+								std::cout << "\t> Solving y... \n";	
+								Vector y_CP = ZeroVector(m_n_active_control_points);
+								m_linear_solver->Solve(compressed_lhs_y, y_CP, m_rhs_y);		
+								std::cout << "\t\t\t DONE" << std::endl;
+
+								std::cout << "\t> Solving z... \n";	
+								Vector z_CP = ZeroVector(m_n_active_control_points);
+								m_linear_solver->Solve(compressed_lhs_z, z_CP, m_rhs_z);		
+								std::cout << "\t\t\t DONE" << std::endl;
+
+							// update
+								std::cout << "\n\t> Updating control points positions... " << std::endl;
+								m_cad_reader.UpdateControlPointsPositions(m_patches, x_CP, y_CP, z_CP);
+								std::cout << "\t\t\t DONE" << std::endl;
+
+							// test computing residuals
+								Vector rhs_test = ZeroVector(m_n_active_control_points);
+								noalias(rhs_test) = prod(compressed_lhs_x,x_CP);
+								Vector rhs_difference = m_rhs_x - rhs_test;
+								double normalized_difference_in_rhs = norm_2(rhs_difference);
+								std::cout << "\n\t> Residual when solving for x (Euclidean norm): " << normalized_difference_in_rhs << std::endl;
+					
+								rhs_test = ZeroVector(m_n_active_control_points);
+								noalias(rhs_test) = prod(compressed_lhs_y,y_CP);
+								rhs_difference = m_rhs_y - rhs_test;
+								normalized_difference_in_rhs = norm_2(rhs_difference);
+								std::cout << "\t> Residual when solving for y (Euclidean norm): " << normalized_difference_in_rhs << std::endl;
+					
+								rhs_test = ZeroVector(m_n_active_control_points);
+								noalias(rhs_test) = prod(compressed_lhs_z,z_CP);
+								rhs_difference = m_rhs_z - rhs_test;
+								normalized_difference_in_rhs = norm_2(rhs_difference);
+								std::cout << "\t> Residual when solving for z (Euclidean norm): " << normalized_difference_in_rhs << std::endl;	
+							
+						}
 				// regularization techniques
-
+					void beta_criterion()
+						{
+							// add contribution to lhs
+								for(unsigned int i=0; i<m_n_active_control_points; i++)
+								{
+									m_lhs_x(i,i) += m_beta;
+									m_lhs_y(i,i) += m_beta;
+									m_lhs_z(i,i) += m_beta;
+								}
+							// add contribution to rhs
+								int cp_id;
+								for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
+								{
+									for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
+									{
+										if(cp_i->IsActive())
+										{
+											cp_id = cp_i->GetMappingMatrixId();
+											m_rhs_x[cp_id] += m_beta * cp_i->getX();
+											m_rhs_y[cp_id] += m_beta * cp_i->getY();
+											m_rhs_z[cp_id] += m_beta * cp_i->getZ();
+										}
+									}
+								}
+						}
 				// boundary conditions
-			
-				// functions exposed to user
-					void map_to_cad_space_5()
-					{
-						std::cout << "\n> Starting to map to CAD space..." << std::endl;
-						boost::timer function_timer;
+					void apply_boundary_conditions_5(double penalty_factor_disp, 
+													double penalty_factor_rot
+													//double penalty_factor_dirichlet, 
+													//boost::python::list& edges_with_specific_dirichlet_conditions, 
+													// boost::python::list& edges_with_enforced_tangent_continuity
+													)
+						{
+							boost::python::list edges_with_enforced_tangent_continuity;
+							// Loop over all brep elements specifying boundary conditions 
+							for (BREPElementVector::iterator brep_elem_i = m_brep_elements.begin(); brep_elem_i != m_brep_elements.end(); ++brep_elem_i)
+							{
+								// Check if brep_elem_i is a element used for coupling or for Dirichlet boundary conditions
+								if(brep_elem_i->HasCouplingCondition())
+									apply_coupling_condition_small(brep_elem_i, penalty_factor_disp, penalty_factor_rot, edges_with_enforced_tangent_continuity);
+								// else if(brep_elem_i->HasDirichletCondition())
+									// apply_dirichlet_condition(brep_elem_i, penalty_factor_dirichlet, edges_with_specific_dirichlet_conditions);
+							}
+												}
+				// functions exposed to user (different strategies are implemented here)
+					void user_exposed_function_general_structure()
+						{
+							// activate cps
+							// assign ids
+							// initialize lse
+							// add contributions
+								// 1.
+								// 2.
+								// ...
+							// solve and update
+							// deactivate all
+						}
+					void map_all_patches()
+						{
+							std::cout << "\n\n\n ****************** RECONSTRUCTION *******************" << std::endl;
+							boost::timer overall;
+							// activate cps
+														std::cout << "\n\t> Activating control points..." << std::endl;
+														boost::timer timer1;
+							activate_all();
+							if(m_penalty_factor_disp > 0 || m_penalty_factor_rot > 0) activate_borders();
 
-						// 0:
+														std::cout << "\t\t\t DONE (" << timer1.elapsed() << " s)" << std::endl;
+
+							// assign ids
+														std::cout << "\n\t> Assigning mapping matrix ids..." << std::endl;
+														boost::timer timer2;
+							assign_mapping_matrix_ids();
+														std::cout << "\t\t\t DONE (" << timer2.elapsed() << " s)" << std::endl;
+
+							// initialize lse
+														std::cout << "\n\t> Setting up the linear system of equations..." << std::endl;
+														boost::timer timer3;
+							initialize_lse();
+							// add contributions
+								least_square_minimization_of_data_points();
+								if(m_beta > 0)  beta_criterion();
+								// if boundaries
+								if(m_penalty_factor_disp > 0 || m_penalty_factor_rot > 0) apply_boundary_conditions_5(m_penalty_factor_disp, m_penalty_factor_rot);
+
+														std::cout << "\t\t\t DONE (" << timer3.elapsed() << " s)" << std::endl;
+							// solve and update
+							solve_update_and_test();
+							// deactivate all
+							// deactivate_all();
+							std::cout << "\n ****************** (" << overall.elapsed() << " s) ********************" << std::endl;
+						}
+					void map_patch_by_patch()
+						{
 							for(PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 							{
-								Patch::Pointer patch = (*patch_i);
-								std::cout << "activating patch " << patch->GetId() << std::endl;
-								activate_patch(patch);
+								// activate cps
+								activate_patch(*patch_i);
+								// assign ids
+								assign_mapping_matrix_ids();
+								// initialize lse
+								initialize_lse();
+								// add contributions
+									least_square_minimization_of_data_points();
+									if(m_beta > 0)  beta_criterion();
+									// if boundaries
+								// solve and update
+								solve_update_and_test();
+								// deactivate all
+								deactivate_all();
+								
+								// output_surface_points(std::to_string(patch->GetId()) + ".txt", 150, 150, -1); ////////////////////////////////////////////////////
 							}
-							assign_mapping_matrix_ids();
-							print_mapping_ids();
-							KRATOS_WATCH(m_n_relevant_control_points);
-							KRATOS_WATCH(m_n_active_control_points);
-						// 1: compute lhs and rhs
-							initialize_lse(); // computes m_lhs_x, m_lhs_y, m_lhs_z 
-												//			 m_rhs_x, m_rhs_y, m_rhs_z
-							print_lhs();
-						// 2: apply regularization
-							// if(alpha > 0) alpha_criterion(alpha);
-							// if(beta  > 0)  beta_criterion(beta );
-							// if(delta > 0) delta_criterion(delta);
-						// 2bis: apply B.C.s
-							// apply_boundary_conditions_small(penalty_factor_disp, penalty_factor_rot, edges_with_enforced_tangent_continuity);
-						// 3: solve for x_CP: updated position of CP
-							CompressedMatrixType compressed_lhs_x = m_lhs_x; //???
-							CompressedMatrixType compressed_lhs_y = m_lhs_y; //???
-							CompressedMatrixType compressed_lhs_z = m_lhs_z; //???
-
-							std::cout << "\t> Solving x... \n";	
-							Vector x_CP = ZeroVector(m_n_active_control_points);
-							m_linear_solver->Solve(compressed_lhs_x, x_CP, m_rhs_x);		
-							std::cout << "\t\t\t DONE" << std::endl;
-
-							std::cout << "\t> Solving y... \n";	
-							Vector y_CP = ZeroVector(m_n_active_control_points);
-							m_linear_solver->Solve(compressed_lhs_y, y_CP, m_rhs_y);		
-							std::cout << "\t\t\t DONE" << std::endl;
-
-							std::cout << "\t> Solving z... \n";	
-							Vector z_CP = ZeroVector(m_n_active_control_points);
-							m_linear_solver->Solve(compressed_lhs_z, z_CP, m_rhs_z);		
-							std::cout << "\t\t\t DONE" << std::endl;
-
-						// 4: update
-							std::cout << "\t> Updating control points positions... ";
-							m_cad_reader.UpdateControlPointsPositions(m_patches, x_CP, y_CP, z_CP);
-
-						std::cout << "\n> Mapping to CAD space finished in " << function_timer.elapsed() << " s." << std::endl;	
-
-						// 5: Test solution
-							Vector rhs_test = ZeroVector(m_n_active_control_points);
-							noalias(rhs_test) = prod(compressed_lhs_x,x_CP);
-							Vector rhs_difference = m_rhs_x - rhs_test;
-							double normalized_difference_in_rhs = norm_2(rhs_difference);
-							std::cout << "\n> Solution of linear system leads to a difference in the RHS_x of: normalized_difference_in_rhs = " << normalized_difference_in_rhs << std::endl;
-				
-							rhs_test = ZeroVector(m_n_active_control_points);
-							noalias(rhs_test) = prod(compressed_lhs_y,y_CP);
-							rhs_difference = m_rhs_y - rhs_test;
-							normalized_difference_in_rhs = norm_2(rhs_difference);
-							std::cout << "\n> Solution of linear system leads to a difference in the RHS_y of: normalized_difference_in_rhs = " << normalized_difference_in_rhs << std::endl;
-				
-							rhs_test = ZeroVector(m_n_active_control_points);
-							noalias(rhs_test) = prod(compressed_lhs_z,z_CP);
-							rhs_difference = m_rhs_z - rhs_test;
-							normalized_difference_in_rhs = norm_2(rhs_difference);
-							std::cout << "\n> Solution of linear system leads to a difference in the RHS_z of: normalized_difference_in_rhs = " << normalized_difference_in_rhs << std::endl;	
-
+						}
+					void map_CP_by_CP()
+					{
 
 					}
 
+					void map_boundary_conditions()
+						{
+							// activate cps
+							activate_borders();
+							// assign ids
+							assign_mapping_matrix_ids();
+							// initialize lse
+							initialize_lse();
+							// add contributions
+								least_square_minimization_of_data_points();
+								if(m_beta > 0)  beta_criterion();
+								apply_boundary_conditions_5(1,1);
+							// solve and update
+							solve_update_and_test();
+							// deactivate all
+							deactivate_all();
+						}
+					void crazy_step_back()
+						{
+							// activate cps
+							activate_borders();
+							// assign ids
+							assign_mapping_matrix_ids();
+							// initialize lse
 
+							// add contributions
+
+							// solve and update
+								// set CP back to original position
+									Vector x_CP = ZeroVector(m_n_active_control_points);
+									Vector y_CP = ZeroVector(m_n_active_control_points);
+									Vector z_CP = ZeroVector(m_n_active_control_points);
+									for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
+									{
+										for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
+										{
+											if(cp_i->IsActive())
+											{
+												// Updating c++ data base
+												unsigned int cp_mapping_matrix_id = cp_i->GetMappingMatrixId();
+												x_CP[cp_mapping_matrix_id] = cp_i->getX0();
+												y_CP[cp_mapping_matrix_id] = cp_i->getY0();
+												z_CP[cp_mapping_matrix_id] = cp_i->getZ0();
+											}
+										}
+									}
+									m_cad_reader.UpdateControlPointsPositions(m_patches, x_CP, y_CP, z_CP);
+							// deactivate all
+							deactivate_all();
+						}
+					void map_boundary_conditions_augmented_Lagrange(boost::python::list& edges_with_enforced_tangent_continuity,
+																	double r1,
+																	double r2)
+						{
+							// activate cps
+							activate_borders();
+							// assign ids
+							assign_mapping_matrix_ids();
+							double lambda_1 = 0;
+							double lambda_2 = 0;
+							double up_1 = 1e5;
+							double up_2 = 1e5;
+							while(up_1 > 1e-2 || up_2 > 1e-2)
+							{
+								//
+									// initialize lse
+									initialize_lse();
+									// add contributions
+										least_square_minimization_of_data_points();
+										if(m_beta > 0)  beta_criterion(); 					// depends on active CP position !!!
+										apply_boundary_conditions_5(lambda_1, lambda_2);	// depends on active CP position !!!
+									// solve and update
+									solve_update_and_test();
+								//
+								up_1 = measure_g0_continuity(edges_with_enforced_tangent_continuity);
+								up_2 = measure_g1_continuity(edges_with_enforced_tangent_continuity);
+								lambda_1 = lambda_1 + r1 * up_1;
+								lambda_2 = lambda_2 + r2 * up_2;
+								KRATOS_WATCH(up_1);
+								KRATOS_WATCH(up_2);
+								KRATOS_WATCH(lambda_1);
+								KRATOS_WATCH(lambda_2);
+								double a;
+								std::cin >> a;
+								if(a==2) break;
+							}
+							// deactivate all							
+							deactivate_all();
+						}
+				// setup
+					void apply_regularization_schemes(double alpha, double beta, double delta)
+						{
+							m_alpha = alpha;
+							m_beta = beta;
+							m_delta = delta;
+						}
+					void apply_penalty_factors(
+											//    double penalty_factor_dirichlet,
+											   double penalty_factor_disp,
+											   double penalty_factor_rot,
+											//    double penalty_factor_tangent_continuity,
+											   boost::python::list& edges_with_enforced_tangent_continuity
+											   )
+						{
+							m_penalty_factor_disp = penalty_factor_disp;
+							m_penalty_factor_rot = penalty_factor_rot;
+							// m_edges_with_enforced_tangent_continuity = edges_with_enforced_tangent_continuity;
+						}
 		////////////////////////////////////////////////////////
 		
 		/////////////// ONE CONTROL POINT AT A TIME: exploitation of NURBS locality ///////////////
@@ -4896,6 +5276,12 @@ class CADMapper
 	Vector m_rhs_z;
 	// MODULAR //
 	unsigned int m_n_active_control_points;
+	double m_alpha = 0;
+	double m_beta = 0;
+	double m_delta = 0;
+	double m_penalty_factor_disp;
+	double m_penalty_factor_rot;
+	// boost::python::list& m_edges_with_enforced_tangent_continuity;
 	// EXTERNAL: separating FE-mesh data from computation //
 	double m_number_of_points_external = 0;
 	IntVector m_list_of_patch_ids_external;

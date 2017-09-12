@@ -148,6 +148,7 @@ public:
 
         Point<3>& getCADPoint()
         {
+            m_patch->GetSurface().EvaluateSurfacePoint(m_cad_point, m_u, m_v);
             return m_cad_point;
         }
 
