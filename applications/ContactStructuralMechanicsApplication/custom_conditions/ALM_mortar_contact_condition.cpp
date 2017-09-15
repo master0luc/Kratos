@@ -624,6 +624,51 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
 //         //                 KRATOS_WATCH(RHS_contact_pair);
 //                     LOG_VECTOR_PRETTY( RHS_contact_pair );
                 }
+                
+                // Setting the weighted gap
+                // Mortar condition matrices - DOperator and MOperator
+                const bounded_matrix<double, TNumNodes, TNumNodes>& DOperator = rThisMortarConditionMatrices.DOperator;
+                const bounded_matrix<double, TNumNodes, TNumNodes>& MOperator = rThisMortarConditionMatrices.MOperator;
+                
+                // Current coordinates 
+                const bounded_matrix<double, TNumNodes, TDim> x1 = ContactUtilities::GetCoordinates<TDim,TNumNodes>(this->GetGeometry());
+                const bounded_matrix<double, TNumNodes, TDim> x2 = ContactUtilities::GetCoordinates<TDim,TNumNodes>(mThisMasterElements[pair_index]->GetGeometry());
+        
+                const bounded_matrix<double, TNumNodes, TDim> D_x1_M_x2 = prod(DOperator, x1) - prod(MOperator, x2); 
+                
+                for (unsigned int i_node = 0; i_node < TNumNodes; i_node++)
+                {
+                    const array_1d<double, 3>& normal = GetGeometry()[i_node].GetValue(NORMAL);
+                    const array_1d<double, TDim> aux_array = row(D_x1_M_x2, i_node);
+                                    
+                    #pragma omp atomic 
+                    GetGeometry()[i_node].FastGetSolutionStepValue(WEIGHTED_GAP) += inner_prod(aux_array, - subrange(normal, 0, TDim)); 
+                }
+                
+                if (TFrictional == true) // TODO: Check this!!!
+                {
+                    // Old coordinates 
+                    const bounded_matrix<double, TNumNodes, TDim> x1_old = ContactUtilities::GetCoordinates<TDim,TNumNodes>(this->GetGeometry(), false, 1);
+                    const bounded_matrix<double, TNumNodes, TDim> x2_old = ContactUtilities::GetCoordinates<TDim,TNumNodes>(mThisMasterElements[pair_index]->GetGeometry(), false, 1);
+            
+                    const bounded_matrix<double, TNumNodes, TDim> D_x1_old_M_x2_old = prod(DOperator, x1_old) - prod(MOperator, x2_old); 
+                    
+                    for (unsigned int i_node = 0; i_node < TNumNodes; i_node++)
+                    {
+                        // We compute the tangent
+                        const array_1d<double, 3>& normal = GetGeometry()[i_node].GetValue(NORMAL);
+                        const array_1d<double, 3>& lm = GetGeometry()[i_node].FastGetSolutionStepValue(VECTOR_LAGRANGE_MULTIPLIER);
+                        const double lm_normal = inner_prod(normal, lm);
+                        array_1d<double, 3> tangent_lm = lm - lm_normal * normal;
+                        tangent_lm /= norm_2(tangent_lm); 
+                        array_1d<double, TDim> tangent = subrange(tangent_lm, 0, TDim);
+                        
+                        const array_1d<double, TDim> aux_array = row(D_x1_old_M_x2_old, i_node);
+                                        
+                        #pragma omp atomic 
+                        GetGeometry()[i_node].FastGetSolutionStepValue(WEIGHTED_SLIP) += inner_prod(aux_array, tangent); 
+                    }
+                }
             }
         }
     }
