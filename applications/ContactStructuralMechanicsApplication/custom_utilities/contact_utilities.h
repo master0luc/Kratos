@@ -765,6 +765,36 @@ public:
     }
     
     /**
+     * It calculates the center updated in u_n+1/2
+     * @param ThisGeometry: The geometry to calculate
+     * @return point: The center in u_n+1/2 (Newmark)
+     */
+    
+    static inline Point<3> GetHalfJumpCenter(
+        GeometryType& ThisGeometry,
+        const double& DeltaTime
+        )
+    {
+        Point<3> center = ThisGeometry.Center();
+        
+        // Initialize variables
+        Vector N;
+        GeometryType::CoordinatesArrayType local_point;
+        
+        // Get shape functions
+        ThisGeometry.PointLocalCoordinates( local_point, center.Coordinates() );
+        ThisGeometry.ShapeFunctionsValues( N, local_point );
+        
+        const Matrix new_delta_disp = 0.25 * DeltaTime * (GetVariableMatrix(ThisGeometry, VELOCITY, 0) + GetVariableMatrix(ThisGeometry, VELOCITY, 1)) + 0.125 * DeltaTime * DeltaTime * GetVariableMatrix(ThisGeometry, ACCELERATION, 1);
+        
+        const Vector new_delta_disp_center = prod(new_delta_disp, N);
+        
+        center.Coordinates() += new_delta_disp_center;
+        
+        return center;
+    }
+    
+    /**
      * It calculates the matrix of coordinates of a geometry
      * @param nodes: The geometry to calculate
      * @param current: If we calculate the current coordinates or the initial ones
@@ -773,9 +803,9 @@ public:
     
     template< unsigned int TDim, unsigned int TNumNodes>
     static inline bounded_matrix<double, TNumNodes, TDim> GetCoordinates(
-        const GeometryType& nodes,
-        const bool current = true,
-        const unsigned int step = 0
+        const GeometryType& Nodes,
+        const bool Current = true,
+        const unsigned int Step = 0
         )
     {
         /* DEFINITIONS */            
@@ -785,17 +815,17 @@ public:
         {
             array_1d<double, 3> coord;
             
-            if (current == true)
+            if (Current == true)
             {
-                coord = nodes[i_node].Coordinates();
+                coord = Nodes[i_node].Coordinates();
             }
             else
             {
-                coord = nodes[i_node].GetInitialPosition();
+                coord = Nodes[i_node].GetInitialPosition();
                 
-                if (step > 0)
+                if (Step > 0)
                 {
-                    coord += nodes[i_node].FastGetSolutionStepValue(DISPLACEMENT, step);
+                    coord += Nodes[i_node].FastGetSolutionStepValue(DISPLACEMENT, Step);
                 }
             }
 
@@ -810,7 +840,7 @@ public:
 
     /**
      * It calculates the vector of an historical variable of a geometry
-     * @param nodes: The geometry to calculate
+     * @param Nodes: The geometry to calculate
      * @param rVarName: The name of the variable to calculate
      * @param step: The step where calculate
      * @return var_vector: The vector containing the variables of the geometry
@@ -818,9 +848,9 @@ public:
     
     template< unsigned int TNumNodes >
     static inline array_1d<double, TNumNodes> GetVariableVector(
-        const GeometryType& nodes,
+        const GeometryType& Nodes,
         const Variable<double>& rVarName,
-        const unsigned int step = 0
+        const unsigned int Step = 0
         )
     {
         /* DEFINITIONS */        
@@ -828,7 +858,7 @@ public:
         
         for (unsigned int i_node = 0; i_node < TNumNodes; i_node++)
         {
-            var_vector[i_node] = nodes[i_node].FastGetSolutionStepValue(rVarName, step);
+            var_vector[i_node] = Nodes[i_node].FastGetSolutionStepValue(rVarName, Step);
         }
         
         return var_vector;
@@ -836,7 +866,7 @@ public:
     
     /**
      * It calculates the vector of an historical variable of a geometry
-     * @param nodes: The geometry to calculate
+     * @param Nodes: The geometry to calculate
      * @param rVarName: The name of the variable to calculate
      * @param step: The step where calculate
      * @return var_vector: The vector containing the variables of the geometry
@@ -844,9 +874,9 @@ public:
         
     template< unsigned int TNumNodes >
     static inline bounded_matrix<double, TNumNodes, 1> GetVariableVectorMatrix(
-        const GeometryType& nodes,
+        const GeometryType& Nodes,
         const Variable<double>& rVarName,
-        const unsigned int step = 0
+        const unsigned int Step = 0
         )
     {
         /* DEFINITIONS */        
@@ -854,7 +884,7 @@ public:
         
         for (unsigned int i_node = 0; i_node < TNumNodes; i_node++)
         {
-            var_vector(i_node, 0) = nodes[i_node].FastGetSolutionStepValue(rVarName, step);
+            var_vector(i_node, 0) = Nodes[i_node].FastGetSolutionStepValue(rVarName, Step);
         }
         
         return var_vector;
@@ -862,14 +892,14 @@ public:
 
     /**
      * It calculates the vector of a non-historical variable of a geometry
-     * @param nodes: The geometry to calculate
+     * @param Nodes: The geometry to calculate
      * @param rVarName: The name of the variable to calculate
      * @return var_vector: The vector containing the variables of the geometry
      */
         
     template< unsigned int TNumNodes >
     static inline array_1d<double, TNumNodes> GetVariableVector(
-        const GeometryType& nodes,
+        const GeometryType& Nodes,
         const Variable<double>& rVarName
         )
     {
@@ -878,7 +908,7 @@ public:
         
         for (unsigned int i_node = 0; i_node < TNumNodes; i_node++)
         {
-            var_vector[i_node] = nodes[i_node].GetValue(rVarName);
+            var_vector[i_node] = Nodes[i_node].GetValue(rVarName);
         }
         
         return var_vector;
@@ -886,14 +916,14 @@ public:
     
     /**
      * It calculates the vector of a non-historical variable of a geometry
-     * @param nodes: The geometry to calculate
+     * @param Nodes: The geometry to calculate
      * @param rVarName: The name of the variable to calculate
      * @return var_vector: The vector containing the variables of the geometry
      */
     
     template< unsigned int TNumNodes >
     static inline bounded_matrix<double, TNumNodes, 1> GetVariableVectorMatrix(
-        const GeometryType& nodes,
+        const GeometryType& Nodes,
         const Variable<double>& rVarName
         )
     {
@@ -902,10 +932,41 @@ public:
         
         for (unsigned int i_node = 0; i_node < TNumNodes; i_node++)
         {
-            var_vector(i_node, 0) = nodes[i_node].GetValue(rVarName);
+            var_vector(i_node, 0) = Nodes[i_node].GetValue(rVarName);
         }
         
         return var_vector;
+    }
+    
+    /**
+     * It calculates the matrix of a variable of a geometry
+     * @param Nodes: The geometry to calculate
+     * @param rVarName: The name of the variable to calculate
+     * @param step: The step where calculate
+     * @return var_matrix: The matrix containing the variables of the geometry
+     */
+    
+    static inline Matrix GetVariableMatrix(
+        const GeometryType& Nodes,
+        const Variable<array_1d<double,3> >& rVarName,
+        const unsigned int& Step
+        )
+    {
+        /* DEFINITIONS */        
+        const std::size_t num_nodes = Nodes.size();
+        const std::size_t dim = Nodes.WorkingSpaceDimension();
+        Matrix var_matrix(num_nodes, dim);
+        
+        for (unsigned int i_node = 0; i_node < num_nodes; i_node++)
+        {
+            const array_1d<double, 3> value = Nodes[i_node].FastGetSolutionStepValue(rVarName, Step);
+            for (unsigned int i_dof = 0; i_dof < dim; i_dof++)
+            {
+                var_matrix(i_node, i_dof) = value[i_dof];
+            }
+        }
+        
+        return var_matrix;
     }
     
     /**
@@ -920,7 +981,7 @@ public:
     static inline Matrix GetVariableMatrix(
         const GeometryType& Nodes,
         const Variable<array_1d<double,3> >& rVarName,
-        const unsigned int step
+        const unsigned int& Step
         )
     {
         /* DEFINITIONS */        
@@ -928,7 +989,7 @@ public:
         
         for (unsigned int i_node = 0; i_node < TNumNodes; i_node++)
         {
-            const array_1d<double, 3> value = Nodes[i_node].FastGetSolutionStepValue(rVarName, step);
+            const array_1d<double, 3> value = Nodes[i_node].FastGetSolutionStepValue(rVarName, Step);
             for (unsigned int i_dof = 0; i_dof < TDim; i_dof++)
             {
                 var_matrix(i_node, i_dof) = value[i_dof];
