@@ -36,23 +36,34 @@ namespace Kratos
     /// Print object's data.
     void LoggerTable::PrintData(std::ostream& rOStream) const
     {
-        rOStream << mMessage;
+        rOStream << mTable;
     }
 
     /// char stream function
     LoggerTable& LoggerTable::operator << (const char * rString)
     {
-        mMessage.append(rString);
+        mTable << rString;
 
         return *this;
     }
 
+    template<class StreamValueType>
+    LoggerTable& LoggerTable::operator<< (StreamValueType const& rValue)
+    {
+        std::stringstream buffer;
+        buffer << rValue;
+
+        mTable << buffer.str();
+
+        return *this;
+    }
+    
     LoggerTable& LoggerTable::operator << (std::ostream& (*pf)(std::ostream&))
     {
         std::stringstream buffer;
         pf(buffer);
 
-        mMessage.append(buffer.str());
+        mTable << buffer.str();
 
         return *this;
     }
@@ -64,7 +75,8 @@ namespace Kratos
         return *this;
     }
 
-    LoggerTable& LoggerTable::operator << (Category const& TheCategory) {
+    LoggerTable& LoggerTable::operator << (Category const& TheCategory) 
+    {
         mCategory = TheCategory;
 
         return *this;

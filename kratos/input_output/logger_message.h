@@ -220,9 +220,9 @@ namespace Kratos
 		std::ostream& operator << (std::ostream& rOStream,
 			const LoggerMessage& rThis);
 
-		///@}
-		///@name macros
-		///@{
+            ///@}
+            ///@name Kratos Macros
+            ///@{
 
 
 		///@}

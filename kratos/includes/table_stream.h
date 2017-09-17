@@ -15,12 +15,17 @@
 #ifndef KRATOS_TABLE_STREAM_H_INCLUDED
 #define KRATOS_TABLE_STREAM_H_INCLUDED
 
+// System includes
+#include <typeinfo>
 #include <iostream>
 #include <iomanip>
 #include <vector>
 #include <string>
 #include <sstream>
 #include <cmath>
+// External includes
+
+// Project includes
 
 namespace Kratos 
 {
@@ -217,13 +222,10 @@ public:
      */
     void AddColumn(
         const std::string& HeaderName, 
-        const int ColumnWidth
+        const unsigned int ColumnWidth = 10
         )
     {
-        if (ColumnWidth < 4)
-        {
-            KRATOS_ERROR << "Column size has to be >= 4" << std::endl;
-        }
+        if (ColumnWidth < 4) throw std::invalid_argument( "Column size has to be >= 4" );
 
         mColumnHeaders.push_back(HeaderName);
         mColumnWidths.push_back(ColumnWidth);

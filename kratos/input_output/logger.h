@@ -34,7 +34,6 @@ namespace Kratos
   ///@name Kratos Macros
   ///@{ 
 
-
   ///@} 
   ///@name Type Definitions
   ///@{ 

@@ -35,8 +35,6 @@ namespace Kratos
 ///@name Type Definitions
 ///@{
     
-    typedef TableStream TableStreamType;
-    
 ///@}
 ///@name  Enum's
 ///@{
@@ -63,6 +61,8 @@ public:
     ///@name Type Definitions
     ///@{
 
+    typedef TableStream TableStreamType;
+    
     using TimePointType = std::chrono::steady_clock::time_point;
 
     ///@}
@@ -90,26 +90,64 @@ public:
     ///@}
     ///@name Life Cycle
     ///@{
+    
+    // Class Constructor
+    
+    /**
+     * The default constructor
+     */
+    
+    LoggerTable(const bool UseBoldFont = true) 
+        : mTable(&std::cout, "|", UseBoldFont), 
+          mLevel(1), 
+          mSeverity(Severity::INFO), 
+          mCategory(Category::STATUS)
+    {
+        // TODO: Add something if necessary
+    }
 
-    LoggerTable() : mMessage(), mLevel(1), mSeverity(Severity::INFO), mCategory(Category::STATUS) {}
+    /**
+     * The constructor with table
+     */
+    
+    LoggerTable(
+        TableStream const& TheTable,
+        const bool UseBoldFont = true
+        ) 
+        : mTable(TheTable), 
+          mLevel(1), 
+          mSeverity(Severity::INFO), 
+          mCategory(Category::STATUS)
+    {
+        // TODO: Add something if necessary
+    }
 
-    LoggerTable(std::string const& TheMessage) 
-        : mMessage(TheMessage), mLevel(1), mSeverity(Severity::INFO), mCategory(Category::STATUS) {}
-
+    /**
+     * The copy constructor
+     */
     LoggerTable(LoggerTable const& Other) 
-        : mMessage(Other.mMessage), mLevel(Other.mLevel), mSeverity(Other.mSeverity), mCategory(Other.mCategory) {}
+        : mTable(Other.mTable), 
+          mLevel(Other.mLevel), 
+          mSeverity(Other.mSeverity), 
+          mCategory(Other.mCategory)
+    {
+        // TODO: Add something if necessary
+    }
 
     /// Destructor.
     virtual ~LoggerTable() {}
-
 
     ///@}
     ///@name Operators
     ///@{
 
+    /**
+     * The assigning operator 
+     * @param Other: The logger to copy
+     */
     LoggerTable& operator=(LoggerTable const& Other) 
     {
-        mMessage = Other.mMessage;
+        mTable = Other.mTable;
         mLevel = Other.mLevel;
         mSeverity = Other.mSeverity;
         mCategory = Other.mCategory;
@@ -126,56 +164,133 @@ public:
     ///@name Access
     ///@{
 
-    void SetMessage(std::string const& TheMessage) +
+    /**
+     * This function sets the table
+     * @param TheTable: The table to set
+     */
+    void GetTable(TableStream const& TheTable)
     {
-        mMessage = TheMessage;
+        mTable = TheTable;
     }
 
-    std::string const& GetMessage() const 
+    /**
+     * This function recovers the table
+     * @return mMessage: The table to set
+     */
+    TableStream const& GetMessage() const 
     {
-        return mMessage;
+        return mTable;
     }
 
+    /**
+     * This function sets the level
+     * @param TheLevel: The level
+     */
     void SetLevel(std::size_t TheLevel) 
     {
         mLevel = TheLevel;
     }
 
+    /**
+     * This function gets the level
+     * @return mLevel: The level
+     */
     std::size_t GetLevel() const 
     {
         return mLevel;
     }
 
+    /**
+     * This function sets the severity
+     * @param TheSeverity: The severity
+     */
     void SetSeverity(Severity const& TheSeverity) 
     {
         mSeverity = TheSeverity;
     }
 
+    /**
+     * This function gets the severity
+     * @return mSeverity: The severity
+     */
     Severity GetSeverity() const 
     {
         return mSeverity;
     }
 
+    /**
+     * This function sets the category
+     * @param TheCategory: The category
+     */
     void SetCategory(Category const& TheCategory) 
     {
         mCategory = TheCategory;
     }
 
+    /**
+     * This function gets the category
+     * @return mCategory: The category
+     */
     Category GetCategory() const 
     {
         return mCategory;
     }
 
+    /**
+     * This function sets the time
+     */
     void SetTime() 
     {
         mTime = std::chrono::steady_clock::now();
     }
 
+    /**
+     * This function gets the time
+     * @return mTime: The time
+     */
     TimePointType const& GetTime() const 
     {
         return mTime;
     }
 
+    /**
+     * This function prints the header of the table
+     */
+    void PrintTableHeader()
+    {
+        mTable.PrintHeader();
+    }
+    
+    /**
+     * This function prints the footer of the table
+     */
+    void PrintTableFooter()
+    {
+        mTable.PrintFooter();
+    }
+    
+    /**
+     * It adds a column to the table
+     * @param ThisName: The name of the variable
+     * @param ThisSpaces: The number of spaces to consider
+     */
+    void AddColumnToTable(        
+        std::string ThisName, 
+        const unsigned int ThisSpaces = 10
+        )
+    {
+        mTable.AddColumn(ThisName, ThisSpaces);
+    }
+    
+    /**
+     * This function sets if the table uses the bold UseBoldFont
+     * @param UseBoldFont: If the bold font is used
+     */
+    void SetBoldTable(const bool UseBoldFont) 
+    {
+        mTable.SetBold(UseBoldFont);
+    }
+    
     ///@}
     ///@name Inquiry
     ///@{
@@ -195,15 +310,7 @@ public:
 
     /// string stream function
     template<class StreamValueType>
-    LoggerTable& operator << (StreamValueType const& rValue)
-    {
-        std::stringstream buffer;
-        buffer << rValue;
-
-        mMessage.append(buffer.str());
-
-        return *this;
-    }
+    LoggerTable& operator << (StreamValueType const& rValue);
 
     /// Manipulator stream function
     LoggerTable& operator << (std::ostream& (*pf)(std::ostream&));
@@ -227,12 +334,11 @@ private:
     ///@name Member Variables
     ///@{
 
-    std::string mMessage;
-    std::size_t mLevel;
-    Severity mSeverity;
-    Category mCategory;
-    TimePointType mTime;
-    TableStreamType mTable;
+    TableStreamType mTable; // The table used as ouput
+    std::size_t mLevel;     // The level of the message
+    Severity mSeverity;     // The severity of the message
+    Category mCategory;     // The category of the message
+    TimePointType mTime;    // The time
 
     ///@}
 }; // Class LoggerTable
@@ -247,7 +353,7 @@ std::ostream& operator << (std::ostream& rOStream,
     const LoggerTable& rThis);
 
 ///@}
-///@name macros
+///@name Kratos Macros
 ///@{
 
 ///@}
