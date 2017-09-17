@@ -168,7 +168,7 @@ public:
      * This function sets the table
      * @param TheTable: The table to set
      */
-    void GetTable(TableStream const& TheTable)
+    void SetTable(TableStream const& TheTable)
     {
         mTable = TheTable;
     }
@@ -177,7 +177,7 @@ public:
      * This function recovers the table
      * @return mMessage: The table to set
      */
-    TableStream const& GetMessage() const 
+    TableStream const& GetTable() const 
     {
         return mTable;
     }
@@ -310,7 +310,15 @@ public:
 
     /// string stream function
     template<class StreamValueType>
-    LoggerTable& operator << (StreamValueType const& rValue);
+    LoggerTable& operator << (StreamValueType const& rValue)
+    {
+        std::stringstream buffer;
+        buffer << rValue;
+
+        mTable << buffer.str();
+
+        return *this;
+    }
 
     /// Manipulator stream function
     LoggerTable& operator << (std::ostream& (*pf)(std::ostream&));

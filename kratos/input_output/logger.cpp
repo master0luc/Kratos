@@ -4,11 +4,12 @@
 //   _|\_\_|  \__,_|\__|\___/ ____/
 //                   Multi-Physics
 //
-//  License:		 BSD License
-//					 Kratos default license: kratos/license.txt
+//  License:         BSD License
+//                     Kratos default license: kratos/license.txt
 //
 //  Main authors:    Pooyan Dadvand
 //                   Carlos Roig
+//                   Vicente Mataix Ferrandiz
 //
 
 
@@ -22,74 +23,100 @@
 #include "includes/define.h"
 #include "input_output/logger.h"
 
-
 namespace Kratos
 {
+    Logger::Logger(const bool UseTable)
+    {
+        mUseTable = UseTable;
+    }
 
-	Logger::Logger()
-	{
-	}
+    Logger::~Logger()
+    {
+        auto outputs = GetOutputsInstance();
+        #pragma omp critical
+        {
+            for (auto i_output = outputs.begin(); i_output != outputs.end(); i_output++)
+                i_output->WriteMessage(mCurrentMessage);
+        }
+    }
 
-	Logger::~Logger()
-	{
-		auto outputs = GetOutputsInstance();
-		#pragma omp critical
-		{
-			for (auto i_output = outputs.begin(); i_output != outputs.end(); i_output++)
-				i_output->WriteMessage(mCurrentMessage);
-		}
-	}
-
-	void Logger::AddOutput(LoggerOutput const& TheOutput)
-	{
-		#pragma omp critical
-		{
-		  GetOutputsInstance().push_back(TheOutput);
-		}
-	}
+    void Logger::AddOutput(LoggerOutput const& TheOutput)
+    {
+        #pragma omp critical
+        {
+          GetOutputsInstance().push_back(TheOutput);
+        }
+    }
 
     std::string Logger::Info() const
-	{
-		return "Logger";
-	}
+    {
+        return "Logger";
+    }
 
       /// Print information about this object.
     void Logger::PrintInfo(std::ostream& rOStream) const
-	{
-	}
+    {
+    }
       /// Print object's data.
     void Logger::PrintData(std::ostream& rOStream) const
-	{
-	}
+    {
+    }
 
-	/// char stream function
-	Logger& Logger::operator << (const char * rString)
-	{
-		mCurrentMessage << rString;
+    /// char stream function
+    Logger& Logger::operator << (const char * rString)
+    {
+        if (mUseTable == false)
+        {
+            mCurrentMessage << rString;
+        }
+        else
+        {
+            mCurrentTable << rString;
+        }
 
-		return *this;
-	}
+        return *this;
+    }
 
-	Logger& Logger::operator << (std::ostream& (*pf)(std::ostream&))
-	{
-		mCurrentMessage << pf;
+    Logger& Logger::operator << (std::ostream& (*pf)(std::ostream&))
+    {
+        if (mUseTable == false)
+        {
+            mCurrentMessage << pf;
+        }
+        else
+        {
+            mCurrentTable << pf;
+        }
 
-		return *this;
-	}
+        return *this;
+    }
 
-	Logger& Logger::operator << (Severity const& TheSeverity)
-	{
-		mCurrentMessage << TheSeverity;
+    Logger& Logger::operator << (Severity const& TheSeverity)
+    {
+//         if (mUseTable == false) FIXME: Try to use template instead of boolean member class!!!!
+//         {
+            mCurrentMessage << TheSeverity;
+//         }
+//         else
+//         {
+//             mCurrentTable << TheSeverity;
+//         }
 
-		return *this;
-	}
+        return *this;
+    }
 
-	Logger& Logger::operator << (Category const& TheCategory) {
-		mCurrentMessage << TheCategory;
+    Logger& Logger::operator << (Category const& TheCategory) 
+    {
+//         if (mUseTable == false)
+//         {
+            mCurrentMessage << TheCategory;
+//         }
+//         else
+//         {
+//             mCurrentTable << TheCategory;
+//         }
 
-		return *this;
-	}
-
-
+        return *this;
+    }
 
 }  // namespace Kratos.

@@ -4,13 +4,14 @@
 //   _|\_\_|  \__,_|\__|\___/ ____/
 //                   Multi-Physics 
 //
-//  License:		 BSD License 
-//					 Kratos default license: kratos/license.txt
+//  License:         BSD License 
+//                     Kratos default license: kratos/license.txt
 //
 //  Main authors:    Pooyan Dadvand
 //                   Carlos Roig 
+//                   Vicente Mataix Ferrandiz
 //
-	           
+               
 
 #if !defined(KRATOS_LOGGER_H_INCLUDED )
 #define  KRATOS_LOGGER_H_INCLUDED
@@ -20,11 +21,10 @@
 #include <iostream> 
 
 // Project includes
+#include "input_output/logger_table.h"
 #include "input_output/logger_message.h"
 #include "input_output/logger_output.h"
 #include "includes/exception.h"
-
-
 
 namespace Kratos
 {
@@ -52,48 +52,50 @@ namespace Kratos
   
   /// Logger is in charge of writing the messages to output streams.
   /** Logger is the main class in message writing pipeline which holds an 
-	  array of logger outputs and dispach the arriving logger messages 
-	  to them. Implements a singletone for the list of the outputs and
-	  also has public constructors and destructors to perform the 
-	  streaming.
+      array of logger outputs and dispach the arriving logger messages 
+      to them. Implements a singletone for the list of the outputs and
+      also has public constructors and destructors to perform the 
+      streaming.
   */
   class KRATOS_API(KRATOS_CORE) Logger
-    {
-    public:
+  {
+  public:
       ///@name Type Definitions
       ///@{
       
-		using LoggerOutputContainerType = std::vector<LoggerOutput>;
-	  ///@}
-	  ///@name Enums
-	  ///@{
+      typedef TableStream TableStreamType;
+      
+      using LoggerOutputContainerType = std::vector<LoggerOutput>;
+      
+      ///@}
+      ///@name Enums
+      ///@{
 
-		using Severity = LoggerMessage::Severity;
+      using Severity = LoggerMessage::Severity;
 
-		using Category = LoggerMessage::Category;
+      using Category = LoggerMessage::Category;
 
-	  ///@}
+      ///@}
       ///@name Life Cycle 
       ///@{ 
       
       /// Default constructor.
-      Logger();
+      Logger(const bool UseTable = false);
 
 
-	  /// Avoiding Logger to be copied
-	  Logger(Logger const& rOther) = delete;
+      /// Avoiding Logger to be copied
+      Logger(Logger const& rOther) = delete;
 
 
       /// Destructor is in charge of passing the message into outputs
       virtual ~Logger();
-      
 
       ///@}
       ///@name Operators 
       ///@{
       
-	  /// Loggers can not be assigned.
-	  Logger& operator=(Logger const& rOther) = delete;
+      /// Loggers can not be assigned.
+      Logger& operator=(Logger const& rOther) = delete;
 
       ///@}
       ///@name Operations
@@ -104,23 +106,70 @@ namespace Kratos
       ///@name Static Methods
       ///@{
       
-	  static LoggerOutputContainerType& GetOutputsInstance()
-	  {
-		  static LoggerOutputContainerType instance;
-		  return instance;
-	  }
+      static LoggerOutputContainerType& GetOutputsInstance()
+      {
+          static LoggerOutputContainerType instance;
+          return instance;
+      }
 
-	  static void AddOutput(LoggerOutput const& TheOutput);
+      static void AddOutput(LoggerOutput const& TheOutput);
 
-    
       ///@}
       ///@name Access
       ///@{ 
 
-	  std::string const& GetCurrentMessage() {
-		  return mCurrentMessage.GetMessage();
-	  }
+      void SetUseTable(const bool UseTable)
+      {
+          mUseTable = UseTable;
+      }
       
+      std::string const& GetCurrentMessage() 
+      {
+          return mCurrentMessage.GetMessage();
+      }
+      
+      TableStream const& GetCurrentTable() 
+      {
+          return mCurrentTable.GetTable();
+      }
+      
+      /**
+       * This function prints the header of the table
+       */
+       void StartTable()
+       {
+           if (mUseTable == true) mCurrentTable.PrintTableHeader();
+       }
+        
+      /**
+       * This function prints the footer of the table
+       */
+       void EndTable()
+       {
+           if (mUseTable == true) mCurrentTable.PrintTableFooter();
+       }
+        
+      /**
+       * It adds a column to the table
+       * @param ThisName: The name of the variable
+       * @param ThisSpaces: The number of spaces to consider
+       */
+      void AddColumnToTable(        
+        std::string ThisName, 
+        const unsigned int ThisSpaces = 10
+        )
+      {
+          if (mUseTable == true) mCurrentTable.AddColumnToTable(ThisName, ThisSpaces);
+      }
+        
+      /**
+       * This function sets if the table uses the bold UseBoldFont
+       * @param UseBoldFont: If the bold font is used
+       */
+      void SetBoldTable(const bool UseBoldFont) 
+      {
+          if (mUseTable == true) mCurrentTable.SetBoldTable(UseBoldFont);
+      }
       
       ///@}
       ///@name Inquiry
@@ -140,40 +189,48 @@ namespace Kratos
       /// Print object's data.
       virtual void PrintData(std::ostream& rOStream) const;
       
+      /// string stream function
+      template<class StreamValueType>
+      Logger& operator << (StreamValueType const& rValue)
+      {
+          if (mUseTable == false)
+          {
+              mCurrentMessage << rValue;
+          }
+          else
+          {
+              mCurrentTable << rValue;
+          }
 
-	  /// string stream function
-	  template<class StreamValueType>
-	  Logger& operator << (StreamValueType const& rValue)
-	  {
-		  mCurrentMessage << rValue;
+          return *this;
+      }
 
-		  return *this;
-	  }
+      /// Manipulator stream function
+      Logger& operator << (std::ostream& (*pf)(std::ostream&));
 
-	  /// Manipulator stream function
-	  Logger& operator << (std::ostream& (*pf)(std::ostream&));
+      /// char stream function
+      Logger& operator << (const char * rString);
 
-	  /// char stream function
-	  Logger& operator << (const char * rString);
+      /// Severity stream function
+      Logger& operator << (Severity const& TheSeverity);
 
-	  /// Severity stream function
-	  Logger& operator << (Severity const& TheSeverity);
-
-	  /// Category stream function
-	  Logger& operator << (Category const& TheCategory);
-
+      /// Category stream function
+      Logger& operator << (Category const& TheCategory);
 
       ///@}      
-     private:
+  private:
       ///@name Static Member Variables 
       ///@{ 
-        
         
       ///@} 
       ///@name Member Variables 
       ///@{ 
         
-		 LoggerMessage mCurrentMessage;
+      LoggerMessage mCurrentMessage;
+      
+      LoggerTable mCurrentTable;
+      
+      bool mUseTable;
         
       ///@} 
       ///@name Private Operators
@@ -217,11 +274,11 @@ namespace Kratos
  
   /// input stream function
   inline std::istream& operator >> (std::istream& rIStream, 
-				    Logger& rThis);
+                    Logger& rThis);
 
   /// output stream function
   inline std::ostream& operator << (std::ostream& rOStream, 
-				    const Logger& rThis)
+                    const Logger& rThis)
     {
       rThis.PrintInfo(rOStream);
       rOStream << std::endl;

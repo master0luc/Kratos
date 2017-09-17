@@ -47,17 +47,6 @@ namespace Kratos
         return *this;
     }
 
-    template<class StreamValueType>
-    LoggerTable& LoggerTable::operator<< (StreamValueType const& rValue)
-    {
-        std::stringstream buffer;
-        buffer << rValue;
-
-        mTable << buffer.str();
-
-        return *this;
-    }
-    
     LoggerTable& LoggerTable::operator << (std::ostream& (*pf)(std::ostream&))
     {
         std::stringstream buffer;
