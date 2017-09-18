@@ -582,7 +582,6 @@ namespace Kratos
                 rOutput[point_number] = integration_weight * StrainEnergy;  // 1/2 * sigma * epsilon
             } 
         }
-
         else if ( rVariable == ERROR_INTEGRATION_POINT )
         {
             const unsigned int number_of_nodes = GetGeometry().size();
@@ -633,20 +632,19 @@ namespace Kratos
                     integration_weight *= this->GetProperties()[THICKNESS];
                 }
 
-                //calculate recovered stresses at integration points 
+                // Calculate recovered stresses at integration points 
                 Vector sigma_recovered(strain_size,0);
                 
-                for (int stress_component=0; stress_component<strain_size; stress_component++)
+                for (unsigned int stress_component=0; stress_component<strain_size; stress_component++)
                 {
                     // sigma_recovered = sum(N_i * sigma_recovered_i)
-                    for (int node_number=0; node_number<number_of_nodes; node_number++)
+                    for (unsigned int node_number=0; node_number<number_of_nodes; node_number++)
                     {
                         sigma_recovered[stress_component]+= this_kinematic_variables.N[node_number]*GetGeometry()[node_number].GetValue(RECOVERED_STRESS)[stress_component];
                     }
                 }
-                std::cout<<"sigma recovered:"<<sigma_recovered<<std::endl;
-                std::cout<<"sigma        FE:"<<sigma_FE_solution[point_number]<<std::endl;
-                //calculate error_sigma
+
+                // Calculate error_sigma
                 Vector error_sigma(strain_size);
                 error_sigma = sigma_recovered - sigma_FE_solution[point_number];
 
@@ -655,10 +653,9 @@ namespace Kratos
                 double detD;
                 MathUtils<double>::InvertMatrix(this_constitutive_variables.D, invD,detD);
                 //calculate error_energy 
-                rOutput[point_number]= integration_weight*inner_prod(error_sigma,prod(invD,error_sigma));
+                rOutput[point_number]= integration_weight * inner_prod(error_sigma,prod(invD, error_sigma));
             } 
         }
-
         else if ( rVariable == STRAIN_ENERGY )
         {
             const unsigned int number_of_nodes = GetGeometry().size();
