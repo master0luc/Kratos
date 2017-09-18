@@ -406,10 +406,10 @@ public:
         const array_1d<double,3> zero_vect = ZeroVector(3);
         
         NodesArrayType& nodes_array = rModelPart.Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size()); 
+        const std::size_t num_nodes = static_cast<std::size_t>(nodes_array.size()); 
         
         #pragma omp parallel for
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
             it_node->SetValue(NORMAL, zero_vect);
@@ -417,10 +417,10 @@ public:
         
         // Sum all the nodes normals
         ConditionsArrayType& conditions_array = rModelPart.Conditions();
-        const int num_conditions = static_cast<int>(conditions_array.size());
+        const std::size_t num_conditions = static_cast<std::size_t>(conditions_array.size());
         
         #pragma omp parallel for
-        for(int i = 0; i < num_conditions; i++) 
+        for(std::size_t i = 0; i < num_conditions; i++) 
         {
             auto it_cond = conditions_array.begin() + i;
             
@@ -449,7 +449,7 @@ public:
         }
 
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
 
@@ -477,10 +477,10 @@ public:
         const array_1d<double,3> zero_vect = ZeroVector(3);
         
         NodesArrayType& nodes_array = rModelPart.Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size()); 
+        const std::size_t num_nodes = static_cast<std::size_t>(nodes_array.size()); 
         
         #pragma omp parallel for
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
             it_node->SetValue(NODAL_AREA, 0.0);
@@ -493,10 +493,10 @@ public:
         
         // Sum all the nodes normals
         ConditionsArrayType& conditions_array = rModelPart.Conditions();
-        const int numConditions = static_cast<int>(conditions_array.size());
+        const std::size_t numConditions = static_cast<std::size_t>(conditions_array.size());
         
         #pragma omp parallel for
-        for(int i = 0; i < numConditions; i++) 
+        for(std::size_t i = 0; i < numConditions; i++) 
         {
             auto it_cond = conditions_array.begin() + i;
             
@@ -520,7 +520,7 @@ public:
         }
         
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
 
@@ -538,7 +538,7 @@ public:
         }
 
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
 
@@ -579,10 +579,10 @@ public:
         const Matrix I = IdentityMatrix(dimension, dimension);
 
         NodesArrayType& nodes_array = rModelPart.Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size()); 
+        const std::size_t num_nodes = static_cast<std::size_t>(nodes_array.size()); 
         
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
             it_node->SetValue(DELTA_NORMAL, zero_delta_normal);
@@ -747,7 +747,7 @@ public:
         }
         
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
             const array_1d<double, 3>& nj = it_node->GetValue(NORMAL); // nodal non-normalized normal (this function is called before normalization)
@@ -787,7 +787,7 @@ public:
         
         const Matrix new_delta_disp = 0.25 * DeltaTime * (GetVariableMatrix(ThisGeometry, VELOCITY, 0) + GetVariableMatrix(ThisGeometry, VELOCITY, 1)) + 0.125 * DeltaTime * DeltaTime * GetVariableMatrix(ThisGeometry, ACCELERATION, 1);
         
-        const Vector new_delta_disp_center = prod(new_delta_disp, N);
+        const Vector new_delta_disp_center = prod(trans(new_delta_disp), N);
         
         center.Coordinates() += new_delta_disp_center;
         

@@ -47,7 +47,7 @@ class ALMContactProcess(python_process.PythonProcess):
             "use_exact_integration"       : true,
             "hard_clear_after_step"       : false,
             "database_step_update"        : 1,
-            "integration_order"           : 2,
+            "integration_order"           : 3,
             "predict_with_linear_solver"  : false,
             "max_gap_factor"              : 0.0,
             "linear_solver_settings"      : {

@@ -135,10 +135,10 @@ public:
         mBucketSize = ThisParameters["bucket_size"].GetInt();
         
         NodesArrayType& nodes_array = mrMainModelPart.Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size());
+        const std::size_t num_nodes = static_cast<std::size_t>(nodes_array.size());
         
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
             it_node->Set(ACTIVE, false);
@@ -146,10 +146,10 @@ public:
         
         // Iterate in the conditions
         ConditionsArrayType& conditions_array = mrMainModelPart.Conditions();
-        const int num_conditions = static_cast<int>(conditions_array.size());
+        const std::size_t num_conditions = static_cast<std::size_t>(conditions_array.size());
 
         #pragma omp parallel for 
-        for(int i = 0; i < num_conditions; i++) 
+        for(std::size_t i = 0; i < num_conditions; i++) 
         {
             auto it_cond = conditions_array.begin() + i;
             
@@ -175,10 +175,10 @@ public:
     {
         // Iterate in the conditions
         ConditionsArrayType& conditions_array = mrMainModelPart.Conditions();
-        const int num_conditions = static_cast<int>(conditions_array.size());
+        const std::size_t num_conditions = static_cast<std::size_t>(conditions_array.size());
 
 //         #pragma omp parallel for 
-        for(int i = 0; i < num_conditions; i++) 
+        for(std::size_t i = 0; i < num_conditions; i++) 
         {
             auto it_cond = conditions_array.begin() + i;
 
@@ -196,10 +196,10 @@ public:
         ResetContactOperators();
         
         NodesArrayType& nodes_array = mrMainModelPart.Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size());
+        const std::size_t num_nodes = static_cast<std::size_t>(nodes_array.size());
         
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
             
@@ -216,10 +216,10 @@ public:
         ResetContactOperators();
         
         NodesArrayType& nodes_array = mrMainModelPart.Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size());
+        const std::size_t num_nodes = static_cast<std::size_t>(nodes_array.size());
         
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
             
@@ -240,10 +240,10 @@ public:
         ResetContactOperators();
         
         NodesArrayType& nodes_array = mrMainModelPart.Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size());
+        const std::size_t num_nodes = static_cast<std::size_t>(nodes_array.size());
         
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
             
@@ -262,10 +262,10 @@ public:
     void PartialClearScalarMortarConditions()
     {
         NodesArrayType& nodes_array = mrMainModelPart.Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size());
+        const std::size_t num_nodes = static_cast<std::size_t>(nodes_array.size());
         
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
             if (it_node->Is(ACTIVE) == false)
@@ -282,10 +282,10 @@ public:
     void PartialClearComponentsMortarConditions()
     {
         NodesArrayType& nodes_array = mrMainModelPart.Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size());
+        const std::size_t num_nodes = static_cast<std::size_t>(nodes_array.size());
         
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
             if (it_node->Is(ACTIVE) == false)
@@ -302,10 +302,10 @@ public:
     void PartialClearALMFrictionlessMortarConditions()
     {
         NodesArrayType& nodes_array = mrMainModelPart.Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size());
+        const std::size_t num_nodes = static_cast<std::size_t>(nodes_array.size());
         
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
             if (it_node->Is(ACTIVE) == false)
@@ -323,10 +323,10 @@ public:
     {
         // Iterate in the conditions
         ConditionsArrayType& conditions_array = mrMainModelPart.Conditions();
-        const int num_conditions = static_cast<int>(conditions_array.size());
+        const std::size_t num_conditions = static_cast<std::size_t>(conditions_array.size());
 
         #pragma omp for nowait schedule(static)
-        for(int i = 0; i < num_conditions; i++) 
+        for(std::size_t i = 0; i < num_conditions; i++) 
         {
             auto it_cond = conditions_array.begin() + i;
             
@@ -344,12 +344,14 @@ public:
     
     void UpdatePointListMortar()
     {
-        const int num_points = static_cast<int>(mPointListDestination.size());
+        const double& delta_time = mrMainModelPart.GetProcessInfo()[DELTA_TIME];
+        
+        const std::size_t num_points = static_cast<std::size_t>(mPointListDestination.size());
         
         #pragma omp parallel for 
-        for(int i = 0; i < num_points; i++) 
+        for(std::size_t i = 0; i < num_points; i++) 
         {
-            mPointListDestination[i]->UpdatePoint();
+            mPointListDestination[i]->UpdatePoint(delta_time);
         }
     }
 
@@ -367,6 +369,8 @@ public:
         
         // Calculate the mean of the normal in all the nodes
         ContactUtilities::ComputeNodesMeanNormalModelPart(mrMainModelPart); 
+        
+        const double& delta_time = mrMainModelPart.GetProcessInfo()[DELTA_TIME];
         
 //         #pragma omp parallel 
 //         {
@@ -391,8 +395,16 @@ public:
                 if (it_cond->Is(SLAVE) == true)
                 {
                     if (mSearchTreeType == KdtreeInRadius)
-                    {                        
-                        const Point<3> center = it_cond->GetGeometry().Center();
+                    {                  
+                        Point<3> center;
+                        if (mrMainModelPart.NodesBegin()->SolutionStepsDataHas(VELOCITY_X) == true)
+                        {
+                            Point<3> center = ContactUtilities::GetHalfJumpCenter(it_cond->GetGeometry(), delta_time); // NOTE: Center in half delta time
+                        }
+                        else
+                        {
+                            center = it_cond->GetGeometry().Center(); // NOTE: Real center
+                        }
                         const double search_radius = mSearchFactor * Radius(it_cond->GetGeometry());
 
                         number_points_found = tree_points.SearchInRadius(center, search_radius, points_found.begin(), mAllocationSize);
@@ -602,10 +614,10 @@ public:
     void CleanMortarConditions()
     {
         ConditionsArrayType& conditions_array = mrMainModelPart.Conditions();
-        const int num_conditions = static_cast<int>(conditions_array.size());
+        const std::size_t num_conditions = static_cast<std::size_t>(conditions_array.size());
 
         #pragma omp parallel for 
-        for(int i = 0; i < num_conditions; i++) 
+        for(std::size_t i = 0; i < num_conditions; i++) 
         {
             auto it_cond = conditions_array.begin() + i;
             if ( (it_cond)->Is(ACTIVE) == true )
@@ -659,9 +671,9 @@ public:
     {
         // Iterate in the conditions
         ConditionsArrayType& conditions_array = mrMainModelPart.Conditions();
-        const int num_conditions = static_cast<int>(conditions_array.size());
+        const std::size_t num_conditions = static_cast<std::size_t>(conditions_array.size());
 
-        for(int i = 0; i < num_conditions; i++) 
+        for(std::size_t i = 0; i < num_conditions; i++) 
         {
             auto it_cond = conditions_array.begin() + i;
             
@@ -677,9 +689,9 @@ public:
         }
         
         NodesArrayType& nodes_array = mrMainModelPart.Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size());
+        const std::size_t num_nodes = static_cast<std::size_t>(nodes_array.size());
         
-        for(int i = 0; i < num_nodes; i++) 
+        for(std::size_t i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;
             
@@ -814,10 +826,10 @@ protected:
     void ResetContactOperators()
     {
         ConditionsArrayType& conditions_array = mrMainModelPart.Conditions();
-        const int num_conditions = static_cast<int>(conditions_array.size());
+        const std::size_t num_conditions = static_cast<std::size_t>(conditions_array.size());
         
         #pragma omp parallel for 
-        for(int i = 0; i < num_conditions; i++) 
+        for(std::size_t i = 0; i < num_conditions; i++) 
         {
             auto it_cond = conditions_array.begin() + i;
             if (it_cond->Is(SLAVE) == true && it_cond->Is(ACTIVE) == true)
