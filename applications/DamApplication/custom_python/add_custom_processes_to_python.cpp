@@ -12,6 +12,7 @@
 // Project includes
 #include "includes/define.h"
 #include "includes/model_part.h"
+#include "includes/table.h"
 #include "processes/process.h"
 #include "custom_python/add_custom_processes_to_python.h"
 #include "spaces/ublas_space.h"
@@ -25,6 +26,7 @@
 #include "custom_processes/dam_uplift_circular_condition_load_process.hpp"
 #include "custom_processes/dam_westergaard_condition_load_process.hpp"
 #include "custom_processes/dam_nodal_young_modulus_process.hpp"
+#include "custom_processes/dam_input_table_nodal_young_modulus_process.hpp"
 #include "custom_processes/dam_temperature_by_device_process.hpp"
 #include "custom_processes/dam_construction_process.hpp"
 #include "custom_processes/dam_added_mass_condition_process.hpp"
@@ -38,7 +40,9 @@ namespace Python
 using namespace boost::python;
 
 void  AddCustomProcessesToPython() 
-{    
+{   
+    typedef Table<double,double> TableType;   
+    
     // Bofang Process
     class_< BofangConditionTemperatureProcess, bases< Process >, boost::noncopyable > ( "BofangConditionTemperatureProcess",
         init < ModelPart&, Parameters&>());
@@ -66,6 +70,9 @@ void  AddCustomProcessesToPython()
     // Nodal Young Modulus Process     
     class_< DamNodalYoungModulusProcess, bases< Process >, boost::noncopyable > ( "DamNodalYoungModulusProcess",
         init < ModelPart&, Parameters&>());
+
+    class_< DamInputTableNodalYoungModulusProcess, bases< Process >, boost::noncopyable > ( "DamInputTableNodalYoungModulusProcess",
+        init < ModelPart&, TableType&, Parameters&>());
 
     // Construction Process     
     class_< DamConstructionProcess, bases< Process >, boost::noncopyable > ( "DamConstructionProcess",
