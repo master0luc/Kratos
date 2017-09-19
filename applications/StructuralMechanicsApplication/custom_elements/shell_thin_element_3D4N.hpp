@@ -276,10 +276,6 @@ Southern California, 2012.
 			Matrix& Output,
 			const ProcessInfo& rCurrentProcessInfo);
 
-		void Calculate(const Variable<double>& rVariable,
-			double& Output,
-			const ProcessInfo& rCurrentProcessInfo);
-
 		///@}
 
 
@@ -482,12 +478,10 @@ Southern California, 2012.
 
 		IntegrationMethod mThisIntegrationMethod; /*!< Currently selected integration method */
 
-		double mOrthotropicSectionRotation = 0.0; /*!< In-plane rotation angle for orthotropic section */
+        ///@}
 
-												  ///@}
-
-												  ///@name Serialization
-												  ///@{
+        ///@name Serialization
+        ///@{
 		friend class Serializer;
 
 		virtual void save(Serializer& rSerializer) const;

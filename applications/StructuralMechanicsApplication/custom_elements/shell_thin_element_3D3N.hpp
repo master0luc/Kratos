@@ -170,10 +170,6 @@ public:
 		Matrix& Output,
 		const ProcessInfo& rCurrentProcessInfo);
 
-	void Calculate(const Variable<double>& rVariable,
-		double& Output,
-		const ProcessInfo& rCurrentProcessInfo);
-
     ///@}
 
     ///@name Public specialized Access - Temporary
@@ -341,8 +337,6 @@ private:
     CrossSectionContainerType mSections; /*!< Container for cross section associated to each integration point */
 
     IntegrationMethod mThisIntegrationMethod; /*!< Currently selected integration method */
-
-	double mOrthotropicSectionRotation = 0.0; /*!< In-plane rotation angle for orthotropic section */
 
     ///@}
 

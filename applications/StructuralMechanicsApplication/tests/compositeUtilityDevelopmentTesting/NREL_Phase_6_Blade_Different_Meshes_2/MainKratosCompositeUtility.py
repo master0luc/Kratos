@@ -27,6 +27,7 @@ import python_solvers_wrapper_structural
 solver = python_solvers_wrapper_structural.CreateSolver(main_model_part, ProjectParameters)
 
 solver.AddVariables()
+main_model_part.AddNodalSolutionStepVariable(FIBER_ANGLE)
 
 ## Read the model - note that SetBufferSize is done here
 solver.ImportModelPart()

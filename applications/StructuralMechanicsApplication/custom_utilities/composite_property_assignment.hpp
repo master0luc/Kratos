@@ -238,7 +238,7 @@ namespace Kratos {
             const ElementsIteratorType& firstElement = rSubModelpart.ElementsBegin();
             Properties elementProperties = (*firstElement).GetProperties();
 
-            if (elementProperties.Has(ORTHOTROPIC_ORIENTATION_ASSIGNMENT))
+            if ((*firstElement).Has(FIBER_ANGLE))
             {
                 // the composite orientation assignment has already been done
             }
@@ -260,7 +260,7 @@ namespace Kratos {
             const ElementsIteratorType& firstElement = rSubModelpart.ElementsBegin();
             Properties elementProperties = (*firstElement).GetProperties();
 
-            if (elementProperties.Has(ORTHOTROPIC_ORIENTATION_ASSIGNMENT))
+            if ((*firstElement).Has(FIBER_ANGLE))
             {
                 // the composite orientation assignment has already been done
             }
@@ -384,11 +384,8 @@ namespace Kratos {
                         theta *= -1.0;
                     }
 
-
                     // set required rotation in element
-                    pElementProps = element.pGetProperties();
-                    pElementProps->SetValue(ORTHOTROPIC_ORIENTATION_ASSIGNMENT, theta);
-                    element.Calculate(ORTHOTROPIC_ORIENTATION_ASSIGNMENT, theta, current_process_info);
+                    element.SetValue(FIBER_ANGLE, theta);
 
                 }// sub-modelpart element loop
 
@@ -629,9 +626,7 @@ namespace Kratos {
 				}
 
 				// set required rotation in element
-				pElementProps = element.pGetProperties();
-				pElementProps->SetValue(ORTHOTROPIC_ORIENTATION_ASSIGNMENT, theta);
-				element.Calculate(ORTHOTROPIC_ORIENTATION_ASSIGNMENT, theta, current_process_info);
+				element.SetValue(FIBER_ANGLE, theta);
 
 				// add option to write out angles so they don't have to be computed next time
 					// or maybe this should be a separate python call

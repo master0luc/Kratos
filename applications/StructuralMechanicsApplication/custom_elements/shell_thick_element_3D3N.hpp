@@ -201,10 +201,6 @@ namespace Kratos
 			Matrix& Output,
 			const ProcessInfo& rCurrentProcessInfo);
 
-		void Calculate(const Variable<double>& rVariable,
-			double& Output,
-			const ProcessInfo& rCurrentProcessInfo);
-
 		///@}
 
 		///@name Public specialized Access - Temporary
@@ -397,12 +393,10 @@ namespace Kratos
 
 		IntegrationMethod mThisIntegrationMethod; /*!< Currently selected integration method */
 
-		double mOrthotropicSectionRotation = 0.0; /*!< In-plane rotation angle for orthotropic section */
+        ///@}
 
-												  ///@}
-
-												  ///@name Serialization
-												  ///@{
+        ///@name Serialization
+        ///@{
 		void printMatrix(Matrix& matrixIn, std::string stringIn);
 
 
