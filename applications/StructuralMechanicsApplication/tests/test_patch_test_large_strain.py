@@ -136,39 +136,38 @@ class TestPatchTestLargeStrain(KratosUnittest.TestCase):
         convergence_criterion = KratosMultiphysics.ResidualCriteria(1e-4,1e-9)
         convergence_criterion.SetEchoLevel(0)
         
-        max_iters = 20
+        max_iters = 1
+        #max_iters = 20
         compute_reactions = True
         reform_step_dofs = True
         move_mesh_flag = True
-        #strategy = KratosMultiphysics.ResidualBasedNewtonRaphsonStrategy(mp, 
-                                                                        #scheme, 
-                                                                        #linear_solver, 
-                                                                        #convergence_criterion, 
-                                                                        #builder_and_solver, 
-                                                                        #max_iters, 
-                                                                        #compute_reactions, 
-                                                                        #reform_step_dofs, 
-                                                                        #move_mesh_flag)
-        strategy = KratosMultiphysics.ResidualBasedLinearStrategy(mp, 
-                                                                scheme, 
-                                                                linear_solver, 
-                                                                builder_and_solver, 
-                                                                compute_reactions, 
-                                                                reform_step_dofs,
-                                                                False,
-                                                                move_mesh_flag)
+        strategy = KratosMultiphysics.ResidualBasedNewtonRaphsonStrategy(mp, 
+                                                                        scheme, 
+                                                                        linear_solver, 
+                                                                        convergence_criterion, 
+                                                                        builder_and_solver, 
+                                                                        max_iters, 
+                                                                        compute_reactions, 
+                                                                        reform_step_dofs, 
+                                                                        move_mesh_flag)
+        #strategy = KratosMultiphysics.ResidualBasedLinearStrategy(mp, 
+                                                                #scheme, 
+                                                                #linear_solver, 
+                                                                #builder_and_solver, 
+                                                                #compute_reactions, 
+                                                                #reform_step_dofs,
+                                                                #False,
+                                                                #move_mesh_flag)
         strategy.SetEchoLevel(0)
         
         strategy.Check()
         
-        #strategy.Initialize()
-        #strategy.InitializeSolutionStep()
-        #strategy.Predict()
-        #strategy.SolveSolutionStep()
-        #strategy.GetDirectSystemMatrix(lhs)
-        #strategy.FinalizeSolutionStep()
-        
-        strategy.Solve()
+        strategy.Initialize()
+        strategy.InitializeSolutionStep()
+        strategy.Predict()
+        strategy.SolveSolutionStep()
+        strategy.GetDirectSystemMatrix(lhs)
+        strategy.FinalizeSolutionStep()
     
     def _check_results(self,mp,A,b):
         
@@ -371,7 +370,7 @@ class TestPatchTestLargeStrain(KratosUnittest.TestCase):
                 #node.Fix(KratosMultiphysics.DISPLACEMENT_Y)
                 #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y, iter * 5.0e-1)
                 
-            #self._solve_and_build(tl_mp, tl_lhs)
+            self._solve_and_build(tl_mp, tl_lhs)
             self._solve_and_build(ul_mp, ul_lhs)
             
             ## Check displacement
@@ -384,6 +383,7 @@ class TestPatchTestLargeStrain(KratosUnittest.TestCase):
                 #self.assertAlmostEqual(tl_dx, ul_dx)
                 #self.assertAlmostEqual(tl_dy, ul_dy)
             
+            ## Compare matrices
             #for i in range(ul_lhs.Size1()):
                 #for j in range(ul_lhs.Size2()):
                     #self.assertLess((ul_lhs[i, j] - tl_lhs[i, j]) / tl_lhs[i, j], 1.0e-3)
