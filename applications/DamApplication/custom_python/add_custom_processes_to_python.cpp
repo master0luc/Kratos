@@ -27,6 +27,7 @@
 #include "custom_processes/dam_westergaard_condition_load_process.hpp"
 #include "custom_processes/dam_nodal_young_modulus_process.hpp"
 #include "custom_processes/dam_input_table_nodal_young_modulus_process.hpp"
+#include "custom_processes/dam_list_table_nodal_young_modulus_process.hpp"
 #include "custom_processes/dam_temperature_by_device_process.hpp"
 #include "custom_processes/dam_construction_process.hpp"
 #include "custom_processes/dam_added_mass_condition_process.hpp"
@@ -72,6 +73,9 @@ void  AddCustomProcessesToPython()
         init < ModelPart&, Parameters&>());
 
     class_< DamInputTableNodalYoungModulusProcess, bases< Process >, boost::noncopyable > ( "DamInputTableNodalYoungModulusProcess",
+        init < ModelPart&, TableType&, Parameters&>());
+    
+    class_< DamListTableNodalYoungModulusProcess, bases< Process >, boost::noncopyable > ( "DamListTableNodalYoungModulusProcess",
         init < ModelPart&, TableType&, Parameters&>());
 
     // Construction Process     

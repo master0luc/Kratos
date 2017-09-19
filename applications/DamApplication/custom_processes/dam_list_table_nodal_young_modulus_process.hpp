@@ -11,8 +11,8 @@
 //
 //
 
-#if !defined(KRATOS_DAM_INPUT_TABLE_NODAL_YOUNG_MODULUS_PROCESS )
-#define  KRATOS_DAM_INPUT_TABLE_NODAL_YOUNG_MODULUS_PROCESS
+#if !defined(KRATOS_DAM_LIST_TABLE_NODAL_YOUNG_MODULUS_PROCESS )
+#define  KRATOS_DAM_LIST_TABLE_NODAL_YOUNG_MODULUS_PROCESS
 
 #include <cmath>
 
@@ -27,32 +27,34 @@
 namespace Kratos
 {
 
-class DamInputTableNodalYoungModulusProcess : public Process
+class DamListTableNodalYoungModulusProcess : public Process
 {
     
 public:
 
-    KRATOS_CLASS_POINTER_DEFINITION(DamInputTableNodalYoungModulusProcess);
-
-    typedef Table<double,double> TableType;   
+    KRATOS_CLASS_POINTER_DEFINITION(DamListTableNodalYoungModulusProcess);
     
+    typedef Table<double,double> TableType;
+
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     /// Constructor
-    DamInputTableNodalYoungModulusProcess(ModelPart& rModelPart, TableType& Table,
+    DamListTableNodalYoungModulusProcess(ModelPart& rModelPart, TableType& Table,
                                 Parameters& rParameters
-                                ) : Process(Flags()) , mrModelPart(rModelPart) , mrTable(Table)
+                                ) : Process(Flags()) , mrModelPart(rModelPart), mrTable(Table)
     {
         KRATOS_TRY
 			 
         //only include validation with c++11 since raw_literals do not exist in c++03
         Parameters default_parameters( R"(
             {
-                "model_part_name":"PLEASE_CHOOSE_MODEL_PART_NAME",
-                "mesh_id": 0,
-                "variable_name"      : "PLEASE_PRESCRIBE_VARIABLE_NAME",
-                "is_fixed"           : false,
-                "input_file_name"    : ""
+                "model_part_name"  :"PLEASE_CHOOSE_MODEL_PART_NAME",
+                "mesh_id"          : 0,
+                "variable_name"    : "PLEASE_PRESCRIBE_VARIABLE_NAME",
+                "is_fixed"         : false,
+                "young_Modulus_min": 5.0,
+                "young_Modulus_max": 50.0,
+                "number_of_cases"  : 10            
             }  )" );
         
         // Some values need to be mandatorily prescribed since no meaningful default value exist. For this reason try accessing to them
@@ -66,46 +68,15 @@ public:
         mMeshId = rParameters["mesh_id"].GetInt();
         mVariableName = rParameters["variable_name"].GetString();
         mIsFixed = rParameters["is_fixed"].GetBool();
-       
+
         KRATOS_CATCH("");
     }
 
     ///------------------------------------------------------------------------------------
     
     /// Destructor
-    virtual ~DamInputTableNodalYoungModulusProcess() {}
+    virtual ~DamListTableNodalYoungModulusProcess() {}
 
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-    void ExecuteInitialize()
-    {
-        
-        KRATOS_TRY;
-        
-        Variable<double> var = KratosComponents< Variable<double> >::Get(mVariableName);
-        const int nnodes = mrModelPart.GetMesh(mMeshId).Nodes().size();
-       
-        if(nnodes != 0)
-        {
-            ModelPart::NodesContainerType::iterator it_begin = mrModelPart.GetMesh(mMeshId).NodesBegin();
-        
-            #pragma omp parallel for
-            for(int i = 0; i<nnodes; i++)
-            {
-                ModelPart::NodesContainerType::iterator it = it_begin + i;
-                
-                if(mIsFixed)
-                {
-                    it->Fix(var);
-                }
-
-                it->FastGetSolutionStepValue(var) = mrTable.GetValue(it->Id());
-            }
-        }
-        
-        KRATOS_CATCH("");
-    }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -116,6 +87,11 @@ public:
         
         Variable<double> var = KratosComponents< Variable<double> >::Get(mVariableName);
         const int nnodes = mrModelPart.GetMesh(mMeshId).Nodes().size();
+        const double time_unit_converter = mrModelPart.GetProcessInfo()[TIME_UNIT_CONVERTER];
+
+        double time = mrModelPart.GetProcessInfo()[TIME];
+        time = time/time_unit_converter;
+        mValue = mrTable.GetValue(time);
                 
         if(nnodes != 0)
         {
@@ -131,7 +107,7 @@ public:
                     it->Fix(var);
                 }
                 
-                it->FastGetSolutionStepValue(var) = mrTable.GetValue(it->Id());
+                it->FastGetSolutionStepValue(var) = mValue;
             }
         }
         
@@ -141,13 +117,13 @@ public:
     /// Turn back information as a string.
     std::string Info() const
     {
-        return "DamInputTableNodalYoungModulusProcess";
+        return "DamListTableNodalYoungModulusProcess";
     }
 
     /// Print information about this object.
     void PrintInfo(std::ostream& rOStream) const
     {
-        rOStream << "DamInputTableNodalYoungModulusProcess";
+        rOStream << "DamListTableNodalYoungModulusProcess";
     }
 
     /// Print object's data.
@@ -165,25 +141,27 @@ protected:
     TableType& mrTable;
     std::size_t mMeshId;
     std::string mVariableName;
-    bool mIsFixed;   
+    bool mIsFixed;
+    double mValue;
+
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 private:
 
     /// Assignment operator.
-    DamInputTableNodalYoungModulusProcess& operator=(DamInputTableNodalYoungModulusProcess const& rOther);
+    DamListTableNodalYoungModulusProcess& operator=(DamListTableNodalYoungModulusProcess const& rOther);
 
 };//Class
 
 
 /// input stream function
 inline std::istream& operator >> (std::istream& rIStream,
-                                    DamInputTableNodalYoungModulusProcess& rThis);
+                                 DamListTableNodalYoungModulusProcess& rThis);
 
 /// output stream function
 inline std::ostream& operator << (std::ostream& rOStream,
-                                  const DamInputTableNodalYoungModulusProcess& rThis)
+                                  const DamListTableNodalYoungModulusProcess& rThis)
 {
     rThis.PrintInfo(rOStream);
     rOStream << std::endl;
@@ -194,5 +172,5 @@ inline std::ostream& operator << (std::ostream& rOStream,
 
 } /* namespace Kratos.*/
 
-#endif /* KRATOS_DAM_INPUT_TABLE_NODAL_YOUNG_MODULUS_PROCESS defined */
+#endif /* KRATOS_DAM_LIST_TABLE_NODAL_YOUNG_MODULUS_PROCESS defined */
 
