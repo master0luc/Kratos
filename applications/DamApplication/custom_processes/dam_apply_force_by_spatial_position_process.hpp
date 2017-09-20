@@ -94,13 +94,14 @@ public:
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    void ExecuteInitializeSolutionStep()
+    void ExecuteInitialize()
     {
         
         KRATOS_TRY;
 
+        typedef VariableComponent< VectorComponentAdaptor<array_1d<double, 3> > > component_type;
+        component_type var_component = KratosComponents< component_type >::Get(mVariableName);
         const int nelements = mrModelPart.GetMesh(mMeshId).Elements().size();
-        Variable<double> var = KratosComponents< Variable<double> >::Get(mVariableName);
         bool IsInside = false;
         array_1d<double,3> LocalCoordinates;       
         Element::Pointer pSelectedElement;
@@ -141,12 +142,17 @@ public:
             }
 
             PointsNumber = pSelectedElement->GetGeometry().PointsNumber();
+            std::vector<std::size_t> ConditionNodeIds(1);
 
+            // The global condition index should be a ProcessInfo or sth similar
             for(int j = 0; j < PointsNumber; j++)
             {
-                    pSelectedElement->GetGeometry().GetPoint(j).FastGetSolutionStepValue(var) = mValue;
-                    pSelectedElement->GetGeometry().GetPoint(j).Fix(var);
-            }    
+                    pSelectedElement->GetGeometry().GetPoint(j).FastGetSolutionStepValue(var_component) = mValue;
+                    ConditionNodeIds[0]= pSelectedElement->GetGeometry().GetPoint(j).Id();
+                    mrModelPart.CreateNewCondition("PointLoadCondition2D1N", j+1, ConditionNodeIds, 0);
+            }
+            
+            
         }
     
         KRATOS_CATCH("");

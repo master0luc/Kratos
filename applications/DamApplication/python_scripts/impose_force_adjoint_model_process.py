@@ -45,7 +45,6 @@ class ImposeForceAdjointModelProcess(Process):
             y_params.AddEmptyValue("value").SetDouble(self.value[1])
             y_params.AddEmptyValue("variable_name").SetString(variable_name+"_Y")
             y_params.AddValue("table",settings["table"])
-            print(y_params)
             self.components_process_list.append(DamApplyForceBySpatialPositionProcess(model_part, y_params))
 
         if abs(self.value[2])>1.0e-15:
