@@ -283,20 +283,11 @@ namespace Kratos
         // Shape functions
         rThisKinematicVariables.N = GetGeometry().ShapeFunctionsValues(rThisKinematicVariables.N, IntegrationPoints[PointNumber].Coordinates());
 
-        // Calculating jacobian
-        Matrix J;
-        J = GetGeometry().Jacobian( J, PointNumber, this_integration_method );
-        
         rThisKinematicVariables.detJ0 = CalculateDerivativesOnReferenceConfiguration(rThisKinematicVariables.J0, rThisKinematicVariables.InvJ0, rThisKinematicVariables.DN_DX, PointNumber, this_integration_method);
         
-        // This overwrites DN_DX in the current configuration (if written previously)
-        Matrix inv_J;
-        double detJ;
-        MathUtils<double>::InvertMatrix( J, inv_J, detJ );
-        
-        const Matrix& DN_De = GetGeometry().ShapeFunctionsLocalGradients(this_integration_method)[PointNumber];
-        
-        noalias( rThisKinematicVariables.DN_DX ) = prod( DN_De, inv_J);
+        // Calculating jacobian
+        Matrix J, inv_J;
+        CalculateDerivativesOnCurrentConfiguration(J, inv_J, rThisKinematicVariables.DN_DX, PointNumber, this_integration_method);
         
         if (rThisKinematicVariables.detJ0 < 0.0)
         {
@@ -376,11 +367,11 @@ namespace Kratos
         
         J0 = GetGeometry().Jacobian( J0, PointNumber, ThisIntegrationMethod, delta_displacement);
         
-//         const Matrix& DN_De = GetGeometry().ShapeFunctionsLocalGradients(ThisIntegrationMethod)[PointNumber];
+        const Matrix& DN_De = GetGeometry().ShapeFunctionsLocalGradients(ThisIntegrationMethod)[PointNumber];
         
         MathUtils<double>::InvertMatrix( J0, InvJ0, detJ0 );
         
-//         noalias( DN_DX ) = prod( DN_De, InvJ0); // NOTE: Operation done outside the function
+        noalias( DN_DX ) = prod( DN_De, InvJ0);
         
         return detJ0;
     }
