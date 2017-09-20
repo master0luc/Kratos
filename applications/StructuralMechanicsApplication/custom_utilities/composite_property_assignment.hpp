@@ -76,8 +76,6 @@ namespace Kratos {
 
         void Execute(Parameters MethodParameters)
         {
-            // TODO do more checks on valid input
-            // TODO if needed use the echo_level. If not we can remove it
             MethodParameters.ValidateAndAssignDefaults(mDefaultParameters);
             const std::string method_name = MethodParameters["method"].GetString();
             if (method_name == "")
@@ -85,12 +83,20 @@ namespace Kratos {
                 KRATOS_ERROR << "Please specify a method name" << std::endl;
             }
 
+			const int echo_level = MethodParameters["echo_level"].GetInt();
+			if (echo_level < 0 || echo_level > 2)
+			{
+				KRATOS_ERROR << "Echo level must be between 0, 1 or 2." << std::endl;
+			}
+
             auto specific_parameters = MethodParameters["method_specific_settings"];
 
             if (method_name == "simple")
             {
                 if (specific_parameters.Has("cs_axis_1"))
                 {
+					// Check simple methods 12 and 13
+
                     specific_parameters.ValidateAndAssignDefaults(mSimpleMethodCSDefaultParameters);
 
                     Vector3 cs_axis_1;
@@ -98,38 +104,50 @@ namespace Kratos {
     
                     CheckAndReadVectors(specific_parameters, "cs_axis_1", cs_axis_1);
                     CheckAndReadVectors(specific_parameters, "cs_axis_2", cs_axis_2);
-                    // TODO check axis for orthogonality(?)
+					if (std::abs(inner_prod(cs_axis_1, cs_axis_2)) > 1E-3)
+					{
+						KRATOS_ERROR << "The defined CS axes 1 and 2 are not orthogonal. They must be." << std::endl;
+					}
 
                     const double rotation_angle = specific_parameters["cs_rotation_angle"].GetDouble();
-                    if (rotation_angle > 360.0) // TODO check for all directions
+                    if (std::abs(rotation_angle) > 360.0)
                     {
-                        KRATOS_ERROR << "Rotation angle is too large" << std::endl;
+                        KRATOS_ERROR << "Rotation angle is too large. Enter something between -360.0 and +360.0" << std::endl;
                     }
 
-                    if (specific_parameters["cs_normal_axis"].GetInt() == 0)
+                    if (specific_parameters["cs_normal_axis"].GetInt() < 1 || specific_parameters["cs_normal_axis"].GetInt() > 3)
                     {
                         KRATOS_ERROR << "The normal axis has to be specified" << std::endl;
                     }
-                    // TODO check if the input is valid (i.e. 1,2 or 3)
 
-                    std::cout << "Using the simple method with user-defined cs" << std::endl;
+					std::string title_string = "\nUsing the simple method with user-defined cs";
+					printMethodInfo(MethodParameters, echo_level, title_string);
 
                     const int normal_axis_number = specific_parameters["cs_normal_axis"].GetInt();
 
                     ExecuteCustomCS(cs_axis_1, cs_axis_2, 
-                                    normal_axis_number, rotation_angle);
+                                    normal_axis_number, rotation_angle,echo_level);
                 }
                 else 
                 {
+					// Check simple method 11
+
+					// No verification necessary, we just align to the global X axis.
+					/*
                     specific_parameters.ValidateAndAssignDefaults(mSimpleMethodDefaultParameters);
                     Vector3 global_fiber_direction;
                     Vector3 normal_vector;
     
                     CheckAndReadVectors(specific_parameters, "global_fiber_direction", global_fiber_direction);
                     CheckAndReadVectors(specific_parameters, "normal_vector", normal_vector);
+					*/
 
-                    std::cout << "Using the simple method" << std::endl;   
-                    ExecuteOLD(global_fiber_direction, normal_vector, 4);                 
+					std::string title_string = "\nUsing the simple method aligned to the global X axis";
+					printMethodInfo(MethodParameters, echo_level, title_string);
+
+					Vector3 dummy = Vector3((1.0,0.0,0.0));
+
+                    ExecuteOLD(dummy, dummy, 4, echo_level);
                 }
             }
             else if (method_name == "advanced")
@@ -142,11 +160,17 @@ namespace Kratos {
                 CheckAndReadVectors(specific_parameters, "global_fiber_direction", global_fiber_direction);
                 CheckAndReadVectors(specific_parameters, "normal_vector", normal_vector);
 
+				if (specific_parameters["smoothness_level"].GetInt() < 1 || specific_parameters["smoothness_level"].GetInt() > 3)
+				{
+					KRATOS_ERROR << "The smoothness level must be 1, 2 or 3." << std::endl;
+				}
+
                 const int level = specific_parameters["smoothness_level"].GetInt();
 
-                std::cout << "Using the advanced method" << std::endl;
+				std::string title_string = "\nUsing the advanced method";
+				printMethodInfo(MethodParameters, echo_level, title_string);
 
-                ExecuteOLD(global_fiber_direction, normal_vector, level);
+                ExecuteOLD(global_fiber_direction, normal_vector, level,echo_level);
             }
             else
             {
@@ -226,11 +250,14 @@ namespace Kratos {
             "echo_level"               : 0
         }  )" );
         
+		// Specific parameters not necessary, we just align to global X vector.
+		/*
         Parameters mSimpleMethodDefaultParameters = Parameters( R"(
         {
             "global_fiber_direction" : [0,0,0],
             "normal_vector"   : [0,0,0]
         }  )" );
+		*/
         
         Parameters mSimpleMethodCSDefaultParameters = Parameters( R"(
         {
@@ -253,7 +280,7 @@ namespace Kratos {
 		///@name Private Operations
 		///@{
 
-        void ExecuteOLD(Vector3 GlobalFiberDirection, Vector3 normalVector, const int Level)
+        void ExecuteOLD(Vector3 GlobalFiberDirection, Vector3 normalVector, const int Level, const int echo_level)
         {
             // Check to see if the composite orientation assignment has already
             // been performed on the current modelPart
@@ -269,12 +296,12 @@ namespace Kratos {
             else
             {
                 // perform the composite orientation assignment
-                compositeOrientationAssignment(GlobalFiberDirection, normalVector, Level);
+                compositeOrientationAssignment(GlobalFiberDirection, normalVector, Level, echo_level);
             }
         }
 
         void ExecuteCustomCS(const Vector3 lc1, const Vector3 lc2, 
-                             const int normalAxisNumber, const double normalRotationDegrees)
+                             const int normalAxisNumber, const double normalRotationDegrees, const int echo_level)
         {
             auto current_process_info = mrModelPart.GetProcessInfo();
             // Check to see if the composite orientation assignment has already
@@ -286,17 +313,10 @@ namespace Kratos {
             if ((*firstElement).Has(FIBER_ANGLE))
             {
                 // the composite orientation assignment has already been done
-                std::cout << "Composite Assignment is skipped, because Fiber Angles are already Present in the first element" << std::endl;             
+                std::cout << "Composite Assignment is skipped, because Fiber Angles are already present in the first element" << std::endl;             
             }
             else
             {
-                // Check inputs
-                if (abs(inner_prod(lc1,lc2)) > 1E-6)
-                {
-                    KRATOS_ERROR <<
-                        "Local axis 1 and 2 of the user specified CS must be orthogonal" << std::endl;
-                }
-
                 // Create a copy of the User Coordinate System (UCS)
                 Vector ucs1 = Vector(lc1);
                 ucs1 /= std::sqrt(inner_prod(ucs1, ucs1));
@@ -372,14 +392,23 @@ namespace Kratos {
                     shellLocalAxis3 /= std::sqrt(inner_prod(shellLocalAxis3, shellLocalAxis3));
 
 
-
-                    // TODO make this a warning
-                    // Check that this user specified normal axis isn't actually 
-                    // orthogonal to the shell normal
-                    if (abs(inner_prod(ucsNormal, shellLocalAxis3)) < 1E-6)
-                    {
-                        KRATOS_ERROR << "The user axis (axis" << normalAxisNumber << "=" << ucsNormal << ") you said was normal to the shell is actually orthogonal to shell element "  << element.Id() << "(shell normal = " << shellLocalAxis3 << ")" << std::endl;
-                    }
+					if (echo_level > 0)
+					{
+						// Check that this user specified normal axis isn't actually 
+						// orthogonal to the shell normal
+						if (abs(inner_prod(ucsNormal, shellLocalAxis3)) < 1E-6)
+						{
+							std::cout << "\nWARNING:\n"
+								<< "The user axis (axis"
+								<< normalAxisNumber
+								<< "=" << ucsNormal
+								<< ") you said was normal to the shell is actually orthogonal to shell element "
+								<< element.Id()
+								<< "(shell normal = "
+								<< shellLocalAxis3 << ")"
+								<< std::endl;
+						}
+					}
                     
 
                     // Project the vector onto the shell surface
@@ -411,6 +440,11 @@ namespace Kratos {
                     // set required rotation in element
                     element.SetValue(FIBER_ANGLE, theta);
 
+					if (echo_level > 1)
+					{
+						std::cout << "\tModel part " << mrModelPart.Name() << ", element " << element.GetId() << " rotation = " << theta << std::endl;
+					}
+
                 }// sub-modelpart element loop
 
 
@@ -421,7 +455,7 @@ namespace Kratos {
 
 
         void compositeOrientationAssignment(Vector3 GlobalFiberDirection, 
-                                            Vector3 normalVector, const int Level)
+                                            Vector3 normalVector, const int Level, const int echo_level)
 		{
             auto current_process_info = mrModelPart.GetProcessInfo();
 			
@@ -485,21 +519,25 @@ namespace Kratos {
                 KRATOS_ERROR << "Wrong Level!" << std::endl;
             }
 
-			std::cout << "Using composite alignment method ";
-			switch (caseId)
+			if (echo_level > 0)
 			{
-			case 1:
-				std::cout << caseId << " (strictly fulfills alignment via hard orthogonality)" << std::endl;
-				break;
-			case 2:
-				std::cout << caseId << " (generally aligns with global fiber); normal_alignment=" << perform_normal_alignment << std::endl;
-				break;
-			case 3:
-				std::cout << caseId << " (Abaqus default projection to Global Cartesian axis)" << std::endl;
-				break;
-			default:
-				break;
+				std::cout << "The chosen composite utility method ";
+				switch (caseId)
+				{
+				case 1:
+					std::cout  << "strictly fulfills alignment with the specified global fiber via hard orthogonality." << std::endl;
+					break;
+				case 2:
+					std::cout << "generally aligns with the specified global fiber via projection."  << std::endl;
+					break;
+				case 3:
+					std::cout << "generally aligns with the global Cartesian X axis via projection." << std::endl;
+					break;
+				default:
+					break;
+				}
 			}
+			
 			
 			// -----------------------------------------------------------------
 
@@ -512,30 +550,6 @@ namespace Kratos {
 			double cosTheta, theta, rotation_angle, dotCheck;
 			Properties::Pointer pElementProps;
 			Vector orthogonal_vector;
-			bool debug_printout = true;
-
-			// Optional printout of details for current part
-			bool printDetails = true;
-			if (printDetails)
-			{
-				std::cout << "Composite orientation assignment details for model part '" << mrModelPart.Name() << "': " << std::endl;
-				std::cout << "\tGlobal fiber direction = \t" << GlobalFiberDirection << std::endl;
-				std::cout << "\tProjection direction = \t\t" << normalVector << std::endl;
-			}
-
-			// Check incoming GlobalFiberDirection and normalVector are valid
-			if (inner_prod(GlobalFiberDirection, GlobalFiberDirection) == 0.0)
-			{
-				KRATOS_ERROR <<
-					"Defined global fiber direction for subModelPart " <<
-					mrModelPart.Name() << " has zero length" << std::endl;
-			}
-			else if (inner_prod(normalVector, normalVector) == 0.0)
-			{
-				KRATOS_ERROR <<
-					"Defined normal vector for subModelPart " <<
-					mrModelPart.Name() << " has zero length" << std::endl;
-			}
 
 			// Normalize
 			GlobalFiberDirection /= std::sqrt(inner_prod(GlobalFiberDirection, GlobalFiberDirection));
@@ -583,9 +597,8 @@ namespace Kratos {
 
 					// create vector which we must be orthogonal to
 					orthogonal_vector = Vector(MathUtils<double>::CrossProduct(GlobalFiberDirection, correctedNormalVector));
-					//orthogonal_vector = Vector(MathUtils<double>::CrossProduct(GlobalFiberDirection, localAxis3));
 
-					theta = iterativelyDetermineBestAngle(localAxis1, localAxis3, orthogonal_vector,GlobalFiberDirection);
+					theta = iterativelyDetermineBestAngle(localAxis1, localAxis3, orthogonal_vector,GlobalFiberDirection,element.GetId(),echo_level);
 					break;
 
 				case 2:
@@ -643,7 +656,7 @@ namespace Kratos {
 					// the shell local 1-direction is the projection of the 
 					// Global Z vector onto the shell surface
 
-					theta = defaultGlobalProjection(localAxis1, localAxis2, localAxis3);
+					theta = defaultGlobalProjection(localAxis1, localAxis2, localAxis3, element.GetId(),echo_level);
 
 				default:
 					break;
@@ -652,12 +665,17 @@ namespace Kratos {
 				// set required rotation in element
 				element.SetValue(FIBER_ANGLE, theta);
 
+				if (echo_level > 1)
+				{
+					std::cout << "\tModel part " << mrModelPart.Name() << ", element " << element.GetId() << " rotation = " << theta << std::endl;
+				}
+
 				// add option to write out angles so they don't have to be computed next time
 					// or maybe this should be a separate python call
 			}// sub-modelpart element loop
 		}
 
-		double iterativelyDetermineBestAngle(Vector localAxis1, Vector localAxis3, Vector orthogonal_vector, Vector GlobalFiberDirection)
+		double iterativelyDetermineBestAngle(Vector localAxis1, Vector localAxis3, Vector orthogonal_vector, Vector GlobalFiberDirection, const int element_number, const int echo_level)
 		{
 			double tolerance = 1E-9;
 			double steps = 16.0;
@@ -694,7 +712,17 @@ namespace Kratos {
 				}
 				if (iteration > iteration_limit)
 				{
-					std::cout << "iteration lim" << std::endl;
+					if (echo_level > 0)
+					{
+						std::cout << "\nWARNING:\n"
+							<< "Model part "
+							<< mrModelPart.Name()
+							<< " element "
+							<< element_number
+							<< " orientation angle did not converge using the iterative method selected.\n"
+							<< "Check the angle output of this element!"
+							<< std::endl;
+					}
 					converged = true;
 				}
 			}
@@ -708,7 +736,7 @@ namespace Kratos {
 			return best_angle;
 		}
 
-		double defaultGlobalProjection(const Vector localAxis1, const Vector localAxis2, const Vector localAxis3)
+		double defaultGlobalProjection(const Vector localAxis1, const Vector localAxis2, const Vector localAxis3, const int element_number, const int echo_level)
 		{
 			// (Abaqus default projection)
 			// http://130.149.89.49:2080/v6.8/books/gsa/default.htm?startat=ch05s03.html
@@ -725,6 +753,17 @@ namespace Kratos {
 			// First, check if Global X vector is normal to the shell surface
 			if (abs(inner_prod(globalVector, localAxis1)) < 1E-6)
 			{
+				if (echo_level > 0)
+				{
+					std::cout << "\nWARNING:\n"
+						<< "The normal vector of model part "
+						<< mrModelPart.Name()
+						<< " element "
+						<< element_number
+						<< " is orthogonal to the global X vector.\n"
+						<< "Now element aligning fiber direction to the global Z vector."
+						<< std::endl;
+				}
 				// Now we use Global Z as the global vector
 				globalVector[0] = 0.0;
 				globalVector[2] = 1.0;
@@ -815,6 +854,18 @@ namespace Kratos {
 				KRATOS_ERROR <<	"Vector \" "<< KeyName << "\" has zero length" << std::endl;
 			}
         }
+
+		void printMethodInfo(const Parameters ThisParameters, const int echo_level, const std::string title_string)
+		{
+			std::cout << title_string << " for model part:\t" << mrModelPart.Name() << std::endl;
+
+			// Optional printout of details for current part
+			if (echo_level > 0)
+			{
+				std::cout << "The following composite assignment settings for this model part are:" << std::endl;
+				std::cout << ThisParameters.PrettyPrintJsonString() << std::endl;
+			}
+		}
 
 		///@}
 		///@name Private  Access

@@ -35,15 +35,13 @@ solver.ImportModelPart()
 composite_property_alignment_settings_11 = Parameters("""
 {
     "method": "simple",
-    "method_specific_settings" : {
-        "global_fiber_direction" : [0,0,1],
-        "normal_vector"   : [1,0,0]
-    }
+	"echo_level"      : 0
 }
 """)
 composite_property_alignment_settings_12 = Parameters("""
 {
     "method": "simple",
+	"echo_level"      : 0,
     "method_specific_settings" : {
         "cs_axis_1" : [0,0,1],
         "cs_axis_2" : [1,0,0],
@@ -54,6 +52,7 @@ composite_property_alignment_settings_12 = Parameters("""
 composite_property_alignment_settings_13 = Parameters("""
 {
     "method": "simple",
+	"echo_level"      : 0,
     "method_specific_settings" : {
         "cs_axis_1" : [0,0,1],
         "cs_axis_2" : [1,0,0],
@@ -66,6 +65,7 @@ composite_property_alignment_settings_13 = Parameters("""
 composite_property_alignment_settings_21 = Parameters("""
 {
     "method": "advanced",
+	"echo_level"      : 2,
     "method_specific_settings" : {
         "global_fiber_direction" : [0,0,1],
         "normal_vector"   : [1,0,0],
@@ -77,9 +77,11 @@ composite_property_alignment_settings_21 = Parameters("""
 composite_property_alignment_settings_22 = Parameters("""
 {
     "method": "advanced",
+	"echo_level"      : 0,
     "method_specific_settings" : {
         "global_fiber_direction" : [0,0,1],
-        "normal_vector"   : [1,0,0]
+        "normal_vector"   : [1,0,0],
+		"smoothness_level" : 2
     }
 }
 """)
@@ -87,6 +89,7 @@ composite_property_alignment_settings_22 = Parameters("""
 composite_property_alignment_settings_23 = Parameters("""
 {
     "method": "advanced",
+	"echo_level"      : 0,
     "method_specific_settings" : {
         "global_fiber_direction" : [0,0,1],
         "normal_vector"   : [1,0,0],
