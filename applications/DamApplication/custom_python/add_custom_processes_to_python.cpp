@@ -28,6 +28,7 @@
 #include "custom_processes/dam_nodal_young_modulus_process.hpp"
 #include "custom_processes/dam_input_table_nodal_young_modulus_process.hpp"
 #include "custom_processes/dam_list_table_nodal_young_modulus_process.hpp"
+#include "custom_processes/dam_apply_force_by_spatial_position_process.hpp"
 #include "custom_processes/dam_temperature_by_device_process.hpp"
 #include "custom_processes/dam_construction_process.hpp"
 #include "custom_processes/dam_added_mass_condition_process.hpp"
@@ -88,6 +89,10 @@ void  AddCustomProcessesToPython()
 
     //Temperature by device     
     class_< DamTemperaturebyDeviceProcess, bases< Process >, boost::noncopyable > ( "DamTemperaturebyDeviceProcess",
+        init < ModelPart&, Parameters&>());
+
+    //Apply force by spatial position     
+        class_< DamApplyForceBySpatialPositionProcess, bases< Process >, boost::noncopyable > ( "DamApplyForceBySpatialPositionProcess",
         init < ModelPart&, Parameters&>());
 }
 
