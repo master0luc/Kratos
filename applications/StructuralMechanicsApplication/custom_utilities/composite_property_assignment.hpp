@@ -63,7 +63,7 @@ namespace Kratos {
 		///@}
 		///@name Life Cycle
 		///@{
-		CompositePropertyAssignment() {}
+		CompositePropertyAssignment(ModelPart& rSubModelPart) : mrModelPart(rSubModelPart) {}
 
 		virtual ~CompositePropertyAssignment() {}
 
@@ -74,7 +74,7 @@ namespace Kratos {
 		///@name Operations
 		///@{
 
-        void Execute(ModelPart& rSubModelpart, Parameters MethodParameters)
+        void Execute(Parameters MethodParameters)
         {
             // TODO do more checks on valid input
             // TODO if needed use the echo_level. If not we can remove it
@@ -116,7 +116,7 @@ namespace Kratos {
 
                     const int normal_axis_number = specific_parameters["cs_normal_axis"].GetInt();
 
-                    ExecuteCustomCS(rSubModelpart, cs_axis_1, cs_axis_2, 
+                    ExecuteCustomCS(cs_axis_1, cs_axis_2, 
                                     normal_axis_number, rotation_angle);
                 }
                 else 
@@ -129,7 +129,7 @@ namespace Kratos {
                     CheckAndReadVectors(specific_parameters, "normal_vector", normal_vector);
 
                     std::cout << "Using the simple method" << std::endl;   
-                    ExecuteOLD(rSubModelpart, global_fiber_direction, normal_vector, 4);                 
+                    ExecuteOLD(global_fiber_direction, normal_vector, 4);                 
                 }
             }
             else if (method_name == "advanced")
@@ -146,7 +146,7 @@ namespace Kratos {
 
                 std::cout << "Using the advanced method" << std::endl;
 
-                ExecuteOLD(rSubModelpart, global_fiber_direction, normal_vector, level);
+                ExecuteOLD(global_fiber_direction, normal_vector, level);
             }
             else
             {
@@ -154,6 +154,26 @@ namespace Kratos {
             }
         }
 
+
+        void WriteFiberAngles(std::string FileName = "CompositeFiberAngles.txt")
+        {
+            std::ofstream element_data_file (FileName);
+
+            if (element_data_file.is_open())
+            {
+                element_data_file << "Begin ElementalData FIBER_ANGLE" << std::endl;
+                for (auto& element : mrModelPart.Elements())
+                {
+                    element_data_file << "\t" << element.Id() 
+                                      << " " << element.GetValue(FIBER_ANGLE) 
+                                      << std::endl;
+                }
+                element_data_file << "End ElementalData" << std::endl;
+                
+                element_data_file.close();
+            }
+            else std::cout << "Unable to open file";
+        }
 
 
 		///@}
@@ -196,6 +216,9 @@ namespace Kratos {
 		///@}
 		///@name Member Variables
 		///@{
+
+        ModelPart& mrModelPart;
+            
         Parameters mDefaultParameters = Parameters( R"(
         {
             "method"                   : "",
@@ -230,39 +253,40 @@ namespace Kratos {
 		///@name Private Operations
 		///@{
 
-        void ExecuteOLD(ModelPart& rSubModelpart, Vector3 GlobalFiberDirection, Vector3 normalVector, const int Level)
+        void ExecuteOLD(Vector3 GlobalFiberDirection, Vector3 normalVector, const int Level)
         {
             // Check to see if the composite orientation assignment has already
             // been performed on the current modelPart
             // Just look at the first element to save time
-            const ElementsIteratorType& firstElement = rSubModelpart.ElementsBegin();
+            const ElementsIteratorType& firstElement = mrModelPart.ElementsBegin();
             Properties elementProperties = (*firstElement).GetProperties();
 
             if ((*firstElement).Has(FIBER_ANGLE))
             {
                 // the composite orientation assignment has already been done
+                std::cout << "Composite Assignment is skipped, because Fiber Angles are already Present in the first element" << std::endl;
             }
             else
             {
                 // perform the composite orientation assignment
-                compositeOrientationAssignment(rSubModelpart,
-                    GlobalFiberDirection, normalVector, Level);
+                compositeOrientationAssignment(GlobalFiberDirection, normalVector, Level);
             }
         }
 
-        void ExecuteCustomCS(ModelPart& rSubModelpart, const Vector3 lc1, const Vector3 lc2, 
+        void ExecuteCustomCS(const Vector3 lc1, const Vector3 lc2, 
                              const int normalAxisNumber, const double normalRotationDegrees)
         {
-            auto current_process_info = rSubModelpart.GetProcessInfo();
+            auto current_process_info = mrModelPart.GetProcessInfo();
             // Check to see if the composite orientation assignment has already
             // been performed on the current modelPart
             // Just look at the first element to save time
-            const ElementsIteratorType& firstElement = rSubModelpart.ElementsBegin();
+            const ElementsIteratorType& firstElement = mrModelPart.ElementsBegin();
             Properties elementProperties = (*firstElement).GetProperties();
 
             if ((*firstElement).Has(FIBER_ANGLE))
             {
                 // the composite orientation assignment has already been done
+                std::cout << "Composite Assignment is skipped, because Fiber Angles are already Present in the first element" << std::endl;             
             }
             else
             {
@@ -325,7 +349,7 @@ namespace Kratos {
 
 
                 // Loop over all elements in part
-                for (auto& element : rSubModelpart.Elements())
+                for (auto& element : mrModelPart.Elements())
                 {
                     // get current element properties
                     pElementProps = element.pGetProperties();
@@ -396,10 +420,10 @@ namespace Kratos {
 
 
 
-        void compositeOrientationAssignment(ModelPart& rSubModelpart, Vector3 GlobalFiberDirection, 
+        void compositeOrientationAssignment(Vector3 GlobalFiberDirection, 
                                             Vector3 normalVector, const int Level)
 		{
-            auto current_process_info = rSubModelpart.GetProcessInfo();
+            auto current_process_info = mrModelPart.GetProcessInfo();
 			
 			// case 1
 			// (strictly fulfills alignment via hard orthogonality)
@@ -494,7 +518,7 @@ namespace Kratos {
 			bool printDetails = true;
 			if (printDetails)
 			{
-				std::cout << "Composite orientation assignment details for model part '" << rSubModelpart.Name() << "': " << std::endl;
+				std::cout << "Composite orientation assignment details for model part '" << mrModelPart.Name() << "': " << std::endl;
 				std::cout << "\tGlobal fiber direction = \t" << GlobalFiberDirection << std::endl;
 				std::cout << "\tProjection direction = \t\t" << normalVector << std::endl;
 			}
@@ -504,13 +528,13 @@ namespace Kratos {
 			{
 				KRATOS_ERROR <<
 					"Defined global fiber direction for subModelPart " <<
-					rSubModelpart.Name() << " has zero length" << std::endl;
+					mrModelPart.Name() << " has zero length" << std::endl;
 			}
 			else if (inner_prod(normalVector, normalVector) == 0.0)
 			{
 				KRATOS_ERROR <<
 					"Defined normal vector for subModelPart " <<
-					rSubModelpart.Name() << " has zero length" << std::endl;
+					mrModelPart.Name() << " has zero length" << std::endl;
 			}
 
 			// Normalize
@@ -518,7 +542,7 @@ namespace Kratos {
 			normalVector /= std::sqrt(inner_prod(normalVector, normalVector));
 
 			// Loop over all elements in part
-			for (auto& element : rSubModelpart.Elements())
+			for (auto& element : mrModelPart.Elements())
 			{
 				// get current element properties
 				pElementProps = element.pGetProperties();

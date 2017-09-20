@@ -53,12 +53,18 @@ void TransferEigenvector2(
 }
 
 inline
-void CompositePropertyAssignmentExecute(
-	CompositePropertyAssignment& rThisUtil,
-	ModelPart& rModelPart,
-	Parameters MethodParameters)
+void WriteFiberAngles1(
+        CompositePropertyAssignment& rThisUtil)
 {
-	rThisUtil.Execute(rModelPart, MethodParameters);
+    rThisUtil.WriteFiberAngles();
+}
+
+inline
+void WriteFiberAngles2(
+        CompositePropertyAssignment& rThisUtil,
+        std::string FileName)
+{
+    rThisUtil.WriteFiberAngles(FileName);
 }
 
 void  AddCustomUtilitiesToPython()
@@ -80,8 +86,10 @@ void  AddCustomUtilitiesToPython()
     .def("Transfer",TransferEigenvector2)
     ;
 
-	class_<CompositePropertyAssignment>("CompositePropertyAssignment")
-	.def("Execute", &CompositePropertyAssignment::Execute)
+	class_<CompositePropertyAssignment>("CompositePropertyAssignment", init<ModelPart&>())
+    .def("Execute", &CompositePropertyAssignment::Execute)
+    .def("WriteFiberAngles", WriteFiberAngles1)
+    .def("WriteFiberAngles", WriteFiberAngles2)
 	;
 }
 

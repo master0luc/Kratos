@@ -94,8 +94,9 @@ composite_property_alignment_settings_23 = Parameters("""
     }
 }
 """)
-
-CompositePropertyAssignment().Execute(main_model_part.GetSubModelPart("main_mesh"), composite_property_alignment_settings_11)
+comp_assignment_utility = CompositePropertyAssignment(main_model_part.GetSubModelPart("main_mesh"))
+comp_assignment_utility.Execute(composite_property_alignment_settings_11)
+comp_assignment_utility.WriteFiberAngles()
 
 
 ## Example of CompositePropertyAssignment utility 1
