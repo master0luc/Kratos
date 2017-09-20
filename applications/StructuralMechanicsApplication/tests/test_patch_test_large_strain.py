@@ -340,7 +340,7 @@ class TestPatchTestLargeStrain(KratosUnittest.TestCase):
         delta_time = ul_mp.ProcessInfo[KratosMultiphysics.DELTA_TIME]
         time = ul_mp.ProcessInfo[KratosMultiphysics.TIME]
         
-        for iter in range(1, 2):
+        for iter in range(1, 4):
                         
             time += iter * delta_time
             tl_mp.CloneTimeStep(time)
@@ -552,7 +552,7 @@ class TestPatchTestLargeStrain(KratosUnittest.TestCase):
         self._check_results(mp,A,b)
         self._check_outputs(mp,A,dim)
         
-        self.__post_process(mp)
+        #self.__post_process(mp)
         
     def test_UL_2D_quadrilateral(self):
         dim = 2
