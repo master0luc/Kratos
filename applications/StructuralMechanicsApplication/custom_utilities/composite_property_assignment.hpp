@@ -83,11 +83,11 @@ namespace Kratos {
                 KRATOS_ERROR << "Please specify a method name" << std::endl;
             }
 
-			const int echo_level = MethodParameters["echo_level"].GetInt();
-			if (echo_level < 0 || echo_level > 2)
+			mEchoLevel = MethodParameters["echo_level"].GetInt();
+			if (mEchoLevel < 0 || mEchoLevel > 2)
 			{
 				KRATOS_ERROR << "Echo level must be between 0, 1 or 2." << std::endl;
-			}
+            }
 
             auto specific_parameters = MethodParameters["method_specific_settings"];
 
@@ -121,12 +121,12 @@ namespace Kratos {
                     }
 
 					std::string title_string = "\nUsing the simple method with user-defined cs";
-					printMethodInfo(MethodParameters, echo_level, title_string);
+					printMethodInfo(MethodParameters, title_string);
 
                     const int normal_axis_number = specific_parameters["cs_normal_axis"].GetInt();
 
                     ExecuteCustomCS(cs_axis_1, cs_axis_2, 
-                                    normal_axis_number, rotation_angle,echo_level);
+                                    normal_axis_number, rotation_angle);
                 }
                 else 
                 {
@@ -143,11 +143,11 @@ namespace Kratos {
 					*/
 
 					std::string title_string = "\nUsing the simple method aligned to the global X axis";
-					printMethodInfo(MethodParameters, echo_level, title_string);
+					printMethodInfo(MethodParameters, title_string);
 
 					Vector3 dummy = Vector3((1.0,0.0,0.0));
 
-                    ExecuteOLD(dummy, dummy, 4, echo_level);
+                    ExecuteOLD(dummy, dummy, 4);
                 }
             }
             else if (method_name == "advanced")
@@ -168,9 +168,9 @@ namespace Kratos {
                 const int level = specific_parameters["smoothness_level"].GetInt();
 
 				std::string title_string = "\nUsing the advanced method";
-				printMethodInfo(MethodParameters, echo_level, title_string);
+				printMethodInfo(MethodParameters, title_string);
 
-                ExecuteOLD(global_fiber_direction, normal_vector, level,echo_level);
+                ExecuteOLD(global_fiber_direction, normal_vector, level);
             }
             else
             {
@@ -196,7 +196,10 @@ namespace Kratos {
                 
                 element_data_file.close();
             }
-            else std::cout << "Unable to open file";
+            else std::cout << "Unable to open file " << FileName << std::endl;
+
+            std::cout << "Use \"cat " << FileName << " >> your_mdpa_file.mdpa\" to append "
+                      << "the FIBER_ANGLE values to the mdpa-file" << std::endl;
         }
 
 
@@ -242,6 +245,7 @@ namespace Kratos {
 		///@{
 
         ModelPart& mrModelPart;
+        int mEchoLevel;
             
         Parameters mDefaultParameters = Parameters( R"(
         {
@@ -280,13 +284,12 @@ namespace Kratos {
 		///@name Private Operations
 		///@{
 
-        void ExecuteOLD(Vector3 GlobalFiberDirection, Vector3 normalVector, const int Level, const int echo_level)
+        void ExecuteOLD(Vector3 GlobalFiberDirection, Vector3 normalVector, const int Level)
         {
             // Check to see if the composite orientation assignment has already
             // been performed on the current modelPart
             // Just look at the first element to save time
             const ElementsIteratorType& firstElement = mrModelPart.ElementsBegin();
-            Properties elementProperties = (*firstElement).GetProperties();
 
             if ((*firstElement).Has(FIBER_ANGLE))
             {
@@ -296,19 +299,18 @@ namespace Kratos {
             else
             {
                 // perform the composite orientation assignment
-                compositeOrientationAssignment(GlobalFiberDirection, normalVector, Level, echo_level);
+                compositeOrientationAssignment(GlobalFiberDirection, normalVector, Level);
             }
         }
 
         void ExecuteCustomCS(const Vector3 lc1, const Vector3 lc2, 
-                             const int normalAxisNumber, const double normalRotationDegrees, const int echo_level)
+                             const int normalAxisNumber, const double normalRotationDegrees)
         {
             auto current_process_info = mrModelPart.GetProcessInfo();
             // Check to see if the composite orientation assignment has already
             // been performed on the current modelPart
             // Just look at the first element to save time
             const ElementsIteratorType& firstElement = mrModelPart.ElementsBegin();
-            Properties elementProperties = (*firstElement).GetProperties();
 
             if ((*firstElement).Has(FIBER_ANGLE))
             {
@@ -392,7 +394,7 @@ namespace Kratos {
                     shellLocalAxis3 /= std::sqrt(inner_prod(shellLocalAxis3, shellLocalAxis3));
 
 
-					if (echo_level > 0)
+					if (mEchoLevel > 0)
 					{
 						// Check that this user specified normal axis isn't actually 
 						// orthogonal to the shell normal
@@ -440,7 +442,7 @@ namespace Kratos {
                     // set required rotation in element
                     element.SetValue(FIBER_ANGLE, theta);
 
-					if (echo_level > 1)
+					if (mEchoLevel > 1)
 					{
 						std::cout << "\tModel part " << mrModelPart.Name() << ", element " << element.GetId() << " rotation = " << theta << std::endl;
 					}
@@ -455,7 +457,7 @@ namespace Kratos {
 
 
         void compositeOrientationAssignment(Vector3 GlobalFiberDirection, 
-                                            Vector3 normalVector, const int Level, const int echo_level)
+                                            Vector3 normalVector, const int Level)
 		{
             auto current_process_info = mrModelPart.GetProcessInfo();
 			
@@ -519,7 +521,7 @@ namespace Kratos {
                 KRATOS_ERROR << "Wrong Level!" << std::endl;
             }
 
-			if (echo_level > 0)
+			if (mEchoLevel > 0)
 			{
 				std::cout << "The chosen composite utility method ";
 				switch (caseId)
@@ -598,7 +600,7 @@ namespace Kratos {
 					// create vector which we must be orthogonal to
 					orthogonal_vector = Vector(MathUtils<double>::CrossProduct(GlobalFiberDirection, correctedNormalVector));
 
-					theta = iterativelyDetermineBestAngle(localAxis1, localAxis3, orthogonal_vector,GlobalFiberDirection,element.GetId(),echo_level);
+					theta = iterativelyDetermineBestAngle(localAxis1, localAxis3, orthogonal_vector,GlobalFiberDirection,element.GetId());
 					break;
 
 				case 2:
@@ -656,7 +658,7 @@ namespace Kratos {
 					// the shell local 1-direction is the projection of the 
 					// Global Z vector onto the shell surface
 
-					theta = defaultGlobalProjection(localAxis1, localAxis2, localAxis3, element.GetId(),echo_level);
+					theta = defaultGlobalProjection(localAxis1, localAxis2, localAxis3, element.GetId());
 
 				default:
 					break;
@@ -665,7 +667,7 @@ namespace Kratos {
 				// set required rotation in element
 				element.SetValue(FIBER_ANGLE, theta);
 
-				if (echo_level > 1)
+				if (mEchoLevel > 1)
 				{
 					std::cout << "\tModel part " << mrModelPart.Name() << ", element " << element.GetId() << " rotation = " << theta << std::endl;
 				}
@@ -675,7 +677,8 @@ namespace Kratos {
 			}// sub-modelpart element loop
 		}
 
-		double iterativelyDetermineBestAngle(Vector localAxis1, Vector localAxis3, Vector orthogonal_vector, Vector GlobalFiberDirection, const int element_number, const int echo_level)
+        double iterativelyDetermineBestAngle(Vector localAxis1, Vector localAxis3, Vector orthogonal_vector, 
+                                             Vector GlobalFiberDirection, const int element_number)
 		{
 			double tolerance = 1E-9;
 			double steps = 16.0;
@@ -712,7 +715,7 @@ namespace Kratos {
 				}
 				if (iteration > iteration_limit)
 				{
-					if (echo_level > 0)
+					if (mEchoLevel > 0)
 					{
 						std::cout << "\nWARNING:\n"
 							<< "Model part "
@@ -736,7 +739,8 @@ namespace Kratos {
 			return best_angle;
 		}
 
-		double defaultGlobalProjection(const Vector localAxis1, const Vector localAxis2, const Vector localAxis3, const int element_number, const int echo_level)
+        double defaultGlobalProjection(const Vector localAxis1, const Vector localAxis2, 
+                                       const Vector localAxis3, const int element_number)
 		{
 			// (Abaqus default projection)
 			// http://130.149.89.49:2080/v6.8/books/gsa/default.htm?startat=ch05s03.html
@@ -753,7 +757,7 @@ namespace Kratos {
 			// First, check if Global X vector is normal to the shell surface
 			if (std::abs(inner_prod(globalVector, localAxis1)) < 1E-6)
 			{
-				if (echo_level > 0)
+				if (mEchoLevel > 0)
 				{
 					std::cout << "\nWARNING:\n"
 						<< "The normal vector of model part "
@@ -855,12 +859,12 @@ namespace Kratos {
 			}
         }
 
-		void printMethodInfo(const Parameters ThisParameters, const int echo_level, const std::string title_string)
+		void printMethodInfo(const Parameters ThisParameters, const std::string title_string)
 		{
 			std::cout << title_string << " for model part:\t" << mrModelPart.Name() << std::endl;
 
 			// Optional printout of details for current part
-			if (echo_level > 0)
+			if (mEchoLevel > 0)
 			{
 				std::cout << "The following composite assignment settings for this model part are:" << std::endl;
 				std::cout << ThisParameters.PrettyPrintJsonString() << std::endl;
