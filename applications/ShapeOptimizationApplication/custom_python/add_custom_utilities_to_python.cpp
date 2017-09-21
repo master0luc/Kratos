@@ -190,6 +190,7 @@ void  AddCustomUtilitiesToPython()
             .def("map_boundary_conditions", &CADMapper::map_boundary_conditions)  
             .def("crazy_step_back", &CADMapper::crazy_step_back)  
             .def("map_boundary_conditions_augmented_Lagrange", &CADMapper::map_boundary_conditions_augmented_Lagrange)  
+            .def("map_all_patches_augmented_Lagrange", &CADMapper::map_all_patches_augmented_Lagrange)  
           
             // EXTERNAL: separating FE-mesh data from computation //
             .def("external_map_to_cad_space", &CADMapper::external_map_to_cad_space)            

@@ -95,9 +95,9 @@ public:
     DataPoint(double X, double Y, double Z)
     {
         m_node_ptr = NodeType::Pointer(new NodeType(-1, X, Y, Z)); // node id is set to -1
-        m_node_ptr->SetValue(SHAPE_CHANGE_ABSOLUTE_X, 0);
-        m_node_ptr->SetValue(SHAPE_CHANGE_ABSOLUTE_Y, 0);
-        m_node_ptr->SetValue(SHAPE_CHANGE_ABSOLUTE_Z, 0);
+        // m_node_ptr->SetValue(SHAPE_CHANGE_ABSOLUTE_X, 0);
+        // m_node_ptr->SetValue(SHAPE_CHANGE_ABSOLUTE_Y, 0);
+        // m_node_ptr->SetValue(SHAPE_CHANGE_ABSOLUTE_Z, 0);
     }
 
     /// Constructor 3
@@ -105,9 +105,9 @@ public:
               double updated_X, double updated_Y, double updated_Z)
     {
         m_node_ptr = NodeType::Pointer(new NodeType(-1, X, Y, Z)); // node id is set to -1
-        m_node_ptr->SetValue(SHAPE_CHANGE_ABSOLUTE_X, updated_X);
-        m_node_ptr->SetValue(SHAPE_CHANGE_ABSOLUTE_Y, updated_Y);
-        m_node_ptr->SetValue(SHAPE_CHANGE_ABSOLUTE_Z, updated_Z);
+        // m_node_ptr->SetValue(SHAPE_CHANGE_ABSOLUTE_X, updated_X);
+        // m_node_ptr->SetValue(SHAPE_CHANGE_ABSOLUTE_Y, updated_Y);
+        // m_node_ptr->SetValue(SHAPE_CHANGE_ABSOLUTE_Z, updated_Z);
     }
 
     // Getters
@@ -118,17 +118,17 @@ public:
 
         double getX()
         {
-            return m_node_ptr->X() + m_node_ptr->GetValue(SHAPE_CHANGE_ABSOLUTE_X);
+            return m_node_ptr->X() + m_node_ptr->GetSolutionStepValue(SHAPE_CHANGE_ABSOLUTE_X);
         }
 
         double getY()
         {
-            return m_node_ptr->Y() + m_node_ptr->GetValue(SHAPE_CHANGE_ABSOLUTE_Y);
+            return m_node_ptr->Y() + m_node_ptr->GetSolutionStepValue(SHAPE_CHANGE_ABSOLUTE_Y);
         }
 
         double getZ()
         {
-            return m_node_ptr->Z() + m_node_ptr->GetValue(SHAPE_CHANGE_ABSOLUTE_Z);
+            return m_node_ptr->Z() + m_node_ptr->GetSolutionStepValue(SHAPE_CHANGE_ABSOLUTE_Z);
         }
 
         double getU()

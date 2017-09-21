@@ -3219,6 +3219,8 @@ class CADMapper
 									tangent_continuity_to_be_enforced = true;
 									double extracted_factor = extractDouble(edges_with_enforced_tangent_continuity[i][1]);
 									penalty_factor_tangent_continuity = extracted_factor;
+									std::cout << "tangent continuity will been enforced on " << brep_elem_i->GetEdgeId() << std::endl;
+									
 								}
 							}
 
@@ -3284,6 +3286,7 @@ class CADMapper
 																J1,
 																gp_i_weight,
 																penalty_factor_tangent_continuity );
+								std::cout << "tangent continuity has been enforced on " << brep_elem_i->GetEdgeId() << std::endl;
 							}
 							// ...if no, we introduce coupling of rotations
 							else
@@ -3572,7 +3575,7 @@ class CADMapper
 																					t1_der_rs_s, t2_der_rs_s, t3_der_rs_s );	
 
 							
-							double fac = inner_prod(T3_m, T1_s);
+							double fac = - inner_prod(T3_m, T1_s);
 							KRATOS_WATCH(fac);
 
 						// First we consider contribution to the m_mapping_rhs_vector
@@ -3747,6 +3750,237 @@ class CADMapper
 								}
 							}		
 					}
+
+				void enforce_tangent_continuity_small_2( Patch::Pointer master_patch,
+												Patch::Pointer slave_patch,
+												double u_m, double v_m,
+												double u_s, double v_s,
+												Vector& tangent_on_master_patch,
+												Vector& tangent_on_slave_patch,
+												matrix<unsigned int>& mapping_matrix_ids_gpi_master,
+												matrix<unsigned int>& mapping_matrix_ids_gpi_slave,
+												double J1,
+												double gp_i_weight,
+												double penalty_factor_tangent_continuity )
+					{
+						// Variables needed later
+							Vector T1_m, T1_s, T2_m, T2_s, T3_m, T3_s;
+							Vector T1_der_m, T1_der_s, T2_der_m, T2_der_s, T3_der_m, T3_der_s;
+							std::vector<Vector> t1r_m, t1r_s, t2r_m, t2r_s, t3r_m, t3r_s;
+							std::vector<Vector> t1_der_r_m, t1_der_r_s, t2_der_r_m, t2_der_r_s, t3_der_r_m, t3_der_r_s;					
+							std::vector<std::vector<Vector>> t1rs_m, t1rs_s, t2rs_m, t2rs_s, t3rs_m, t3rs_s;
+							std::vector<std::vector<Vector>> t1_der_rs_m, t1_der_rs_s, t2_der_rs_m, t2_der_rs_s, t3_der_rs_m, t3_der_rs_s;
+
+						std::cout << "Called: cad_mapper::enforce_tangent_continuity()" << std::endl;
+
+						// Compute geometric quantities
+							master_patch->GetSurface().ComputeSecondVariationOfLocalCSY( u_m, v_m, 
+																						tangent_on_master_patch, 
+																						T1_m, T2_m, T3_m, 
+																						T1_der_m, T2_der_m, T3_der_m,
+																						t1r_m, t2r_m, t3r_m,
+																						t1_der_r_m, t2_der_r_m, t3_der_r_m,
+																						t1rs_m, t2rs_m, t3rs_m,
+																						t1_der_rs_m, t2_der_rs_m, t3_der_rs_m );
+							slave_patch->GetSurface().ComputeSecondVariationOfLocalCSY( u_s, v_s, 
+																					tangent_on_slave_patch, 
+																					T1_s, T2_s, T3_s, 
+																					T1_der_s, T2_der_s, T3_der_s,
+																					t1r_s, t2r_s, t3r_s,
+																					t1_der_r_s, t2_der_r_s, t3_der_r_s,
+																					t1rs_s, t2rs_s, t3rs_s,
+																					t1_der_rs_s, t2_der_rs_s, t3_der_rs_s );	
+
+							
+							double cosine = inner_prod(T3_m, T3_s);
+							double delta_omega = - acos(cosine);
+							KRATOS_WATCH(delta_omega);
+							// double delta_omega = 0.2;
+							int sign_factor = 1;
+							if( inner_prod(T2_m,T2_s) > 0 )
+								sign_factor = -1;
+
+						// First we consider contribution to the m_mapping_rhs_vector
+
+						// Master-Master-relation ( MM )
+							unsigned int k_row = 0;
+							for(unsigned int k=0; k<mapping_matrix_ids_gpi_master.size2();k++)
+							{
+								for(unsigned int l=0; l<mapping_matrix_ids_gpi_master.size1();l++)
+								{
+									unsigned int R_row_id = mapping_matrix_ids_gpi_master(l,k);
+									Vector omega_mx_row = MathUtils<double>::CrossProduct(T3_m,t3r_m[3*k_row+0]);
+									Vector omega_my_row = MathUtils<double>::CrossProduct(T3_m,t3r_m[3*k_row+1]);
+									Vector omega_mz_row = MathUtils<double>::CrossProduct(T3_m,t3r_m[3*k_row+2]);
+									double omega_T2_mx_row = inner_prod(omega_mx_row,T2_m);
+									double omega_T2_my_row = inner_prod(omega_my_row,T2_m);
+									double omega_T2_mz_row = inner_prod(omega_mz_row,T2_m);
+
+									m_rhs_x(R_row_id) -= penalty_factor_tangent_continuity * gp_i_weight * J1 * delta_omega * omega_T2_mx_row;
+									m_rhs_y(R_row_id) -= penalty_factor_tangent_continuity * gp_i_weight * J1 * delta_omega * omega_T2_my_row;
+									m_rhs_z(R_row_id) -= penalty_factor_tangent_continuity * gp_i_weight * J1 * delta_omega * omega_T2_mz_row;
+									
+									k_row++;
+								}
+							}
+
+						// Slave-Slave-relation ( SS )
+							k_row = 0;
+							for(unsigned int k=0; k<mapping_matrix_ids_gpi_slave.size2();k++)
+							{
+								for(unsigned int l=0; l<mapping_matrix_ids_gpi_slave.size1();l++)
+								{
+									unsigned int R_row_id = mapping_matrix_ids_gpi_slave(l,k);
+									Vector omega_sx_row = MathUtils<double>::CrossProduct(T3_s,t3r_s[3*k_row+0]);
+									Vector omega_sy_row = MathUtils<double>::CrossProduct(T3_s,t3r_s[3*k_row+1]);
+									Vector omega_sz_row = MathUtils<double>::CrossProduct(T3_s,t3r_s[3*k_row+2]);
+									double omega_T2_sx_row = inner_prod(omega_sx_row,T2_s);
+									double omega_T2_sy_row = inner_prod(omega_sy_row,T2_s);
+									double omega_T2_sz_row = inner_prod(omega_sz_row,T2_s);
+
+									m_rhs_x(R_row_id) -= sign_factor * penalty_factor_tangent_continuity * gp_i_weight * J1 * delta_omega * omega_T2_sx_row;
+									m_rhs_y(R_row_id) -= sign_factor * penalty_factor_tangent_continuity * gp_i_weight * J1 * delta_omega * omega_T2_sy_row;
+									m_rhs_z(R_row_id) -= sign_factor * penalty_factor_tangent_continuity * gp_i_weight * J1 * delta_omega * omega_T2_sz_row;
+									
+									k_row++;
+								}
+							}
+
+						// Then we consider the contribution to the m_mapping_matrix_CAD_CAD
+						// First we consider the relation Master-Master ( MM )
+							unsigned int k_coll = 0;
+							for(unsigned int i=0; i<mapping_matrix_ids_gpi_master.size2();i++)
+							{
+								for(unsigned int j=0; j<mapping_matrix_ids_gpi_master.size1();j++)
+								{
+									unsigned int R_row_id = mapping_matrix_ids_gpi_master(j,i);
+									Vector omega_mx_coll = MathUtils<double>::CrossProduct(T3_m,t3r_m[3*k_coll+0]);
+									Vector omega_my_coll = MathUtils<double>::CrossProduct(T3_m,t3r_m[3*k_coll+1]);
+									Vector omega_mz_coll = MathUtils<double>::CrossProduct(T3_m,t3r_m[3*k_coll+2]);
+									double omega_T2_mx_coll = inner_prod(omega_mx_coll,T2_m);
+									double omega_T2_my_coll = inner_prod(omega_my_coll,T2_m);
+									double omega_T2_mz_coll = inner_prod(omega_mz_coll,T2_m);
+
+									unsigned int k_row = 0;
+									for(unsigned int k=0; k<mapping_matrix_ids_gpi_master.size2();k++)
+									{
+										for(unsigned int l=0; l<mapping_matrix_ids_gpi_master.size1();l++)
+										{
+											unsigned int R_coll_id = mapping_matrix_ids_gpi_master(l,k);
+											Vector omega_mx_row = MathUtils<double>::CrossProduct(T3_m,t3r_m[3*k_row+0]);
+											Vector omega_my_row = MathUtils<double>::CrossProduct(T3_m,t3r_m[3*k_row+1]);
+											Vector omega_mz_row = MathUtils<double>::CrossProduct(T3_m,t3r_m[3*k_row+2]);
+											double omega_T2_mx_row = inner_prod(omega_mx_row,T2_m);
+											double omega_T2_my_row = inner_prod(omega_my_row,T2_m);
+											double omega_T2_mz_row = inner_prod(omega_mz_row,T2_m);
+
+											Vector omega_mx_row_col = MathUtils<double>::CrossProduct(T3_m,t3rs_m[3*k_row+0][3*k_coll+0]);
+											Vector omega_my_row_col = MathUtils<double>::CrossProduct(T3_m,t3rs_m[3*k_row+1][3*k_coll+1]);
+											Vector omega_mz_row_col = MathUtils<double>::CrossProduct(T3_m,t3rs_m[3*k_row+2][3*k_coll+2]);
+											double omega_T2_mx_row_col = inner_prod(omega_mx_row_col,T2_m);
+											double omega_T2_my_row_col = inner_prod(omega_my_row_col,T2_m);
+											double omega_T2_mz_row_col = inner_prod(omega_mz_row_col,T2_m);
+
+											m_lhs_x(R_row_id, R_coll_id) += penalty_factor_tangent_continuity * gp_i_weight * J1 * (omega_T2_mx_row * omega_T2_mx_coll - delta_omega * omega_T2_mx_row_col);
+											m_lhs_y(R_row_id, R_coll_id) += penalty_factor_tangent_continuity * gp_i_weight * J1 * (omega_T2_my_row * omega_T2_my_coll - delta_omega * omega_T2_my_row_col);
+											m_lhs_z(R_row_id, R_coll_id) += penalty_factor_tangent_continuity * gp_i_weight * J1 * (omega_T2_mz_row * omega_T2_mz_coll - delta_omega * omega_T2_mz_row_col);
+											
+											k_row++;
+										}
+									}
+									k_coll++;
+								}
+							}
+
+						// Then we consider the relation Slave-Slave ( SS )
+							k_coll = 0;
+							for(unsigned int i=0; i<mapping_matrix_ids_gpi_slave.size2();i++)
+							{
+								for(unsigned int j=0; j<mapping_matrix_ids_gpi_slave.size1();j++)
+								{
+									unsigned int R_row_id = mapping_matrix_ids_gpi_slave(j,i);
+									Vector omega_sx_coll = MathUtils<double>::CrossProduct(T3_s,t3r_s[3*k_coll+0]);
+									Vector omega_sy_coll = MathUtils<double>::CrossProduct(T3_s,t3r_s[3*k_coll+1]);
+									Vector omega_sz_coll = MathUtils<double>::CrossProduct(T3_s,t3r_s[3*k_coll+2]);
+									double omega_T2_sx_coll = inner_prod(omega_sx_coll,T2_s);
+									double omega_T2_sy_coll = inner_prod(omega_sy_coll,T2_s);
+									double omega_T2_sz_coll = inner_prod(omega_sz_coll,T2_s);
+
+									unsigned int k_row = 0;
+									for(unsigned int k=0; k<mapping_matrix_ids_gpi_slave.size2();k++)
+									{
+										for(unsigned int l=0; l<mapping_matrix_ids_gpi_slave.size1();l++)
+										{
+											unsigned int R_coll_id = mapping_matrix_ids_gpi_slave(l,k);
+											Vector omega_sx_row = MathUtils<double>::CrossProduct(T3_s,t3r_s[3*k_row+0]);
+											Vector omega_sy_row = MathUtils<double>::CrossProduct(T3_s,t3r_s[3*k_row+1]);
+											Vector omega_sz_row = MathUtils<double>::CrossProduct(T3_s,t3r_s[3*k_row+2]);
+											double omega_T2_sx_row = inner_prod(omega_sx_row,T2_s);
+											double omega_T2_sy_row = inner_prod(omega_sy_row,T2_s);
+											double omega_T2_sz_row = inner_prod(omega_sz_row,T2_s);
+
+											Vector omega_sx_row_col = MathUtils<double>::CrossProduct(T3_s,t3rs_s[3*k_row+0][3*k_coll+0]);
+											Vector omega_sy_row_col = MathUtils<double>::CrossProduct(T3_s,t3rs_s[3*k_row+1][3*k_coll+1]);
+											Vector omega_sz_row_col = MathUtils<double>::CrossProduct(T3_s,t3rs_s[3*k_row+2][3*k_coll+2]);
+											double omega_T2_sx_row_col = inner_prod(omega_sx_row_col,T2_s);
+											double omega_T2_sy_row_col = inner_prod(omega_sy_row_col,T2_s);
+											double omega_T2_sz_row_col = inner_prod(omega_sz_row_col,T2_s);
+
+											m_lhs_x(R_row_id, R_coll_id) += penalty_factor_tangent_continuity * gp_i_weight * J1 * (omega_T2_sx_row * omega_T2_sx_coll - sign_factor * delta_omega * omega_T2_sx_row_col);
+											m_lhs_y(R_row_id, R_coll_id) += penalty_factor_tangent_continuity * gp_i_weight * J1 * (omega_T2_sy_row * omega_T2_sy_coll - sign_factor * delta_omega * omega_T2_sy_row_col);
+											m_lhs_z(R_row_id, R_coll_id) += penalty_factor_tangent_continuity * gp_i_weight * J1 * (omega_T2_sz_row * omega_T2_sz_coll - sign_factor * delta_omega * omega_T2_sz_row_col);
+											
+											k_row++;
+										}
+									}
+									k_coll++;
+								}
+							}			
+
+						// Then we consider the Master-slave relation ( MS & SM )
+							unsigned int k_m = 0;
+							for(unsigned int i=0; i<mapping_matrix_ids_gpi_master.size2();i++)
+							{
+								for(unsigned int j=0; j<mapping_matrix_ids_gpi_master.size1();j++)
+								{
+									unsigned int R_m_id = mapping_matrix_ids_gpi_master(j,i);
+									Vector omega_mx = MathUtils<double>::CrossProduct(T3_m,t3r_m[3*k_m+0]);
+									Vector omega_my = MathUtils<double>::CrossProduct(T3_m,t3r_m[3*k_m+1]);
+									Vector omega_mz = MathUtils<double>::CrossProduct(T3_m,t3r_m[3*k_m+2]);
+									double omega_T2_mx = inner_prod(omega_mx,T2_m);
+									double omega_T2_my = inner_prod(omega_my,T2_m);
+									double omega_T2_mz = inner_prod(omega_mz,T2_m);
+
+									unsigned int k_s = 0;
+									for(unsigned int k=0; k<mapping_matrix_ids_gpi_slave.size2();k++)
+									{
+										for(unsigned int l=0; l<mapping_matrix_ids_gpi_slave.size1();l++)
+										{
+											unsigned int R_s_id = mapping_matrix_ids_gpi_slave(l,k);
+											Vector omega_sx = MathUtils<double>::CrossProduct(T3_s,t3r_s[3*k_s+0]);
+											Vector omega_sy = MathUtils<double>::CrossProduct(T3_s,t3r_s[3*k_s+1]);
+											Vector omega_sz = MathUtils<double>::CrossProduct(T3_s,t3r_s[3*k_s+2]);
+											double omega_T2_sx = inner_prod(omega_sx,T2_s);
+											double omega_T2_sy = inner_prod(omega_sy,T2_s);
+											double omega_T2_sz = inner_prod(omega_sz,T2_s);
+
+											// MS
+											m_lhs_x(R_m_id, R_s_id) += sign_factor * penalty_factor_tangent_continuity * gp_i_weight * J1 * omega_T2_mx * omega_T2_sx;
+											m_lhs_y(R_m_id, R_s_id) += sign_factor * penalty_factor_tangent_continuity * gp_i_weight * J1 * omega_T2_my * omega_T2_sy;
+											m_lhs_z(R_m_id, R_s_id) += sign_factor * penalty_factor_tangent_continuity * gp_i_weight * J1 * omega_T2_mz * omega_T2_sz;
+
+											// SM
+											m_lhs_x(R_s_id, R_m_id) += sign_factor * penalty_factor_tangent_continuity * gp_i_weight * J1 * omega_T2_mx * omega_T2_sx;
+											m_lhs_y(R_s_id, R_m_id) += sign_factor * penalty_factor_tangent_continuity * gp_i_weight * J1 * omega_T2_my * omega_T2_sy;
+											m_lhs_z(R_s_id, R_m_id) += sign_factor * penalty_factor_tangent_continuity * gp_i_weight * J1 * omega_T2_mz * omega_T2_sz;						
+
+											k_s++;								
+										}
+									}
+									k_m++;
+								}
+							}
+						}					
 			// measuring quality of the results
 				double measure_g0_continuity(boost::python::list& edges_with_enforced_tangent_continuity)
 					{
@@ -4113,7 +4347,7 @@ class CADMapper
 				}
 			}
 		}
-			// define point cloud
+			// define data points
 				void use_all_FE_nodes_as_data_points()
 				{
 					for(ModelPart::NodesContainerType::iterator node_i = mr_fe_model_part.NodesBegin(); node_i!=mr_fe_model_part.NodesEnd(); node_i++)
@@ -4535,13 +4769,14 @@ class CADMapper
 													// boost::python::list& edges_with_enforced_tangent_continuity
 													)
 						{
-							boost::python::list edges_with_enforced_tangent_continuity;
+							KRATOS_WATCH("apply_boundary_conditions_5");
 							// Loop over all brep elements specifying boundary conditions 
 							for (BREPElementVector::iterator brep_elem_i = m_brep_elements.begin(); brep_elem_i != m_brep_elements.end(); ++brep_elem_i)
 							{
+								std::cout << "\n\ncurrent brep element: " << brep_elem_i->GetEdgeId() << std::endl;								
 								// Check if brep_elem_i is a element used for coupling or for Dirichlet boundary conditions
 								if(brep_elem_i->HasCouplingCondition())
-									apply_coupling_condition_small(brep_elem_i, penalty_factor_disp, penalty_factor_rot, edges_with_enforced_tangent_continuity);
+									apply_coupling_condition_small(brep_elem_i, penalty_factor_disp, penalty_factor_rot, m_edges_with_enforced_tangent_continuity);
 								// else if(brep_elem_i->HasDirichletCondition())
 									// apply_dirichlet_condition(brep_elem_i, penalty_factor_dirichlet, edges_with_specific_dirichlet_conditions);
 							}
@@ -4585,41 +4820,54 @@ class CADMapper
 								least_square_minimization_of_data_points();
 								if(m_beta > 0)  beta_criterion();
 								// if boundaries
-								if(m_penalty_factor_disp > 0 || m_penalty_factor_rot > 0) apply_boundary_conditions_5(m_penalty_factor_disp, m_penalty_factor_rot);
+								// if(m_penalty_factor_disp > 0 || m_penalty_factor_rot > 0) apply_boundary_conditions_5(m_penalty_factor_disp, m_penalty_factor_rot);
 
 														std::cout << "\t\t\t DONE (" << timer3.elapsed() << " s)" << std::endl;
 							// solve and update
 							solve_update_and_test();
 							// deactivate all
-							// deactivate_all();
+							deactivate_all();
 							std::cout << "\n ****************** (" << overall.elapsed() << " s) ********************" << std::endl;
 						}
 					void map_patch_by_patch()
 						{
+							std::cout << "\n\n\n ****************** RECONSTRUCTION *******************" << std::endl;
+							boost::timer overall;
 							for(PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
 							{
+								std::cout << "\n ****************** PATCH " << (*patch_i)->GetId() << " **************************" << std::endl;
 								// activate cps
+														std::cout << "\n\t> Activating control points..." << std::endl;
+														boost::timer timer1;
 								activate_patch(*patch_i);
+														std::cout << "\t\t\t DONE (" << timer1.elapsed() << " s)" << std::endl;
 								// assign ids
+														std::cout << "\n\t> Assigning mapping matrix ids..." << std::endl;
+														boost::timer timer2;
 								assign_mapping_matrix_ids();
+														std::cout << "\t\t\t DONE (" << timer2.elapsed() << " s)" << std::endl;
 								// initialize lse
+														std::cout << "\n\t> Setting up the linear system of equations..." << std::endl;
+														boost::timer timer3;
 								initialize_lse();
 								// add contributions
 									least_square_minimization_of_data_points();
 									if(m_beta > 0)  beta_criterion();
 									// if boundaries
+														std::cout << "\t\t\t DONE (" << timer3.elapsed() << " s)" << std::endl;
 								// solve and update
 								solve_update_and_test();
 								// deactivate all
 								deactivate_all();
 								
-								// output_surface_points(std::to_string(patch->GetId()) + ".txt", 150, 150, -1); ////////////////////////////////////////////////////
+								output_surface_points(std::to_string((*patch_i)->GetId()) + ".txt", 150, 150, -1); ////////////////////////////////////////////////////
 							}
+							std::cout << "\n ****************** (" << overall.elapsed() << " s) ********************" << std::endl;
 						}
 					void map_CP_by_CP()
-					{
+						{
 
-					}
+						}
 
 					void map_boundary_conditions()
 						{
@@ -4632,11 +4880,13 @@ class CADMapper
 							// add contributions
 								least_square_minimization_of_data_points();
 								if(m_beta > 0)  beta_criterion();
-								apply_boundary_conditions_5(1,1);
+								if(m_penalty_factor_disp > 0 || m_penalty_factor_rot > 0) apply_boundary_conditions_5(m_penalty_factor_disp, m_penalty_factor_rot);
 							// solve and update
 							solve_update_and_test();
 							// deactivate all
 							deactivate_all();
+							activate_all();
+							activate_borders();
 						}
 					void crazy_step_back()
 						{
@@ -4685,6 +4935,7 @@ class CADMapper
 							double up_2 = 1e5;
 							while(up_1 > 1e-2 || up_2 > 1e-2)
 							{
+								undeform();
 								//
 									// initialize lse
 									initialize_lse();
@@ -4710,6 +4961,63 @@ class CADMapper
 							// deactivate all							
 							deactivate_all();
 						}
+					void map_all_patches_augmented_Lagrange(boost::python::list& edges_with_enforced_tangent_continuity,
+																	double r1,
+																	double r2)
+						{
+							std::cout << "\n\n\n ****************** RECONSTRUCTION *******************" << std::endl;
+							boost::timer overall;
+							// activate cps
+														std::cout << "\n\t> Activating control points..." << std::endl;
+														boost::timer timer1;
+							activate_all();
+							activate_borders();
+
+														std::cout << "\t\t\t DONE (" << timer1.elapsed() << " s)" << std::endl;
+
+							// assign ids
+														std::cout << "\n\t> Assigning mapping matrix ids..." << std::endl;
+														boost::timer timer2;
+							assign_mapping_matrix_ids();
+														std::cout << "\t\t\t DONE (" << timer2.elapsed() << " s)" << std::endl;
+
+							double lambda_1 = 0;
+							double lambda_2 = 0;
+							double up_1 = 1e5;
+							double up_2 = 1e5;
+							while(up_1 > 1e-2 || up_2 > 1e-2)
+							{
+								undeform();
+									// initialize lse
+																std::cout << "\n\t> Setting up the linear system of equations..." << std::endl;
+																boost::timer timer3;
+									initialize_lse();
+									// add contributions
+										least_square_minimization_of_data_points();
+										if(m_beta > 0)  beta_criterion();
+										// if boundaries
+										apply_boundary_conditions_5(lambda_1, lambda_2);
+
+																std::cout << "\t\t\t DONE (" << timer3.elapsed() << " s)" << std::endl;
+									// solve and update
+									solve_update_and_test();
+								up_1 = measure_g0_continuity(edges_with_enforced_tangent_continuity);
+								up_2 = measure_g1_continuity(edges_with_enforced_tangent_continuity);
+								lambda_1 = lambda_1 + r1 * up_1;
+								lambda_2 = lambda_2 + r2 * up_2;
+								KRATOS_WATCH(up_1);
+								KRATOS_WATCH(up_2);
+								KRATOS_WATCH(lambda_1);
+								KRATOS_WATCH(lambda_2);
+								double a;
+								std::cin >> a;
+								if(a==2) break;
+							}
+							// deactivate all							
+							deactivate_all();
+							std::cout << "\n ****************** (" << overall.elapsed() << " s) ********************" << std::endl;
+						}
+												
 				// setup
 					void apply_regularization_schemes(double alpha, double beta, double delta)
 						{
@@ -4722,12 +5030,26 @@ class CADMapper
 											   double penalty_factor_disp,
 											   double penalty_factor_rot,
 											//    double penalty_factor_tangent_continuity,
-											   boost::python::list& edges_with_enforced_tangent_continuity
+											   boost::python::list edges_with_enforced_tangent_continuity
 											   )
 						{
 							m_penalty_factor_disp = penalty_factor_disp;
 							m_penalty_factor_rot = penalty_factor_rot;
-							// m_edges_with_enforced_tangent_continuity = edges_with_enforced_tangent_continuity;
+							m_edges_with_enforced_tangent_continuity = edges_with_enforced_tangent_continuity;
+							KRATOS_WATCH("apply enforcement");
+						}
+				// to clean later
+					void undeform()
+						{
+							for(PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
+							{
+								for(ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
+								{
+									cp_i->setdX(0);
+									cp_i->setdY(0);
+									cp_i->setdZ(0);
+								}	
+							}
 						}
 		////////////////////////////////////////////////////////
 		
@@ -5281,7 +5603,7 @@ class CADMapper
 	double m_delta = 0;
 	double m_penalty_factor_disp;
 	double m_penalty_factor_rot;
-	// boost::python::list& m_edges_with_enforced_tangent_continuity;
+	boost::python::list m_edges_with_enforced_tangent_continuity;
 	// EXTERNAL: separating FE-mesh data from computation //
 	double m_number_of_points_external = 0;
 	IntVector m_list_of_patch_ids_external;
