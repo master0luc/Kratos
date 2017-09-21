@@ -396,7 +396,7 @@ namespace Kratos {
 					{
 						// Check that this user specified normal axis isn't actually 
 						// orthogonal to the shell normal
-						if (abs(inner_prod(ucsNormal, shellLocalAxis3)) < 1E-6)
+						if (std::abs(inner_prod(ucsNormal, shellLocalAxis3)) < 1E-6)
 						{
 							std::cout << "\nWARNING:\n"
 								<< "The user axis (axis"
@@ -617,7 +617,7 @@ namespace Kratos {
 
 						rotation_axis = MathUtils<double>::CrossProduct(correctedNormalVector, localAxis3);
 						rotation_angle = inner_prod(correctedNormalVector, localAxis3);
-						if (abs(rotation_angle) < (1.0 - 1E-6)) // skip if already co-linear
+						if (std::abs(rotation_angle) < (1.0 - 1E-6)) // skip if already co-linear
 						{
 							rotation_angle = std::acos(rotation_angle);
 							R = setUpRotationMatrix(rotation_angle, rotation_axis);
@@ -697,7 +697,7 @@ namespace Kratos {
 					tempFiber = prod(R, localAxis1);
 					double current_dot_prod = inner_prod(tempFiber, orthogonal_vector);
 					
-					if (abs(current_dot_prod) < abs(min_dot_prod))
+					if (std::abs(current_dot_prod) < std::abs(min_dot_prod))
 					{
 						min_dot_prod = current_dot_prod;
 						best_angle = current_angle;
@@ -706,7 +706,7 @@ namespace Kratos {
 				}
 				step_size /= (steps / 2);
 				iteration++;
-				if (abs(min_dot_prod) < tolerance)
+				if (std::abs(min_dot_prod) < tolerance)
 				{
 					converged = true;
 				}
@@ -751,7 +751,7 @@ namespace Kratos {
 
 
 			// First, check if Global X vector is normal to the shell surface
-			if (abs(inner_prod(globalVector, localAxis1)) < 1E-6)
+			if (std::abs(inner_prod(globalVector, localAxis1)) < 1E-6)
 			{
 				if (echo_level > 0)
 				{
