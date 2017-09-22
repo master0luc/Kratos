@@ -131,11 +131,8 @@ class CADMapper
 	  mr_cad_integration_data(cad_integration_data),
 	  m_linear_solver(linear_solver)
     {
-        // Set precision for output
-        std::cout.precision(12);
-
 		// Initialize reader to read CAD model data from the given python dict (json-format)
-		m_cad_reader =  CADModelReader(mr_cad_geometry,mr_cad_integration_data);
+		m_cad_reader = CADModelReader(mr_cad_geometry,mr_cad_integration_data);
 
 		// Read cad geometry data into the loal c++ containers
 		m_cad_reader.ReadGeometry(m_patches);
@@ -386,8 +383,6 @@ class CADMapper
 		}
 
 		// Count relevant control points and assign each a unique mapping matrix Id (iterator over points)
-
-		// First we identify relevant control points affecting the Gauss points on the surface
 		m_n_control_points = 0;
 		m_n_relevant_control_points = 0;
 		unsigned int mapping_matrix_id = 0;
@@ -1198,9 +1193,9 @@ class CADMapper
 		{
 			unsigned int mapping_id = node_i->GetValue(MAPPING_MATRIX_ID);
 
-			dx[3*mapping_id+0] = node_i->GetValue(SHAPE_CHANGE_ABSOLUTE_X);
-			dx[3*mapping_id+1] = node_i->GetValue(SHAPE_CHANGE_ABSOLUTE_Y);
-			dx[3*mapping_id+2] = node_i->GetValue(SHAPE_CHANGE_ABSOLUTE_Z);
+			dx[3*mapping_id+0] = node_i->FastGetSolutionStepValue(SHAPE_CHANGE_ABSOLUTE_X);
+			dx[3*mapping_id+1] = node_i->FastGetSolutionStepValue(SHAPE_CHANGE_ABSOLUTE_Y);
+			dx[3*mapping_id+2] = node_i->FastGetSolutionStepValue(SHAPE_CHANGE_ABSOLUTE_Z);
 		}
 		noalias(m_mapping_rhs_vector) += prod(m_mapping_matrix_CAD_FEM,dx);
 
@@ -1488,12 +1483,12 @@ class CADMapper
 	
 
     // --------------------------------------------------------------------------
-    void output_control_point_displacements()
+    void output_control_point_displacements( std::string output_filename )
     {
 		// Outputs the displacements of the control points in a format that may be read by Gid
 
 		std::cout << "\n> Starting to write displacement of control points..." << std::endl;
-		std::ofstream output_file("control_point_displacements.post.res");
+		std::ofstream output_file(output_filename);
 
 		output_file << "Rhino Post Results File 1.0" << std::endl;
 		output_file << "Result \"Displacement\" \"Load Case\" 0 Vector OnNodes" << std::endl;
