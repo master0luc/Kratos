@@ -121,10 +121,7 @@ class ALMContactProcess(python_process.PythonProcess):
         self.main_model_part.ProcessInfo[ContactStructuralMechanicsApplication.CONSIDER_PAIR_VARIATION] = self.params["pair_variation"].GetBool()
         # We set the max gap factor for the gap adaptation
         max_gap_factor = self.params["max_gap_factor"].GetDouble()
-        if (max_gap_factor > 0.0):
-            self.main_model_part.ProcessInfo[ContactStructuralMechanicsApplication.ADAPT_PENALTY] = True
-        else:
-            self.main_model_part.ProcessInfo[ContactStructuralMechanicsApplication.ADAPT_PENALTY] = False
+        self.main_model_part.ProcessInfo[ContactStructuralMechanicsApplication.ADAPT_PENALTY] = (max_gap_factor > 0.0)
         self.main_model_part.ProcessInfo[ContactStructuralMechanicsApplication.MAX_GAP_FACTOR] = max_gap_factor
         
         # We set the value that scales in the tangent direction the penalty and scale parameter
