@@ -235,8 +235,6 @@ public:
                 }
                 else
                 {
-                    (it_node)->FastGetSolutionStepValue(VECTOR_LAGRANGE_MULTIPLIER) = zero_vector; // NOTE: To clear the value (can affect future iterations)
-                    
                     if ((it_node)->Is(ACTIVE) == true )
                     {
                         (it_node)->Set(ACTIVE, false);
