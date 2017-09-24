@@ -35,7 +35,10 @@ solver.ImportModelPart()
 composite_property_alignment_settings_11 = Parameters("""
 {
     "method": "simple",
-	"echo_level"      : 0
+	"echo_level"      : 0,
+	"method_specific_settings" : {
+        "global_fiber_direction" : [0,0,1]
+    }
 }
 """)
 composite_property_alignment_settings_12 = Parameters("""

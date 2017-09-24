@@ -132,22 +132,16 @@ namespace Kratos {
                 {
 					// Check simple method 11
 
-					// No verification necessary, we just align to the global X axis.
-					/*
+					
                     specific_parameters.ValidateAndAssignDefaults(mSimpleMethodDefaultParameters);
-                    Vector3 global_fiber_direction;
-                    Vector3 normal_vector;
+                    Vector3 global_vector;
     
-                    CheckAndReadVectors(specific_parameters, "global_fiber_direction", global_fiber_direction);
-                    CheckAndReadVectors(specific_parameters, "normal_vector", normal_vector);
-					*/
-
-					std::string title_string = "\nUsing the simple method aligned to the global X axis";
+                    CheckAndReadVectors(specific_parameters, "global_fiber_direction", global_vector);
+					
+					std::string title_string = "\nUsing the simple method aligned to the specified global direction";
 					printMethodInfo(MethodParameters, title_string);
 
-					Vector3 dummy = Vector3((1.0,0.0,0.0));
-
-                    ExecuteOLD(dummy, dummy, 4);
+                    ExecuteOLD(global_vector, global_vector, 4);
                 }
             }
             else if (method_name == "advanced")
@@ -254,14 +248,11 @@ namespace Kratos {
             "echo_level"               : 0
         }  )" );
         
-		// Specific parameters not necessary, we just align to global X vector.
-		/*
+
         Parameters mSimpleMethodDefaultParameters = Parameters( R"(
         {
-            "global_fiber_direction" : [0,0,0],
-            "normal_vector"   : [0,0,0]
+            "global_fiber_direction" : [0,0,0]
         }  )" );
-		*/
         
         Parameters mSimpleMethodCSDefaultParameters = Parameters( R"(
         {
@@ -490,12 +481,12 @@ namespace Kratos {
 
 
 			// case 4
-			// (Abaqus custom projection)
+			// (Abaqus custom projection - modified)
 			// http://130.149.89.49:2080/v6.8/books/gsa/default.htm?startat=ch05s03.html
-			// Shell local axis 1 is the projection of Global X vector onto the shell surface.
-			// If the Global X vector is normal to the shell surface, 
+			// Shell local axis 1 is the projection of specified global vector onto the shell surface.
+			// If the global vector is normal to the shell surface, 
 			// the shell local 1-direction is the projection of the 
-            // Global Z vector onto the shell surface
+            // (global_vector cross shell_1) onto the shell surface
             
             // Select approach -------------------------------------------------
             int caseId = 0;
@@ -533,7 +524,7 @@ namespace Kratos {
 					std::cout << "generally aligns with the specified global fiber via projection."  << std::endl;
 					break;
 				case 3:
-					std::cout << "generally aligns with the global Cartesian X axis via projection." << std::endl;
+					std::cout << "generally aligns with the specified global vector via projection." << std::endl;
 					break;
 				default:
 					break;
@@ -658,7 +649,7 @@ namespace Kratos {
 					// the shell local 1-direction is the projection of the 
 					// Global Z vector onto the shell surface
 
-					theta = defaultGlobalProjection(localAxis1, localAxis2, localAxis3, element.GetId());
+					theta = defaultGlobalProjection(GlobalFiberDirection,localAxis1, localAxis2, localAxis3, element.GetId());
 
 				default:
 					break;
@@ -739,7 +730,7 @@ namespace Kratos {
 			return best_angle;
 		}
 
-        double defaultGlobalProjection(const Vector localAxis1, const Vector localAxis2, 
+        double defaultGlobalProjection(const Vector global_vector, const Vector localAxis1, const Vector localAxis2,
                                        const Vector localAxis3, const int element_number)
 		{
 			// (Abaqus default projection)
@@ -749,12 +740,10 @@ namespace Kratos {
 			// the shell local 1-direction is the projection of the 
 			// Global Z vector onto the shell surface
 
-			// Initially set up Global X vector as global vector
-			Vector globalVector = ZeroVector(3);
-			globalVector[0] = 1.0;
+			// Initially the input global vector is taken as the final global vector
+			Vector globalVector = Vector(global_vector);
 
-
-			// First, check if Global X vector is normal to the shell surface
+			// First, check if specified global vector is normal to the shell surface
 			if (std::abs(inner_prod(globalVector, localAxis1)) < 1E-6)
 			{
 				if (mEchoLevel > 0)
@@ -764,13 +753,13 @@ namespace Kratos {
 						<< mrModelPart.Name()
 						<< " element "
 						<< element_number
-						<< " is orthogonal to the global X vector.\n"
-						<< "Now element aligning fiber direction to the global Z vector."
+						<< " is orthogonal to the specified global_vector.\n"
+						<< "Now aligning fiber direction to global_vector <cross> shell_axis_1."
 						<< std::endl;
 				}
-				// Now we use Global Z as the global vector
-				globalVector[0] = 0.0;
-				globalVector[2] = 1.0;
+				// Now we calculate the cross product of these two
+				// and use it as the specified direction
+				globalVector = Vector(MathUtils<double>::CrossProduct(globalVector, localAxis1));
 			}
 
 
@@ -778,7 +767,7 @@ namespace Kratos {
 			// http://www.euclideanspace.com/maths/geometry/elements/plane/lineOnPlane/index.htm
 			// Projected vector = A
 			// Surface normal = B
-			Vector& A = globalVector;
+			const Vector& A = globalVector;
 			const Vector& B = localAxis3;
 			double B_length = std::sqrt(inner_prod(B, B));
 			Vector ACrossB = Vector(MathUtils<double>::CrossProduct(A, B));
