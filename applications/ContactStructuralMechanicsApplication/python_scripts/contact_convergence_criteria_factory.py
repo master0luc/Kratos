@@ -24,6 +24,7 @@ class convergence_criterion:
             CR_RT = convergence_criterion_parameters["contact_residual_relative_tolerance"].GetDouble()
             CR_AT = convergence_criterion_parameters["contact_residual_absolute_tolerance"].GetDouble()
             contact_tolerance = convergence_criterion_parameters["contact_tolerance"].GetDouble()
+            condn_convergence_criterion = convergence_criterion_parameters["condn_convergence_criterion"].GetBool()
             fancy_convergence_criterion = convergence_criterion_parameters["fancy_convergence_criterion"].GetBool()
             print_convergence_criterion = convergence_criterion_parameters["print_convergence_criterion"].GetBool()
             ensure_contact = convergence_criterion_parameters["ensure_contact"].GetBool()
@@ -100,7 +101,7 @@ class convergence_criterion:
             Mortar.SetEchoLevel(echo_level)
 
             if (fancy_convergence_criterion == True):
-                self.mechanical_convergence_criterion = ContactStructuralMechanicsApplication.MortarAndConvergenceCriteria(self.mechanical_convergence_criterion, Mortar, table, print_convergence_criterion)
+                self.mechanical_convergence_criterion = ContactStructuralMechanicsApplication.MortarAndConvergenceCriteria(self.mechanical_convergence_criterion, Mortar, table, print_convergence_criterion, condn_convergence_criterion)
             else:
                 self.mechanical_convergence_criterion = ContactStructuralMechanicsApplication.MortarAndConvergenceCriteria(self.mechanical_convergence_criterion, Mortar)
             self.mechanical_convergence_criterion.SetEchoLevel(echo_level)

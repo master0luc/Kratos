@@ -13,6 +13,7 @@
 #define  KRATOS_MORTAR_AND_CRITERIA_H
 
 /* System includes */
+#include <algorithm>    // std::sort
 
 /* External includes */
 
@@ -24,7 +25,10 @@
 #if !defined(_WIN32)
     #include "utilities/color_utilities.h"
 #endif
-
+#include "utilities/svd_utils.h"
+#if defined(INCLUDE_FEAST_CONTACT)
+    #include "../ExternalSolversApplication/external_includes/feast_solver.h"
+#endif
 namespace Kratos
 {
 
@@ -86,6 +90,14 @@ public:
 
     typedef TSparseSpace                                  SparseSpaceType;
 
+    typedef typename TSparseSpace::MatrixType            SparseMatrixType;
+
+    typedef typename TSparseSpace::VectorType            SparseVectorType;
+
+    typedef typename TDenseSpace::MatrixType              DenseMatrixType;
+
+    typedef typename TDenseSpace::VectorType              DenseVectorType;
+    
     typedef typename BaseType::TDataType                        TDataType;
 
     typedef typename BaseType::DofsArrayType                DofsArrayType;
@@ -107,11 +119,13 @@ public:
         typename ConvergenceCriteria < TSparseSpace, TDenseSpace >::Pointer pFirstCriterion,
         typename ConvergenceCriteria < TSparseSpace, TDenseSpace >::Pointer pSecondCriterion,
         TablePrinterPointerType pTable = nullptr,
-        const bool PrintingOutput = false 
+        const bool PrintingOutput = false,
+        const bool ComputeConditionNumber = false
         )
         :And_Criteria< TSparseSpace, TDenseSpace >(pFirstCriterion, pSecondCriterion),
         mpTable(pTable),
         mPrintingOutput(PrintingOutput),
+        mComputeConditionNumber(ComputeConditionNumber),
         mTableIsInitialized(false)
     {
     }
@@ -166,6 +180,90 @@ public:
         
         bool criterion_result = BaseType::PostCriteria(rModelPart,rDofSet,A,Dx,b);
         
+        if (mComputeConditionNumber == true)
+        {
+        #if defined(INCLUDE_FEAST_CONTACT)
+            typedef FEASTSolver<TSparseSpace, TDenseSpace> FEASTSolverType;
+            
+            Parameters default_params(R"(
+            {
+                "solver_type": "FEAST",
+                "print_feast_output": false,
+                "perform_stochastic_estimate": true,
+                "solve_eigenvalue_problem": true,
+                "lambda_min": 0.0,
+                "lambda_max": 1.0,
+                "echo_level": 0,
+                "number_of_eigenvalues": 0,
+                "search_dimension": 10,
+                "linear_solver_settings": {
+                    "solver_type": "skyline_lu"
+                }
+            })");
+            
+            const std::size_t size = A.size1();
+            
+            const double normA = SparseSpaceType::TwoNorm(A);
+            default_params["lambda_max"].SetDouble(normA);
+            default_params["lambda_min"].SetDouble(-normA);
+            default_params["number_of_eigenvalues"].SetInt(size * 2/3 - 1);
+            default_params["search_dimension"].SetInt(3/2 * size + 1);
+            SparseMatrixType copy_matrix = A;
+            SparseMatrixType identity_matrix = IdentityMatrix(size, size);
+            
+            // Create the auxilary eigen system
+            DenseMatrixType eigen_vectors;
+            DenseVectorType eigen_values;
+            
+            // Create the FEAST solver
+            FEASTSolverType FEASTSolver(boost::make_shared<Parameters>(default_params));
+            
+            // Solve the problem
+            FEASTSolver.Solve(copy_matrix, identity_matrix, eigen_values, eigen_vectors);
+            
+            // Size of the eigen values vector
+            const int dim_eigen_values = eigen_values.size();
+            
+            // We get the moduli of the eigen values
+            #pragma omp parallel for 
+            for (int i = 0; i < dim_eigen_values; i++)
+            {
+                eigen_values[i] = std::abs(eigen_values[i]);
+            }
+            
+            // Now we sort the vector
+            std::sort(eigen_values.begin(), eigen_values.end());
+            
+            // We compute the eigen value
+            double condition_number = 0.0;
+            if (dim_eigen_values > 0) condition_number = eigen_values[dim_eigen_values - 1]/eigen_values[0];
+        #else
+            const double condition_number = SVDUtils<double>::SVDConditionNumber(A);
+        #endif
+            
+            if (mpTable != nullptr)
+            {
+                std::cout.precision(4);
+                auto& Table = mpTable->GetTable();
+                Table  << condition_number;
+            }
+            else
+            {
+                if (mPrintingOutput == false)
+                {
+                #if !defined(_WIN32)
+                    std::cout << "\n" << BOLDFONT("CONDITION NUMBER:") << "\t " << std::scientific << condition_number << std::endl;
+                #else
+                    std::cout << "\n" << "CONDITION NUMBER:" << "\t" << std::scientific << condition_number << std::endl;
+                #endif
+                }
+                else
+                {
+                    std::cout << "\n" << "CONDITION NUMBER:" << "\t" << std::scientific << condition_number << std::endl;
+                }
+            }
+        }
+        
         if (criterion_result == true && rModelPart.GetCommunicator().MyPID() == 0 && this->GetEchoLevel() > 0)
         {
             if (mpTable != nullptr)
@@ -191,7 +289,13 @@ public:
             mTableIsInitialized = true;
         }
         
-         BaseType::Initialize(rModelPart);
+        BaseType::Initialize(rModelPart);
+         
+        if (mpTable != nullptr && mComputeConditionNumber == true)
+        {
+            auto& table = mpTable->GetTable();
+            table.AddColumn("COND.NUM.", 10);
+        }
     }
 
     /**
@@ -315,6 +419,7 @@ private:
     
     TablePrinterPointerType mpTable; // Pointer to the fancy table 
     bool mPrintingOutput;            // If the colors and bold are printed
+    bool mComputeConditionNumber;    // If the condition number is computed
     bool mTableIsInitialized;        // If the table is already initialized
     
     ///@}
