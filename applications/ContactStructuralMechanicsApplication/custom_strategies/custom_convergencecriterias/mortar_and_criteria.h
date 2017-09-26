@@ -26,6 +26,7 @@
     #include "utilities/color_utilities.h"
 #endif
 #include "utilities/svd_utils.h"
+#include "linear_solvers/linear_solver.h"
 #if defined(INCLUDE_FEAST_CONTACT)
     #include "../ExternalSolversApplication/external_includes/feast_solver.h"
 #endif
@@ -105,8 +106,22 @@ public:
     typedef typename BaseType::TSystemMatrixType        TSystemMatrixType;
 
     typedef typename BaseType::TSystemVectorType        TSystemVectorType;
-
+    
     typedef boost::shared_ptr<TableStreamUtility> TablePrinterPointerType;
+    
+    typedef std::complex<double>                              ComplexType;
+    
+    typedef compressed_matrix<ComplexType>        ComplexSparseMatrixType;
+
+    typedef matrix<ComplexType>                    ComplexDenseMatrixType;
+
+    typedef vector<ComplexType>                         ComplexVectorType;
+
+    typedef UblasSpace<ComplexType, ComplexSparseMatrixType, ComplexVectorType> ComplexSparseSpaceType;
+
+    typedef UblasSpace<ComplexType, ComplexDenseMatrixType, ComplexVectorType> ComplexDenseSpaceType;
+
+    typedef LinearSolver<ComplexSparseSpaceType, ComplexDenseSpaceType> ComplexLinearSolverType;
 
     ///@}
     ///@name Life Cycle
@@ -120,12 +135,14 @@ public:
         typename ConvergenceCriteria < TSparseSpace, TDenseSpace >::Pointer pSecondCriterion,
         TablePrinterPointerType pTable = nullptr,
         const bool PrintingOutput = false,
-        const bool ComputeConditionNumber = false
+        const bool ComputeConditionNumber = false,
+        ComplexLinearSolverType::Pointer pLinearSolver = nullptr
         )
         :And_Criteria< TSparseSpace, TDenseSpace >(pFirstCriterion, pSecondCriterion),
         mpTable(pTable),
         mPrintingOutput(PrintingOutput),
         mComputeConditionNumber(ComputeConditionNumber),
+        mpLinearSolver(pLinearSolver),
         mTableIsInitialized(false)
     {
     }
@@ -138,6 +155,8 @@ public:
       ,mpTable(rOther.mpTable)
       ,mPrintingOutput(rOther.mPrintingOutput)
       ,mTableIsInitialized(rOther.mTableIsInitialized)
+      ,mComputeConditionNumber(rOther.mComputeConditionNumber)
+      ,mpLinearSolver(rOther.mpLinearSolver)
      {
          BaseType::mpFirstCriterion   =  rOther.mpFirstCriterion;
          BaseType::mpSecondCriterion  =  rOther.mpSecondCriterion;      
@@ -195,10 +214,7 @@ public:
                 "lambda_max": 1.0,
                 "echo_level": 0,
                 "number_of_eigenvalues": 0,
-                "search_dimension": 10,
-                "linear_solver_settings": {
-                    "solver_type": "skyline_lu"
-                }
+                "search_dimension": 10
             })");
             
             const std::size_t size = A.size1();
@@ -216,7 +232,7 @@ public:
             DenseVectorType eigen_values;
             
             // Create the FEAST solver
-            FEASTSolverType FEASTSolver(boost::make_shared<Parameters>(default_params));
+            FEASTSolverType FEASTSolver(boost::make_shared<Parameters>(default_params), mpLinearSolver);
             
             // Solve the problem
             FEASTSolver.Solve(copy_matrix, identity_matrix, eigen_values, eigen_vectors);
@@ -417,10 +433,11 @@ private:
     ///@name Member Variables
     ///@{
     
-    TablePrinterPointerType mpTable; // Pointer to the fancy table 
-    bool mPrintingOutput;            // If the colors and bold are printed
-    bool mComputeConditionNumber;    // If the condition number is computed
-    bool mTableIsInitialized;        // If the table is already initialized
+    TablePrinterPointerType mpTable;                 // Pointer to the fancy table 
+    bool mPrintingOutput;                            // If the colors and bold are printed
+    bool mComputeConditionNumber;                    // If the condition number is computed
+    ComplexLinearSolverType::Pointer mpLinearSolver; // The pointer to the linear solver
+    bool mTableIsInitialized;                        // If the table is already initialized
     
     ///@}
     ///@name Private Operators
