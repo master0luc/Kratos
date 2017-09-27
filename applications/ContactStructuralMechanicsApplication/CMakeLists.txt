@@ -36,11 +36,12 @@ set( KRATOS_CONTACT_STRUCTURAL_MECHANICS_APPLICATION_SOURCES
 )
 
 if(${INCLUDE_FEAST} MATCHES ON)
+    include_directories( ${CMAKE_SOURCE_DIR}/applications/ExternalSolversApplication )
   if (NOT DEFINED FEAST_ROOT)
     set(FEAST_ROOT ${CMAKE_SOURCE_DIR}/applications/ExternalSolversApplication/custom_external_libraries/FEAST/3.0 )
   endif(NOT DEFINED FEAST_ROOT)
   include_directories( ${FEAST_ROOT}/include )
-  add_definitions(-DINCLUDE_FEAST_CONTACT)
+  add_definitions(-DINCLUDE_FEAST)
   set(FEAST_LINK_LIBS feast ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} gfortran m)
 endif(${INCLUDE_FEAST} MATCHES ON)
 

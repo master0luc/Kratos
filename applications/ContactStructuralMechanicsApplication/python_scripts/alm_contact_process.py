@@ -37,7 +37,7 @@ class ALMContactProcess(python_process.PythonProcess):
             "normal_variation"            : false,
             "pair_variation"              : true,
             "manual_ALM"                  : false,
-            "stiffness_factor"            : 10.0,
+            "stiffness_factor"            : 1.0,
             "penalty_scale_factor"        : 1.0,
             "use_scale_factor"            : true,
             "penalty"                     : 0.0,

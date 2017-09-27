@@ -27,9 +27,8 @@
 #endif
 #include "utilities/svd_utils.h"
 #include "linear_solvers/linear_solver.h"
-#if defined(INCLUDE_FEAST_CONTACT)
-    #include "../ExternalSolversApplication/external_includes/feast_solver.h"
-#endif
+#include "../ExternalSolversApplication/custom_utilities/feast_condition_number_utility.h"
+
 namespace Kratos
 {
 
@@ -201,58 +200,8 @@ public:
         
         if (mComputeConditionNumber == true)
         {
-        #if defined(INCLUDE_FEAST_CONTACT)
-            typedef FEASTSolver<TSparseSpace, TDenseSpace> FEASTSolverType;
-            
-            Parameters default_params(R"(
-            {
-                "solver_type": "FEAST",
-                "print_feast_output": false,
-                "perform_stochastic_estimate": true,
-                "solve_eigenvalue_problem": true,
-                "lambda_min": 0.0,
-                "lambda_max": 1.0,
-                "echo_level": 0,
-                "number_of_eigenvalues": 0,
-                "search_dimension": 10
-            })");
-            
-            const std::size_t size = A.size1();
-            
-            const double normA = SparseSpaceType::TwoNorm(A);
-            default_params["lambda_max"].SetDouble(normA);
-            default_params["lambda_min"].SetDouble(-normA);
-            default_params["number_of_eigenvalues"].SetInt(size * 2/3 - 1);
-            default_params["search_dimension"].SetInt(3/2 * size + 1);
-            SparseMatrixType copy_matrix = A;
-            SparseMatrixType identity_matrix = IdentityMatrix(size, size);
-            
-            // Create the auxilary eigen system
-            DenseMatrixType eigen_vectors;
-            DenseVectorType eigen_values;
-            
-            // Create the FEAST solver
-            FEASTSolverType FEASTSolver(boost::make_shared<Parameters>(default_params), mpLinearSolver);
-            
-            // Solve the problem
-            FEASTSolver.Solve(copy_matrix, identity_matrix, eigen_values, eigen_vectors);
-            
-            // Size of the eigen values vector
-            const int dim_eigen_values = eigen_values.size();
-            
-            // We get the moduli of the eigen values
-            #pragma omp parallel for 
-            for (int i = 0; i < dim_eigen_values; i++)
-            {
-                eigen_values[i] = std::abs(eigen_values[i]);
-            }
-            
-            // Now we sort the vector
-            std::sort(eigen_values.begin(), eigen_values.end());
-            
-            // We compute the eigen value
-            double condition_number = 0.0;
-            if (dim_eigen_values > 0) condition_number = eigen_values[dim_eigen_values - 1]/eigen_values[0];
+        #if defined(INCLUDE_FEAST)
+            const double condition_number = FEASTConditionNumberUtility<TSparseSpace, TDenseSpace>::ConditionNumber(A, mpLinearSolver);
         #else
             const double condition_number = SVDUtils<double>::SVDConditionNumber(A);
         #endif
