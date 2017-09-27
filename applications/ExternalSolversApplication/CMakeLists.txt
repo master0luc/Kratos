@@ -49,6 +49,7 @@ endif(${INCLUDE_FEAST} MATCHES ON)
 set( KRATOS_EXTERNAL_SOLVERS_APPLICATION_SOURCES    
 	${CMAKE_CURRENT_SOURCE_DIR}/externalsolvers_application.cpp 
 	${CMAKE_CURRENT_SOURCE_DIR}/custom_python/add_linear_solvers_to_python.cpp 
+#  	${CMAKE_CURRENT_SOURCE_DIR}/custom_python/add_custom_utilities_to_python.cpp 
 	${CMAKE_CURRENT_SOURCE_DIR}/custom_python/externalsolvers_python_application.cpp 
 )
 # 

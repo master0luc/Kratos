@@ -94,19 +94,33 @@ public:
     ///@name Life Cycle
     ///@{
 
-    /* Constructor */
+    /// Default constructors
+    FEASTConditionNumberUtility()= default;
 
-
-    /** Destructor */
+    /// Destructor.
+    virtual ~FEASTConditionNumberUtility()= default;
 
     ///@}
     ///@name Operators
     ///@{
 
+    /// Assignment operator.
+    FEASTConditionNumberUtility& operator=(FEASTConditionNumberUtility const& rOther)
+    = default;
 
     ///@}
     ///@name Operations
     ///@{
+    
+    /**
+     * Computes the condition number using the maximum and minimum eigenvalue of the system (in moduli). It always uses the default linear solver
+     * @param InputMatrix: The matrix to obtain the condition number
+     * @return condition_number: The condition number obtained
+     */
+    double GetConditionNumber(const MatrixType& InputMatrix)
+    {
+        return ConditionNumber(InputMatrix);
+    }
     
     /**
      * Computes the condition number using the maximum and minimum eigenvalue of the system (in moduli)
@@ -229,10 +243,6 @@ private:
     ///@}
     ///@name Unaccessible methods
     ///@{
-
-    FEASTConditionNumberUtility(void);
-
-    FEASTConditionNumberUtility(FEASTConditionNumberUtility& rSource);
 
 }; /* Class FEASTConditionNumberUtility */
 

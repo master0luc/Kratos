@@ -17,7 +17,7 @@
 #include "includes/define.h"
 #include "externalsolvers_application.h"
 #include "custom_python/add_linear_solvers_to_python.h"
-
+// #include "custom_python/add_custom_utilities_to_python.h"
 
 namespace Kratos
 {
@@ -38,8 +38,7 @@ BOOST_PYTHON_MODULE(KratosExternalSolversApplication)
            ;
 
     AddLinearSolversToPython();
-
-
+//     AddCustomUtilitiesToPython();
 }
 
 
