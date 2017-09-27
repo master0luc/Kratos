@@ -185,7 +185,9 @@ public:
         mpParam->RecursivelyValidateAndAssignDefaults(default_params);
 
         if (mpParam->GetValue("linear_solver_settings")["solver_type"].GetString() != "skyline_lu")
-            KRATOS_ERROR << "built-in solver type must be used with this constructor" << std::endl;
+        {
+            KRATOS_ERROR << "Built-in solver type must be used with this constructor" << std::endl;
+        }
 
         mpLinearSolver = boost::make_shared<SkylineLUSolver<ComplexSparseSpaceType, ComplexDenseSpaceType>>();
     }
@@ -198,8 +200,10 @@ public:
      *          solvers normally don't perform efficiently with FEAST 
      *          (M. Galgon et al., Parallel Computing (49) 2015 153-163).
      */
-    FEASTSolver(Parameters::Pointer pParam, ComplexLinearSolverType::Pointer pLinearSolver)
-        : mpParam(pParam), mpLinearSolver(pLinearSolver)
+    FEASTSolver(
+        Parameters::Pointer pParam, 
+        ComplexLinearSolverType::Pointer pLinearSolver
+        ): mpParam(pParam)
     {
         Parameters default_params(R"(
         {
@@ -215,8 +219,18 @@ public:
             "linear_solver_settings": {}
         })");
 
-        // don't validate linear_solver_settings here
+        // Don't validate linear_solver_settings here
         mpParam->ValidateAndAssignDefaults(default_params);
+        
+        if (pLinearSolver != nullptr)
+        {
+            mpLinearSolver = pLinearSolver;
+        }
+        else
+        {
+            mpLinearSolver = boost::make_shared<SkylineLUSolver<ComplexSparseSpaceType, ComplexDenseSpaceType>>();
+        }
+        
     }
 
     /// Deleted copy constructor.
