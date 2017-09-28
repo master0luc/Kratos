@@ -68,7 +68,8 @@ def AssambleTestSuites():
     # Create a test suit with the selected tests (Small tests):
     smallSuite = suites['small']
     # Exact integration tests
-    smallSuite.addTest(TTestDoubleCurvatureIntegration('test_double_curvature_integration'))
+    smallSuite.addTest(TTestDoubleCurvatureIntegration('test_double_curvature_integration_triangle'))
+    #smallSuite.addTest(TTestDoubleCurvatureIntegration('test_double_curvature_integration_quad'))
     
     # Mesh tying tests 
     smallSuite.addTest(TSimplePatchTestTwoDMeshTying('test_execution'))
@@ -139,7 +140,7 @@ def AssambleTestSuites():
             TALMMeshMovingMatchingTestContact,
             TALMMeshMovingNotMatchingTestContact,
             TALMTaylorPatchTestContact,
-            TALMTaylorPatchDynamicTestContact, # NOTE: Check that in debug dynamic gives an error
+            TALMTaylorPatchDynamicTestContact, # NOTE: Check that in debug dynamic gives an error (for some reason)
             TALMHertzSimpleTestContact,
             TALMHertzSimpleSphereTestContact,
             ##TALMHertzSphereTestContact,  # FIXME: This test requieres the axisymmetric to work (memmory error, correct it)

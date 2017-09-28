@@ -12,8 +12,8 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
     def setUp(self):
         pass
     
-    def test_double_curvature_integration(self):
-        input_filename = os.path.dirname(os.path.realpath(__file__)) + "/integration_tests/test_double_curvature_integration"
+    def test_double_curvature_integration_triangle(self):
+        input_filename = os.path.dirname(os.path.realpath(__file__)) + "/integration_tests/test_double_curvature_integration_triangle"
 
         main_model_part = KratosMultiphysics.ModelPart("Structure")
         
