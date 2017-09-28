@@ -357,8 +357,7 @@ public:
     //lumping factors for the calculation of the lumped mass matrix
     Vector& LumpingFactors( Vector& rResult ) const override
     {
-	    if(rResult.size() != 4)
-   	        rResult.resize( 4, false );
+        if(rResult.size() != 4) rResult.resize( 4, false );
         std::fill( rResult.begin(), rResult.end(), 1.00 / 4.00 );
         return rResult;
     }
@@ -388,7 +387,7 @@ public:
      */
     double Length() const override
     {
-		return std::sqrt( Area() );
+        return std::sqrt( Area() );
     }
 
     /** This method calculates and returns area or surface area of
@@ -410,9 +409,18 @@ public:
     {
         // Old
 
-        /*Vector d = this->Points()[2] - this->Points()[0];
-        return( sqrt( d[0]*d[0] + d[1]*d[1] + d[2]*d[2] ) );*/
-
+//         Vector temp;
+//         DeterminantOfJacobian( temp, msGeometryData.DefaultIntegrationMethod() );
+//         const IntegrationPointsArrayType& integration_points = this->IntegrationPoints( msGeometryData.DefaultIntegrationMethod() );
+//         double area = 0.0;
+// 
+//         for ( unsigned int i = 0; i < integration_points.size(); i++ )
+//         {
+//            area += temp[i] * integration_points[i].Weight();
+//         }
+//         
+//         return area;
+        
         // New - 24/01/2014 - Massimo Petracca
         // the following procedure calculates the area of a general
         // quadrilateral (flat or warped) using the parametric representation
@@ -485,33 +493,18 @@ public:
      */
     double DomainSize() const override
     {
-		// Old
+        // Old
 
-        //return fabs( DeterminantOfJacobian( PointType() ) ) * 0.5;
+        //return std::abs( DeterminantOfJacobian( PointType() ) ) * 0.5;
 
-		// New - 24/01/2014 - Massimo Petracca
+        // New - 24/01/2014 - Massimo Petracca
 
-		return Area();
+        return Area();
     }
 
 
     double Volume() const override
     {
-        // Old
-
-        //Vector temp;
-        //DeterminantOfJacobian( temp, msGeometryData.DefaultIntegrationMethod() );
-        //const IntegrationPointsArrayType& integration_points = this->IntegrationPoints( msGeometryData.DefaultIntegrationMethod() );
-        //double Volume = 0.00;
-
-        //for ( unsigned int i = 0; i < integration_points.size(); i++ )
-        //{
-        //    Volume += temp[i] * integration_points[i].Weight();
-        //}
-
-        ////KRATOS_WATCH(temp)
-        //return Volume;
-
         // New - 24/01/2014 - Massimo Petracca
 
         return Area();
@@ -649,16 +642,17 @@ public:
      * @see DeterminantOfJacobian
      * @see InverseOfJacobian
      */
-    JacobiansType& Jacobian( JacobiansType& rResult,
-                                     IntegrationMethod ThisMethod ) const override
+    JacobiansType& Jacobian( 
+        JacobiansType& rResult,
+        IntegrationMethod ThisMethod 
+        ) const override
     {
-        //getting derivatives of shape functions
+        // Getting derivatives of shape functions
         ShapeFunctionsGradientsType shape_functions_gradients =
-            CalculateShapeFunctionsIntegrationPointsLocalGradients( ThisMethod );
-        //getting values of shape functions
+        CalculateShapeFunctionsIntegrationPointsLocalGradients( ThisMethod );
+        // Getting values of shape functions
         Matrix shape_functions_values =
-            CalculateShapeFunctionsIntegrationPointsValues( ThisMethod );
-        //workaround by riccardo...
+        CalculateShapeFunctionsIntegrationPointsValues( ThisMethod );
 
         if ( rResult.size() != this->IntegrationPointsNumber( ThisMethod ) )
         {
@@ -668,7 +662,7 @@ public:
             rResult.swap( temp );
         }
 
-        //loop over all integration points
+        // Loop over all integration points
         for ( unsigned int pnt = 0; pnt < this->IntegrationPointsNumber( ThisMethod ); pnt++ )
         {
             //defining single jacobian matrix
@@ -880,8 +874,10 @@ public:
      * @see Jacobian
      * @see InverseOfJacobian
      */
-    Vector& DeterminantOfJacobian( Vector& rResult,
-                                           IntegrationMethod ThisMethod ) const override
+    Vector& DeterminantOfJacobian( 
+        Vector& rResult,
+        IntegrationMethod ThisMethod 
+        ) const override
     {
         const unsigned int integration_points_number = msGeometryData.IntegrationPointsNumber( ThisMethod );
         if(rResult.size() != integration_points_number)
@@ -925,8 +921,10 @@ public:
      * @see Jacobian
      * @see InverseOfJacobian
      */
-    double DeterminantOfJacobian( IndexType IntegrationPointIndex,
-                                          IntegrationMethod ThisMethod ) const override
+    double DeterminantOfJacobian( 
+        IndexType IntegrationPointIndex,
+        IntegrationMethod ThisMethod 
+        ) const override
     {
         Matrix jacobian ( 3, 2 );
          
@@ -1076,7 +1074,7 @@ public:
     */
     SizeType FacesNumber() const override
     {
-      return EdgesNumber();
+        return EdgesNumber();
     }
 
     /** This method gives you all edges of this geometry. This
@@ -1199,12 +1197,12 @@ public:
     */
     Vector& ShapeFunctionsValues (Vector &rResult, const CoordinatesArrayType& rCoordinates) const override
     {
-      if(rResult.size() != 4) rResult.resize(4,false);
-      rResult[0] =  0.25*( 1.0 - rCoordinates[0] )*( 1.0 - rCoordinates[1] );
-      rResult[1] =  0.25*( 1.0 + rCoordinates[0] )*( 1.0 - rCoordinates[1] );
-      rResult[2] =  0.25*( 1.0 + rCoordinates[0] )*( 1.0 + rCoordinates[1] );
-      rResult[3] =  0.25*( 1.0 - rCoordinates[0] )*( 1.0 + rCoordinates[1] );
-        
+        if(rResult.size() != 4) rResult.resize(4,false);
+        rResult[0] =  0.25*( 1.0 - rCoordinates[0] )*( 1.0 - rCoordinates[1] );
+        rResult[1] =  0.25*( 1.0 + rCoordinates[0] )*( 1.0 - rCoordinates[1] );
+        rResult[2] =  0.25*( 1.0 + rCoordinates[0] )*( 1.0 + rCoordinates[1] );
+        rResult[3] =  0.25*( 1.0 - rCoordinates[0] )*( 1.0 + rCoordinates[1] );
+            
         return rResult;
     }
 
@@ -1412,12 +1410,15 @@ public:
     }
 
     /**
-     * returns the second order derivatives of all shape functions
+     * Returns the second order derivatives of all shape functions
      * in given arbitrary pointers
      * @param rResult a third order tensor which contains the second derivatives
      * @param rPoint the given point the second order derivatives are calculated in
      */
-    ShapeFunctionsSecondDerivativesType& ShapeFunctionsSecondDerivatives( ShapeFunctionsSecondDerivativesType& rResult, const CoordinatesArrayType& rPoint ) const override
+    ShapeFunctionsSecondDerivativesType& ShapeFunctionsSecondDerivatives( 
+        ShapeFunctionsSecondDerivativesType& rResult, 
+        const CoordinatesArrayType& rPoint 
+        ) const override
     {
         if ( rResult.size() != this->PointsNumber() )
         {
@@ -1457,7 +1458,10 @@ public:
      * @param rResult a fourth order tensor which contains the third derivatives
      * @param rPoint the given point the third order derivatives are calculated in
      */
-    ShapeFunctionsThirdDerivativesType& ShapeFunctionsThirdDerivatives( ShapeFunctionsThirdDerivativesType& rResult, const CoordinatesArrayType& rPoint ) const override
+    ShapeFunctionsThirdDerivativesType& ShapeFunctionsThirdDerivatives( 
+        ShapeFunctionsThirdDerivativesType& rResult, 
+        const CoordinatesArrayType& rPoint 
+        ) const override
     {
         if ( rResult.size() != this->PointsNumber() )
         {
@@ -1604,9 +1608,7 @@ private:
      * @return the vector of the gradients of all shape functions
      * in each integration point
      */
-    static ShapeFunctionsGradientsType
-    CalculateShapeFunctionsIntegrationPointsLocalGradients(
-        typename BaseType::IntegrationMethod ThisMethod )
+    static ShapeFunctionsGradientsType CalculateShapeFunctionsIntegrationPointsLocalGradients( typename BaseType::IntegrationMethod ThisMethod )
     {
         IntegrationPointsContainerType all_integration_points =
             AllIntegrationPoints();
