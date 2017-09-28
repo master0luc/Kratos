@@ -142,7 +142,7 @@
             "value"                : [0.0, -1.0e3, 0.0]
         }
     }],
-    "contact_processes" :[{
+    "contact_process_list" :[{
         "python_module" : "alm_contact_process",
         "kratos_module" : "KratosMultiphysics.ContactStructuralMechanicsApplication",
         "help"          : "This process computes the contact between different surfaces",

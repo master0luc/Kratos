@@ -1,12 +1,12 @@
 {
     "problem_data"             : {
-        "problem_name"    : "3D_contact_simplest_patch_matching_adaptative_test",
+        "problem_name"    : "3D_contact_patch_test_large_disp_tetra",
         "model_part_name" : "Structure",
         "domain_size"     : 3,
         "parallel_type"   : "OpenMP",
-        "time_step"       : 1.1,
+        "time_step"       : 0.05,
         "start_time"      : 0.0,
-        "end_time"        : 1.0,
+        "end_time"        : 0.85,
         "echo_level"      : 0
     },
     "solver_settings"          : {
@@ -16,34 +16,29 @@
         "analysis_type"                      : "Non-Linear",
         "model_import_settings"              : {
             "input_type"       : "mdpa",
-            "input_filename"   : "ALM_frictionless_contact_test_3D/3D_contact_simplest_patch_matching_test",
+            "input_filename"   : "ALM_frictionless_contact_test_3D/3D_contact_patch_test_large_disp_tetra",
             "input_file_label" : 0
         },
-        "material_import_settings" :{
-            "materials_filename": "ALM_frictionless_contact_test_3D/3D_contact_simplest_patch_matching_test_materials.json"
+        "material_import_settings"           : {
+            "materials_filename" : "ALM_frictionless_contact_test_3D/3D_contact_patch_test_large_disp_materials.json"
         },
         "contact_settings":
         {
-            "mortar_type"                    : "ALMContactFrictionless",
-            "adaptative_strategy"            : true,
-            "split_factor"                   : 11.0,
-            "max_number_splits"              : 1
+            "mortar_type"                    : "ALMContactFrictionless"
         },
-        "block_builder"                      : true,
         "line_search"                        : false,
-        "clear_storage"                      : false,
-        "reform_dofs_at_each_step"           : true,
         "convergence_criterion"              : "Contact_Mixed_criterion",
         "displacement_relative_tolerance"    : 0.0001,
         "displacement_absolute_tolerance"    : 1e-9,
         "residual_relative_tolerance"        : 0.0001,
         "residual_absolute_tolerance"        : 1e-9,
-        "max_iteration"                      : 9,
-        "linear_solver_settings"             : {
-            "solver_type" : "SkylineLUFactorizationSolver"
-        },
+        "max_iteration"                      : 30,
         "problem_domain_sub_model_part_list" : ["Parts_Parts_Auto1","Parts_Parts_Auto2"],
-        "processes_sub_model_part_list"      : ["Contact_Part","Parts_Parts_Auto1","Parts_Parts_Auto2","DISPLACEMENT_Displacement_Auto1","DISPLACEMENT_Displacement_Auto2"]
+        "processes_sub_model_part_list"      : ["Parts_Parts_Auto1","Parts_Parts_Auto2","DISPLACEMENT_Displacement_Auto1","DISPLACEMENT_Displacement_Auto2","Contact_Part"],
+        "linear_solver_settings"             : {
+            "solver_type" : "SuperLUSolver",
+            "scaling"     : false
+        }
     },
     "constraints_process_list" : [{
         "python_module" : "assign_vector_variable_process",
@@ -66,18 +61,8 @@
             "mesh_id"         : 0,
             "model_part_name" : "DISPLACEMENT_Displacement_Auto2",
             "variable_name"   : "DISPLACEMENT",
-            "value"           : [0.0,0.0,null],
+            "value"           : [0.0,0.0,"-2.0e-1*t"],
             "interval"        : [0.0,"End"]
-        }
-    },{
-        "python_module"   : "assign_scalar_variable_process",
-        "kratos_module" : "KratosMultiphysics",
-        "process_name"          : "AssignScalarVariableProcess",
-        "Parameters"            : {
-            "mesh_id"         : 0,
-            "model_part_name" : "DISPLACEMENT_Displacement_Auto2",
-            "variable_name"   : "DISPLACEMENT_Z",
-            "value"          : "-0.25*t"
         }
     }],
     "loads_process_list"       : [],
@@ -90,11 +75,15 @@
         "Parameters"            : {
             "model_part_name"             : "Structure",
             "contact_model_part"          : "Contact_Part",
+            "assume_master_slave"         : "Parts_Parts_Auto1",
             "contact_type"                : "Frictionless",
-            "search_factor"               : 2.0,
+            "search_factor"               : 1.0,
             "max_number_results"          : 1000,
+            "manual_ALM"                  : true,
+            "penalty"                     : 1.0e-6,
+            "scale_factor"                : 1.0e0,
             "type_search"                 : "InRadius",
-            "integration_order"           : 2
+            "integration_order"           : 3
         }
     }
     ],
@@ -103,33 +92,33 @@
             "gidpost_flags"       : {
                 "GiDPostMode"           : "GiD_PostBinary",
                 "WriteDeformedMeshFlag" : "WriteDeformed",
-                "WriteConditionsFlag"   : "WriteConditions",
                 "MultiFileFlag"         : "SingleFile"
             },
             "file_label"          : "step",
             "output_control_type" : "step",
-            "output_frequency"    : 1,
+            "output_frequency"    : 1.0,
             "body_output"         : true,
-            "node_output"         : true,
+            "node_output"         : false,
             "skin_output"         : false,
             "plane_output"        : [],
-            "nodal_results"       : ["DISPLACEMENT","REACTION","NORMAL_CONTACT_STRESS"],
-            "nodal_flags_results": ["ACTIVE"],
-            "gauss_point_results" : []
+            "nodal_results"       : ["DISPLACEMENT","REACTION","NORMAL_CONTACT_STRESS","WEIGHTED_GAP"],
+            "nodal_nonhistorical_results": ["NORMAL"],
+            "nodal_flags_results": ["ACTIVE","SLAVE"],
+            "gauss_point_results" : ["VON_MISES_STRESS","CAUCHY_STRESS_TENSOR"]
         },
         "point_data_configuration"  : []
     },
-    "_json_check_process" : [
+    "json_check_process" : [
     {
         "python_module"   : "from_json_check_result_process",
         "kratos_module" : "KratosMultiphysics",
         "help"                  : "",
         "process_name"          : "FromJsonCheckResultProcess",
         "Parameters"            : {
-            "check_variables"      : ["DISPLACEMENT_Y"],
-            "input_file_name"      : "ALM_frictionless_contact_test_3D/3D_contact_simplest_patch_matching_adaptative_test_results.json",
+            "check_variables"      : ["DISPLACEMENT_Z","NORMAL_CONTACT_STRESS"],
+            "input_file_name"      : "ALM_frictionless_contact_test_3D/3D_contact_patch_test_large_disp_tetra_results.json",
             "model_part_name"      : "Contact_Part",
-            "time_frequency"       : 0.1
+            "time_frequency"       : 1.0
         }
     }
     ],
@@ -140,10 +129,10 @@
         "help"                  : "",
         "process_name"          : "JsonOutputProcess",
         "Parameters"            : {
-            "output_variables"     : ["DISPLACEMENT_Y"],
-            "output_file_name"     : "ALM_frictionless_contact_test_3D/3D_contact_simplest_patch_matching_adaptative_test_results.json",
+            "output_variables"     : ["DISPLACEMENT_Z","NORMAL_CONTACT_STRESS"],
+            "output_file_name"     : "ALM_frictionless_contact_test_3D/3D_contact_patch_test_large_disp_tetra_results.json",
             "model_part_name"      : "Contact_Part",
-            "time_frequency"       : 0.1
+            "time_frequency"       : 1.0
         }
     }
     ],
@@ -156,5 +145,8 @@
     "constraints_data"         : {
         "incremental_load"         : false,
         "incremental_displacement" : false
+    },
+    "material_import_settings" : {
+        "materials_filename" : "StructuralMaterials.json"
     }
 }

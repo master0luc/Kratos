@@ -48,3 +48,6 @@ class ALMIroningTestContact(StructuralMechanichsTestFactory):
     
 class ALMIroningDieTestContact(StructuralMechanichsTestFactory):
     file_name = "ALM_frictionless_contact_test_2D/ironing_die_test"
+    
+class ALMLargeDisplacementPatchTestTetra(StructuralMechanichsTestFactory):
+    file_name = "ALM_frictionless_contact_test_3D/3D_contact_patch_test_large_disp_tetra"

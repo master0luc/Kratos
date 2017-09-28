@@ -49,6 +49,7 @@ from NightlyTests import ALMHertzCompleteTestContact         as TALMHertzComplet
 # ALM frictionless tests
 from ValidationTests import ALMIroningTestContact    as TALMIroningTestContact
 from ValidationTests import ALMIroningDieTestContact as TALMIroningDieTestContact
+from ValidationTests import ALMLargeDisplacementPatchTestTetra as TALMLargeDisplacementPatchTestTetra
 
 def AssambleTestSuites():
     ''' Populates the test suites to run.
@@ -108,6 +109,7 @@ def AssambleTestSuites():
     validationSuite.addTests(nightSuite)
     #validationSuite.addTest(TALMIroningTestContact('test_execution'))
     #validationSuite.addTest(TALMIroningDieTestContact('test_execution'))
+    validationSuite.addTest(TALMLargeDisplacementPatchTestTetra('test_execution'))
 
     # Create a test suit that contains all the tests:
     allSuite = suites['all']
@@ -145,6 +147,7 @@ def AssambleTestSuites():
             ## VALIDATION
             ##TALMIroningTestContact,
             ##TALMIroningDieTestContact,
+            #TALMLargeDisplacementPatchTestTetra, ##NOTE: Takes long
         ])
     )
 
