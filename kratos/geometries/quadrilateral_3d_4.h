@@ -407,74 +407,73 @@ public:
      */
     double Area() const override
     {
-        // Old
+        // Finite element way
+        Vector temp;
+        DeterminantOfJacobian( temp, GeometryData::GI_GAUSS_3 );
+        const IntegrationPointsArrayType& integration_points = this->IntegrationPoints( GeometryData::GI_GAUSS_3 );
+        double area = 0.0;
 
-//         Vector temp;
-//         DeterminantOfJacobian( temp, msGeometryData.DefaultIntegrationMethod() );
-//         const IntegrationPointsArrayType& integration_points = this->IntegrationPoints( msGeometryData.DefaultIntegrationMethod() );
-//         double area = 0.0;
-// 
-//         for ( unsigned int i = 0; i < integration_points.size(); i++ )
-//         {
-//            area += temp[i] * integration_points[i].Weight();
-//         }
-//         
-//         return area;
+        for ( unsigned int i = 0; i < integration_points.size(); i++ )
+        {
+           area += temp[i] * integration_points[i].Weight();
+        }
         
-        // New - 24/01/2014 - Massimo Petracca
-        // the following procedure calculates the area of a general
-        // quadrilateral (flat or warped) using the parametric representation
-        // of ruled hyperbolic paraboloid surface.
-        // the integration of the normal is then performed with a 2x2 gauss quadrature
-        // in the U-V domain [0,1].
-        // results explicitly written after symbolic calculation.
-
-        const TPointType& p1 = this->Points()[0];
-        const TPointType& p2 = this->Points()[1];
-        const TPointType& p3 = this->Points()[2];
-        const TPointType& p4 = this->Points()[3];
-
-        const double p1x = p1.X();
-        const double p1y = p1.Y();
-        const double p1z = p1.Z();
-
-        const double p2x = p2.X();
-        const double p2y = p2.Y();
-        const double p2z = p2.Z();
-
-        const double p3x = p3.X();
-        const double p3y = p3.Y();
-        const double p3z = p3.Z();
-
-        const double p4x = p4.X();
-        const double p4y = p4.Y();
-        const double p4z = p4.Z();
-
-        const double pos = 0.5 + 0.5 / std::sqrt(3.0);
-        const double w = 0.25;
-
-        const double C1  = pos*(p1z - p2z + p3z - p4z);
-        const double C2  = pos*(p1y - p2y + p3y - p4y);
-        const double C3  = pos*(p1x - p2x + p3x - p4x);
-        const double C4  = C1 - p1z + p2z;
-        const double C5  = C1 + p1z - p2z;
-        const double C6  = C2 + p1y - p2y;
-        const double C7  = C2 - p1y + p2y;
-        const double C8  = C3 - p1x + p2x;
-        const double C9  = C3 + p1x - p2x;
-        const double C10 = C1 - p1z + p4z;
-        const double C11 = C2 - p1y + p4y;
-        const double C12 = C3 - p1x + p4x;
-        const double C13 = C1 + p1z - p4z;
-        const double C14 = C2 + p1y - p4y;
-        const double C15 = C3 + p1x - p4x;
-
-        return w * (
-            std::sqrt( std::pow(C4*C11 - C7*C10, 2) + std::pow(C4*C12 - C8*C10, 2) + std::pow(C7*C12 - C8*C11, 2)) + 
-            std::sqrt( std::pow(C5*C11 - C6*C10, 2) + std::pow(C5*C12 - C9*C10, 2) + std::pow(C6*C12 - C9*C11, 2)) + 
-            std::sqrt( std::pow(C4*C14 - C7*C13, 2) + std::pow(C4*C15 - C8*C13, 2) + std::pow(C7*C15 - C8*C14, 2)) + 
-            std::sqrt( std::pow(C5*C14 - C6*C13, 2) + std::pow(C5*C15 - C9*C13, 2) + std::pow(C6*C15 - C9*C14, 2))
-            );
+        return area;
+        
+//         // 24/01/2014 - Massimo Petracca
+//         // the following procedure calculates the area of a general
+//         // quadrilateral (flat or warped) using the parametric representation
+//         // of ruled hyperbolic paraboloid surface.
+//         // the integration of the normal is then performed with a 2x2 gauss quadrature
+//         // in the U-V domain [0,1].
+//         // results explicitly written after symbolic calculation.
+// 
+//         const TPointType& p1 = this->Points()[0];
+//         const TPointType& p2 = this->Points()[1];
+//         const TPointType& p3 = this->Points()[2];
+//         const TPointType& p4 = this->Points()[3];
+// 
+//         const double& p1x = p1.X();
+//         const double& p1y = p1.Y();
+//         const double& p1z = p1.Z();
+// 
+//         const double& p2x = p2.X();
+//         const double& p2y = p2.Y();
+//         const double& p2z = p2.Z();
+// 
+//         const double& p3x = p3.X();
+//         const double& p3y = p3.Y();
+//         const double& p3z = p3.Z();
+// 
+//         const double& p4x = p4.X();
+//         const double& p4y = p4.Y();
+//         const double& p4z = p4.Z();
+// 
+//         const double pos = 0.5 + 0.5 / std::sqrt(3.0);
+//         const double w = 0.25;
+// 
+//         const double C1  = pos*(p1z - p2z + p3z - p4z);
+//         const double C2  = pos*(p1y - p2y + p3y - p4y);
+//         const double C3  = pos*(p1x - p2x + p3x - p4x);
+//         const double C4  = C1 - p1z + p2z;
+//         const double C5  = C1 + p1z - p2z;
+//         const double C6  = C2 + p1y - p2y;
+//         const double C7  = C2 - p1y + p2y;
+//         const double C8  = C3 - p1x + p2x;
+//         const double C9  = C3 + p1x - p2x;
+//         const double C10 = C1 - p1z + p4z;
+//         const double C11 = C2 - p1y + p4y;
+//         const double C12 = C3 - p1x + p4x;
+//         const double C13 = C1 + p1z - p4z;
+//         const double C14 = C2 + p1y - p4y;
+//         const double C15 = C3 + p1x - p4x;
+// 
+//         return w * (
+//             std::sqrt( std::pow(C4*C11 - C7*C10, 2) + std::pow(C4*C12 - C8*C10, 2) + std::pow(C7*C12 - C8*C11, 2)) + 
+//             std::sqrt( std::pow(C5*C11 - C6*C10, 2) + std::pow(C5*C12 - C9*C10, 2) + std::pow(C6*C12 - C9*C11, 2)) + 
+//             std::sqrt( std::pow(C4*C14 - C7*C13, 2) + std::pow(C4*C15 - C8*C13, 2) + std::pow(C7*C15 - C8*C14, 2)) + 
+//             std::sqrt( std::pow(C5*C14 - C6*C13, 2) + std::pow(C5*C15 - C9*C13, 2) + std::pow(C6*C15 - C9*C14, 2))
+//             );
     }
 
     /** This method calculates and returns length, area or volume of
@@ -709,17 +708,17 @@ public:
      * @see DeterminantOfJacobian
      * @see InverseOfJacobian
      */
-    JacobiansType& Jacobian( JacobiansType& rResult,
-                                     IntegrationMethod ThisMethod,
-				     Matrix & DeltaPosition ) const override
+    JacobiansType& Jacobian( 
+        JacobiansType& rResult,
+        IntegrationMethod ThisMethod,
+        Matrix & DeltaPosition 
+        ) const override
     {
-        //getting derivatives of shape functions
+        // Getting derivatives of shape functions
         ShapeFunctionsGradientsType shape_functions_gradients =
-            CalculateShapeFunctionsIntegrationPointsLocalGradients( ThisMethod );
+        CalculateShapeFunctionsIntegrationPointsLocalGradients( ThisMethod );
         //getting values of shape functions
-        Matrix shape_functions_values =
-            CalculateShapeFunctionsIntegrationPointsValues( ThisMethod );
-        //workaround by riccardo...
+        Matrix shape_functions_values = CalculateShapeFunctionsIntegrationPointsValues( ThisMethod );
 
         if ( rResult.size() != this->IntegrationPointsNumber( ThisMethod ) )
         {
@@ -778,41 +777,33 @@ public:
      * @see DeterminantOfJacobian
      * @see InverseOfJacobian
      */
-    Matrix& Jacobian( Matrix& rResult,
-                              IndexType IntegrationPointIndex,
-                              IntegrationMethod ThisMethod ) const override
+    Matrix& Jacobian( 
+        Matrix& rResult,
+        IndexType IntegrationPointIndex,
+        IntegrationMethod ThisMethod 
+        ) const override
     {
-        //setting up size of jacobian matrix
+        // Setting up size of jacobian matrix
         rResult.resize( 3, 2, false );
-        //derivatives of shape functions
-        ShapeFunctionsGradientsType shape_functions_gradients =
-            CalculateShapeFunctionsIntegrationPointsLocalGradients( ThisMethod );
-        Matrix ShapeFunctionsGradientInIntegrationPoint =
-            shape_functions_gradients( IntegrationPointIndex );
-        //values of shape functions in integration points
-//         Vector ShapeFunctionsValuesInIntegrationPoint = ZeroVector( 4 );
-//         /*vector<double>*/
-//         ShapeFunctionsValuesInIntegrationPoint = row(
-//                 CalculateShapeFunctionsIntegrationPointsValues( ThisMethod ),
-//                 IntegrationPointIndex );
-
+        // Derivatives of shape functions
+        ShapeFunctionsGradientsType shape_functions_gradients = CalculateShapeFunctionsIntegrationPointsLocalGradients( ThisMethod );
+        
         //Elements of jacobian matrix (e.g. J(1,1) = dX1/dXi1)
         //loop over all nodes
-
         for ( unsigned int i = 0; i < this->PointsNumber(); i++ )
         {
             rResult( 0, 0 ) +=
-                ( this->GetPoint( i ).X() ) * ( ShapeFunctionsGradientInIntegrationPoint( i, 0 ) );
+                ( this->GetPoint( i ).X() ) * ( shape_functions_gradients[IntegrationPointIndex]( i, 0 ) );
             rResult( 0, 1 ) +=
-                ( this->GetPoint( i ).X() ) * ( ShapeFunctionsGradientInIntegrationPoint( i, 1 ) );
+                ( this->GetPoint( i ).X() ) * ( shape_functions_gradients[IntegrationPointIndex]( i, 1 ) );
             rResult( 1, 0 ) +=
-                ( this->GetPoint( i ).Y() ) * ( ShapeFunctionsGradientInIntegrationPoint( i, 0 ) );
+                ( this->GetPoint( i ).Y() ) * ( shape_functions_gradients[IntegrationPointIndex]( i, 0 ) );
             rResult( 1, 1 ) +=
-                ( this->GetPoint( i ).Y() ) * ( ShapeFunctionsGradientInIntegrationPoint( i, 1 ) );
+                ( this->GetPoint( i ).Y() ) * ( shape_functions_gradients[IntegrationPointIndex]( i, 1 ) );
             rResult( 2, 0 ) +=
-                ( this->GetPoint( i ).Z() ) * ( ShapeFunctionsGradientInIntegrationPoint( i, 0 ) );
+                ( this->GetPoint( i ).Z() ) * ( shape_functions_gradients[IntegrationPointIndex]( i, 0 ) );
             rResult( 2, 1 ) +=
-                ( this->GetPoint( i ).Z() ) * ( ShapeFunctionsGradientInIntegrationPoint( i, 1 ) );
+                ( this->GetPoint( i ).Z() ) * ( shape_functions_gradients[IntegrationPointIndex]( i, 1 ) );
         }
 
         return rResult;
@@ -822,10 +813,10 @@ public:
      * TODO: implemented but not yet tested
      */
     /**
-       * Jacobian in given point. This method calculate jacobian
-       * matrix in given point.
-       *
-       * @param rPoint point which jacobians has to
+    * Jacobian in given point. This method calculate jacobian
+    * matrix in given point.
+    *
+    * @param rPoint point which jacobians has to
     * be calculated in it.
     *
     * @return Matrix of double which is jacobian matrix \f$ J \f$ in given point.
@@ -841,8 +832,7 @@ public:
 
         //derivatives of shape functions
         Matrix shape_functions_gradients;
-        shape_functions_gradients = ShapeFunctionsLocalGradients(
-                                        shape_functions_gradients, rPoint );
+        shape_functions_gradients = ShapeFunctionsLocalGradients(shape_functions_gradients, rPoint );
         //Elements of jacobian matrix (e.g. J(1,1) = dX1/dXi1)
 
         //loop over all nodes
@@ -885,15 +875,14 @@ public:
             rResult.resize(integration_points_number,false);
         }
 
-        Matrix jacobian ( 3, 2 );
+        JacobiansType jacobian;
+        Jacobian( jacobian, ThisMethod);
         
         for ( unsigned int pnt = 0; pnt < integration_points_number; pnt++ )
         {
-            this->Jacobian( jacobian, pnt, ThisMethod);
+            const double detJ = std::sqrt(std::pow(jacobian[pnt](0,1),2.0)*(std::pow(jacobian[pnt](1,0),2.0) + std::pow(jacobian[pnt](2,0),2.0)) + std::pow(jacobian[pnt](1,1)*jacobian[pnt](2,0) - jacobian[pnt](1,0)*jacobian[pnt](2,1),2.0) - 2.0*jacobian[pnt](0,0)*jacobian[pnt](0,1)*(jacobian[pnt](1,0)*jacobian[pnt](1,1) + jacobian[pnt](2,0)*jacobian[pnt](2,1)) + std::pow(jacobian[pnt](0,0),2.0)*(std::pow(jacobian[pnt](1,1),2.0) + std::pow(jacobian[pnt](2,1),2.0)));
             
-            const double detJ = std::pow(jacobian(0,1),2)*(std::pow(jacobian(1,0),2)+std::pow(jacobian(2,0),2))+std::pow(jacobian(1,1)*jacobian(2,0)-jacobian(1,0)*jacobian(2,1),2)-2*jacobian(0,0)*jacobian(0,1)*(jacobian(1,0)*jacobian(1,1)+jacobian(2,0)*jacobian(2,1))+std::pow(jacobian(0,0),2)*(std::pow(jacobian(1,1),2)+std::pow(jacobian(2,1),2));
-            
-            rResult[pnt] = std::sqrt(detJ);
+            rResult[pnt] = detJ;
         }
         
         return rResult;
@@ -928,11 +917,11 @@ public:
     {
         Matrix jacobian ( 3, 2 );
          
-        this->Jacobian( jacobian, IntegrationPointIndex, ThisMethod);
+        Jacobian( jacobian, IntegrationPointIndex, ThisMethod);
             
-        const double detJ = std::pow(jacobian(0,1),2)*(std::pow(jacobian(1,0),2)+std::pow(jacobian(2,0),2))+std::pow(jacobian(1,1)*jacobian(2,0)-jacobian(1,0)*jacobian(2,1),2)-2*jacobian(0,0)*jacobian(0,1)*(jacobian(1,0)*jacobian(1,1)+jacobian(2,0)*jacobian(2,1))+std::pow(jacobian(0,0),2)*(std::pow(jacobian(1,1),2)+std::pow(jacobian(2,1),2));
+        const double detJ = std::sqrt(std::pow(jacobian(0,1),2.0)*(std::pow(jacobian(1,0),2.0) + std::pow(jacobian(2,0),2.0)) + std::pow(jacobian(1,1)*jacobian(2,0) - jacobian(1,0)*jacobian(2,1),2.0) - 2.0*jacobian(0,0)*jacobian(0,1)*(jacobian(1,0)*jacobian(1,1) + jacobian(2,0)*jacobian(2,1)) + std::pow(jacobian(0,0),2.0)*(std::pow(jacobian(1,1),2.0) + std::pow(jacobian(2,1),2.0)));
             
-        return std::sqrt(detJ);
+        return detJ;
     }
 
     /**
@@ -964,11 +953,11 @@ public:
     {
         Matrix jacobian ( 3, 2 );
          
-        this->Jacobian( jacobian, rPoint);
-            
-        const double detJ = std::pow(jacobian(0,1),2)*(std::pow(jacobian(1,0),2)+std::pow(jacobian(2,0),2))+std::pow(jacobian(1,1)*jacobian(2,0)-jacobian(1,0)*jacobian(2,1),2)-2*jacobian(0,0)*jacobian(0,1)*(jacobian(1,0)*jacobian(1,1)+jacobian(2,0)*jacobian(2,1))+std::pow(jacobian(0,0),2)*(std::pow(jacobian(1,1),2)+std::pow(jacobian(2,1),2));
+        Jacobian( jacobian, rPoint);
         
-        return std::sqrt(detJ);
+        const double detJ = std::sqrt(std::pow(jacobian(0,1),2.0)*(std::pow(jacobian(1,0),2.0) + std::pow(jacobian(2,0),2.0)) + std::pow(jacobian(1,1)*jacobian(2,0) - jacobian(1,0)*jacobian(2,1),2.0) - 2.0*jacobian(0,0)*jacobian(0,1)*(jacobian(1,0)*jacobian(1,1) + jacobian(2,0)*jacobian(2,1)) + std::pow(jacobian(0,0),2.0)*(std::pow(jacobian(1,1),2.0) + std::pow(jacobian(2,1),2.0)));
+        
+        return detJ;
     }
 
     /**
@@ -1226,11 +1215,12 @@ public:
         ShapeFunctionsGradientsType& rResult,
         IntegrationMethod ThisMethod ) const override
     {
-        const unsigned int integration_points_number =
-            msGeometryData.IntegrationPointsNumber( ThisMethod );
+        const unsigned int integration_points_number = msGeometryData.IntegrationPointsNumber( ThisMethod );
 
         if ( integration_points_number == 0 )
+        {
             KRATOS_ERROR << "This integration method is not supported" << *this << std::endl;
+        }
 
         //workaround by riccardo
         if ( rResult.size() != integration_points_number )
@@ -1242,8 +1232,7 @@ public:
         }
 
         //calculating the local gradients
-        ShapeFunctionsGradientsType locG =
-            CalculateShapeFunctionsIntegrationPointsLocalGradients( ThisMethod );
+        ShapeFunctionsGradientsType locG = CalculateShapeFunctionsIntegrationPointsLocalGradients( ThisMethod );
 
         //getting the inverse jacobian matrices
         JacobiansType temp( integration_points_number );
@@ -1370,19 +1359,21 @@ public:
      * @return the gradients of all shape functions
      * \f$ \frac{\partial N^i}{\partial \xi_j} \f$
      */
-    Matrix& ShapeFunctionsLocalGradients( Matrix& rResult,
-            const CoordinatesArrayType& rPoint ) const override
+    Matrix& ShapeFunctionsLocalGradients( 
+        Matrix& rResult,
+        const CoordinatesArrayType& rPoint 
+        ) const override
     {
         rResult.resize( 4, 2, false );
         noalias( rResult ) = ZeroMatrix( 4, 2 );
         rResult( 0, 0 ) = -0.25 * ( 1.0 - rPoint[1] );
         rResult( 0, 1 ) = -0.25 * ( 1.0 - rPoint[0] );
-        rResult( 1, 0 ) = 0.25 * ( 1.0 - rPoint[1] );
+        rResult( 1, 0 ) =  0.25 * ( 1.0 - rPoint[1] );
         rResult( 1, 1 ) = -0.25 * ( 1.0 + rPoint[0] );
-        rResult( 2, 0 ) = 0.25 * ( 1.0 + rPoint[1] );
-        rResult( 2, 1 ) = 0.25 * ( 1.0 + rPoint[0] );
+        rResult( 2, 0 ) =  0.25 * ( 1.0 + rPoint[1] );
+        rResult( 2, 1 ) =  0.25 * ( 1.0 + rPoint[0] );
         rResult( 3, 0 ) = -0.25 * ( 1.0 + rPoint[1] );
-        rResult( 3, 1 ) = 0.25 * ( 1.0 - rPoint[0] );
+        rResult( 3, 1 ) =  0.25 * ( 1.0 - rPoint[0] );
         return rResult;
     }
 
@@ -1395,17 +1386,20 @@ public:
      * shape functions in given point
      * @param rPoint the given point the gradients are calculated in
      */
-    virtual Matrix& ShapeFunctionsGradients( Matrix& rResult, PointType& rPoint )
+    virtual Matrix& ShapeFunctionsGradients( 
+        Matrix& rResult, 
+        PointType& rPoint 
+        )
     {
         rResult.resize( 4, 2, false );
         rResult( 0, 0 ) = -0.25 * ( 1.0 - rPoint.Y() );
         rResult( 0, 1 ) = -0.25 * ( 1.0 - rPoint.X() );
-        rResult( 1, 0 ) = 0.25 * ( 1.0 - rPoint.Y() );
+        rResult( 1, 0 ) =  0.25 * ( 1.0 - rPoint.Y() );
         rResult( 1, 1 ) = -0.25 * ( 1.0 + rPoint.X() );
-        rResult( 2, 0 ) = 0.25 * ( 1.0 + rPoint.Y() );
-        rResult( 2, 1 ) = 0.25 * ( 1.0 + rPoint.X() );
+        rResult( 2, 0 ) =  0.25 * ( 1.0 + rPoint.Y() );
+        rResult( 2, 1 ) =  0.25 * ( 1.0 + rPoint.X() );
         rResult( 3, 0 ) = -0.25 * ( 1.0 + rPoint.Y() );
-        rResult( 3, 1 ) = 0.25 * ( 1.0 - rPoint.X() );
+        rResult( 3, 1 ) =  0.25 * ( 1.0 - rPoint.X() );
         return rResult;
     }
 
@@ -1610,10 +1604,8 @@ private:
      */
     static ShapeFunctionsGradientsType CalculateShapeFunctionsIntegrationPointsLocalGradients( typename BaseType::IntegrationMethod ThisMethod )
     {
-        IntegrationPointsContainerType all_integration_points =
-            AllIntegrationPoints();
-        IntegrationPointsArrayType integration_points =
-            all_integration_points[ThisMethod];
+        IntegrationPointsContainerType all_integration_points = AllIntegrationPoints();
+        IntegrationPointsArrayType integration_points = all_integration_points[ThisMethod];
         //number of integration points
         const int integration_points_number = integration_points.size();
         ShapeFunctionsGradientsType d_shape_f_values( integration_points_number );
@@ -1626,12 +1618,12 @@ private:
             Matrix result( 4, 2 );
             result( 0, 0 ) = -0.25 * ( 1.0 - integration_points[pnt].Y() );
             result( 0, 1 ) = -0.25 * ( 1.0 - integration_points[pnt].X() );
-            result( 1, 0 ) = 0.25 * ( 1.0 - integration_points[pnt].Y() );
+            result( 1, 0 ) =  0.25 * ( 1.0 - integration_points[pnt].Y() );
             result( 1, 1 ) = -0.25 * ( 1.0 + integration_points[pnt].X() );
-            result( 2, 0 ) = 0.25 * ( 1.0 + integration_points[pnt].Y() );
-            result( 2, 1 ) = 0.25 * ( 1.0 + integration_points[pnt].X() );
+            result( 2, 0 ) =  0.25 * ( 1.0 + integration_points[pnt].Y() );
+            result( 2, 1 ) =  0.25 * ( 1.0 + integration_points[pnt].X() );
             result( 3, 0 ) = -0.25 * ( 1.0 + integration_points[pnt].Y() );
-            result( 3, 1 ) = 0.25 * ( 1.0 - integration_points[pnt].X() );
+            result( 3, 1 ) =  0.25 * ( 1.0 - integration_points[pnt].X() );
             d_shape_f_values[pnt] = result;
         }
 
