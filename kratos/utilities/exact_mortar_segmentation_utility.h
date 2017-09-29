@@ -250,7 +250,16 @@ public:
             
             if (mDebugGeometries == true)
             {
-                std::cout << "\nGraphics3D[{Opacity[.3],Triangle[{{" << decomp_geom[0].X() << "," << decomp_geom[0].Y() << "," << decomp_geom[0].Z()  << "},{" << decomp_geom[1].X() << "," << decomp_geom[1].Y() << "," << decomp_geom[1].Z()  << "},{" << decomp_geom[2].X() << "," << decomp_geom[2].Y() << "," << decomp_geom[2].Z()  << "}}]}],";// << std::endl;
+                std::cout << "\nGraphics3D[{Opacity[.3],Triangle[{{"; 
+                
+                for (unsigned int i = 0; i < 3; i++)
+                {
+                    std::cout << decomp_geom[i].X() << "," << decomp_geom[i].Y() << "," << decomp_geom[i].Z();
+                    
+                    if (i < 2) std::cout << "},{";
+                }
+                
+                std::cout << "}}]}],";// << std::endl;
             }
             
             rArea += decomp_geom.Area();
@@ -358,6 +367,9 @@ public:
             
             GetExactAreaIntegration(SlaveCond->GetGeometry(), SlaveCond->GetValue(NORMAL), (it_pair->first)->GetGeometry(), (it_pair->first)->GetValue(NORMAL), area);
         }
+        
+//         // DEBUG
+//         std::cout << "\nTOTAL AREA: " << area << "\tORIGINAL AREA: " << SlaveCond->GetGeometry().Area() << std::endl;
         
         return area;
     }
