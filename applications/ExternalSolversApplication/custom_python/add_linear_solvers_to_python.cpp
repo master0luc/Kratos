@@ -38,7 +38,6 @@
   #include "external_includes/pastix_solver.h"
   #include "external_includes/pastix_complex_solver.h"
 #endif
-  
 
 namespace Kratos
 {
@@ -79,11 +78,16 @@ void  AddLinearSolversToPython()
     //linear solvers
     //***************************************************************************
 #ifdef INCLUDE_FEAST
+    // FEAST solver
     typedef FEASTSolver<SpaceType, LocalSpaceType> FEASTSolverType;
     class_<FEASTSolverType, FEASTSolverType::Pointer, bases<LinearSolverType>, boost::noncopyable >
         ( "FEASTSolver", init<Parameters::Pointer>() )
         .def(init<Parameters::Pointer, TLinearSolverType<std::complex<double>>::Pointer>())
         ;
+    // Feast condition number utility
+    class_<FEASTConditionNumberUtility<SpaceType, LocalSpaceType>>("FEASTConditionNumberUtility", init<>())
+    .def("GetConditionNumber",&FEASTConditionNumberUtility<SpaceType, LocalSpaceType>::GetConditionNumber)
+    ;
 #endif    
           
     

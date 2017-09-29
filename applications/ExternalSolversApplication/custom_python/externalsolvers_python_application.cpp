@@ -38,7 +38,6 @@ BOOST_PYTHON_MODULE(KratosExternalSolversApplication)
            ;
 
     AddLinearSolversToPython();
-//     AddCustomUtilitiesToPython();
 }
 
 

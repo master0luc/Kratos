@@ -7,10 +7,8 @@
 //   License:		 BSD License
 //   Kratos default license: kratos/license.txt
 //
-//   Project Name:        $ExternalSolversApplication   $
-//   Last modified by:    $Author: michael.andre@tum.de $
-//   Date:                $Date:             April 2017 $
-//   Revision:            $Revision:                0.0 $
+//   Main authors:    Michael Andre
+//     Co-authors:    Vicente Mataix Ferrandiz
 //
 //
 
@@ -30,8 +28,9 @@
 #include <amgcl/adapter/zero_copy.hpp>
 #include <amgcl/value_type/complex.hpp>
 #include <amgcl/solver/skyline_lu.hpp>
-extern "C" {
-#include "feast.h"
+extern "C" 
+{
+    #include "feast.h"
 }
 
 // Project includes
@@ -45,7 +44,8 @@ extern "C" {
 #if !defined(KRATOS_FEAST_SOLVER)
 #define  KRATOS_FEAST_SOLVER
 
-namespace Kratos {
+namespace Kratos 
+{
 
 ///@name Kratos Classes
 ///@{
@@ -250,15 +250,19 @@ public:
     ///@name Operations
     ///@{
 
-    /// Solve the generalized eigenvalue problem.
     /**
-     * K is a symmetric matrix. M is a symmetric positive-definite matrix.
+     * Solve the generalized eigenvalue problem.
+     * @param K: is a symmetric matrix. 
+     * @param M: Is a symmetric positive-definite matrix.
+     * @param Eigenvalues: The vector containing all the eigenvalues
+     * @param Eigenvector: The matrix containing the eigen vectors
      */
     void Solve(
-            SparseMatrixType& K,
-            SparseMatrixType& M,
-            DenseVectorType& Eigenvalues,
-            DenseMatrixType& Eigenvectors) override
+        SparseMatrixType& K,
+        SparseMatrixType& M,
+        DenseVectorType& Eigenvalues,
+        DenseMatrixType& Eigenvectors
+        ) override
     {
         const auto system_size = K.size1();
 
@@ -339,7 +343,8 @@ private:
             int& rNumEigenvalues,
             DenseVectorType& rEigenvalues,
             DenseMatrixType& rEigenvectors,
-            bool PerformStochasticEstimate)
+            bool PerformStochasticEstimate
+            )
     {
         KRATOS_TRY
 
@@ -547,12 +552,220 @@ private:
     }
 
     ///@}
-    ///@name Un accessible methods
+    ///@name Private  Access
     ///@{
 
     ///@}
+    ///@name Private Inquiry
+    ///@{
+
+    ///@}
+    ///@name Private LifeCycle
+    ///@{
+
+    ///@}
+    ///@name Unaccessible methods
+    ///@{
 
 }; // Class FEASTSolver
+
+/// This utility uses the FEAST solver to obtain (estimate) the the condition number of a regular matrix
+/**
+ * Regular matrix: A*A^H=A^H*A
+ */
+template<class TSparseSpace = UblasSpace<double, CompressedMatrix, Vector>,
+         class TDenseSpace = UblasSpace<double, Matrix, Vector>
+         >
+class FEASTConditionNumberUtility
+{
+public:
+
+    ///@name Type Definitions
+    ///@{
+    
+    typedef Matrix                                             MatrixType;
+
+    typedef Vector                                             VectorType;
+
+    typedef std::size_t                                          SizeType;
+    
+    typedef std::size_t                                         IndexType;
+
+    typedef typename TSparseSpace::MatrixType            SparseMatrixType;
+
+    typedef typename TSparseSpace::VectorType            SparseVectorType;
+
+    typedef typename TDenseSpace::MatrixType              DenseMatrixType;
+
+    typedef typename TDenseSpace::VectorType              DenseVectorType;
+    
+    typedef std::complex<double>                              ComplexType;
+    
+    typedef compressed_matrix<ComplexType>        ComplexSparseMatrixType;
+
+    typedef matrix<ComplexType>                    ComplexDenseMatrixType;
+
+    typedef vector<ComplexType>                         ComplexVectorType;
+
+    typedef UblasSpace<ComplexType, ComplexSparseMatrixType, ComplexVectorType> ComplexSparseSpaceType;
+
+    typedef UblasSpace<ComplexType, ComplexDenseMatrixType, ComplexVectorType> ComplexDenseSpaceType;
+
+    typedef LinearSolver<ComplexSparseSpaceType, ComplexDenseSpaceType> ComplexLinearSolverType;
+    
+    ///@}
+    ///@name Life Cycle
+    ///@{
+
+    /// Default constructors
+    FEASTConditionNumberUtility()= default;
+
+    /// Destructor.
+    virtual ~FEASTConditionNumberUtility()= default;
+
+    ///@}
+    ///@name Operators
+    ///@{
+
+    /// Assignment operator.
+    FEASTConditionNumberUtility& operator=(FEASTConditionNumberUtility const& rOther)
+    = default;
+
+    ///@}
+    ///@name Operations
+    ///@{
+    
+    /**
+     * Computes the condition number using the maximum and minimum eigenvalue of the system (in moduli). It always uses the default linear solver
+     * @param InputMatrix: The matrix to obtain the condition number
+     * @return condition_number: The condition number obtained
+     */
+    double GetConditionNumber(const MatrixType& InputMatrix)
+    {
+        return ConditionNumber(InputMatrix);
+    }
+    
+    /**
+     * Computes the condition number using the maximum and minimum eigenvalue of the system (in moduli)
+     * @param InputMatrix: The matrix to obtain the condition number
+     * @param pLinearSolver: The complex linear solver considered in the FEAST solver
+     * @return condition_number: The condition number obtained
+     */
+    static inline double ConditionNumber(
+        const MatrixType& InputMatrix,
+        ComplexLinearSolverType::Pointer pLinearSolver = nullptr
+        )
+    {
+        typedef FEASTSolver<TSparseSpace, TDenseSpace> FEASTSolverType;
+        
+        Parameters this_params(R"(
+        {
+            "print_feast_output": false,
+            "perform_stochastic_estimate": true,
+            "solve_eigenvalue_problem": true,
+            "lambda_min": 0.0,
+            "lambda_max": 1.0,
+            "echo_level": 0,
+            "number_of_eigenvalues": 0,
+            "search_dimension": 10
+        })");
+        
+        const std::size_t size = InputMatrix.size1();
+        
+        const double normA = TSparseSpace::TwoNorm(InputMatrix);
+        this_params["lambda_max"].SetDouble( normA);
+        this_params["lambda_min"].SetDouble(-normA);
+        double aux_double = 2.0/3.0 * size;
+        int aux_int = static_cast<int>(aux_double) - 1;
+        this_params["number_of_eigenvalues"].SetInt(aux_int);
+        aux_double = 3.0/2.0 * size;
+        aux_int = static_cast<int>(aux_double) + 1;
+        this_params["search_dimension"].SetInt(aux_int);
+        SparseMatrixType copy_matrix = InputMatrix;
+        SparseMatrixType identity_matrix = IdentityMatrix(size, size);
+        
+        // Create the auxilary eigen system
+        DenseMatrixType eigen_vectors;
+        DenseVectorType eigen_values;
+        
+        // Create the FEAST solver
+        FEASTSolverType FEASTSolver(boost::make_shared<Parameters>(this_params), pLinearSolver);
+        
+        // Solve the problem
+        FEASTSolver.Solve(copy_matrix, identity_matrix, eigen_values, eigen_vectors);
+        
+        // Size of the eigen values vector
+        const int dim_eigen_values = eigen_values.size();
+        
+        // We get the moduli of the eigen values
+        #pragma omp parallel for 
+        for (int i = 0; i < dim_eigen_values; i++)
+        {
+            eigen_values[i] = std::abs(eigen_values[i]);
+        }
+        
+        // Now we sort the vector
+        std::sort(eigen_values.begin(), eigen_values.end());
+        
+        // We compute the eigen value
+        double condition_number = 0.0;
+        if (dim_eigen_values > 0) condition_number = eigen_values[dim_eigen_values - 1]/eigen_values[0];
+        
+        return condition_number;
+    }
+    
+    ///@}
+    ///@name Access
+    ///@{
+
+
+    ///@}
+    ///@name Inquiry
+    ///@{
+
+
+    ///@}
+    ///@name Input and output
+    ///@{
+
+    ///@}
+    ///@name Friends
+    ///@{
+
+private:
+    
+    ///@name Private static Member Variables
+    ///@{
+
+    ///@}
+    ///@name Private member Variables
+    ///@{
+
+    ///@}
+    ///@name Private Operators
+    ///@{
+
+    ///@}
+    ///@name Private Operations
+    ///@{
+    
+    ///@}
+    ///@name Private  Access
+    ///@{
+
+    ///@}
+    ///@name Private Inquiry
+    ///@{
+
+    ///@}
+    ///@name Private LifeCycle
+    ///@{
+
+    ///@}
+    ///@name Unaccessible methods
+    ///@{
+
+}; /* Class FEASTConditionNumberUtility */
 
 ///@}
 
