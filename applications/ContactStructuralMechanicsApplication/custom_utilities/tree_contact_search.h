@@ -763,9 +763,18 @@ protected:
         const Condition::Pointer& pCond2
         )
     {
-        if (((pCond1 != pCond2) && (pCond1->GetValue(ELEMENT_POINTER) != pCond2->GetValue(ELEMENT_POINTER))) == false) // Avoiding "auto self-contact" and "auto element contact"
+        if ((pCond1 != pCond2)== false) // Avoiding "auto self-contact"
         {
             return Fail;
+        }
+        
+        
+        if (((pCond1->GetValue(ELEMENT_POINTER) != nullptr) && (pCond2->GetValue(ELEMENT_POINTER) != nullptr)) == true)
+        {
+            if ((pCond1->GetValue(ELEMENT_POINTER) != pCond2->GetValue(ELEMENT_POINTER)) == false) // Avoiding "auto element contact"
+            {
+                return Fail;
+            }
         }
 
         // Avoid conditions oriented in the same direction
