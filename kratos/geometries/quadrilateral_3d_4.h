@@ -576,8 +576,7 @@ public:
 
             noalias( CurrentGlobalCoords ) = rPoint - CurrentGlobalCoords;
 
-
-            //derivatives of shape functions
+            // Derivatives of shape functions
             Matrix shape_functions_gradients;
             shape_functions_gradients = ShapeFunctionsLocalGradients(shape_functions_gradients, rResult );
             noalias(DN) = prod(X,shape_functions_gradients);
@@ -585,7 +584,7 @@ public:
             noalias(J) = prod(trans(DN),DN);
             Vector res = prod(trans(DN),CurrentGlobalCoords);
 
-            //deteminant of Jacobian
+            // Deteminant of Jacobian
             const double det_j = J( 0, 0 ) * J( 1, 1 ) - J( 0, 1 ) * J( 1, 0 );
 
             //filling matrix
@@ -600,15 +599,15 @@ public:
 
             rResult[0] += DeltaXi[0];
             rResult[1] += DeltaXi[1];
-            rResult[2] = 0.0;
 
             if ( norm_2( DeltaXi ) > 300 )
             {
                 res[0] = 0.0;
                 res[1] = 0.0;
+            #ifdef KRATOS_DEBUG 
                 std::cout << "detJ =" << det_j << "DeltaX = " << DeltaXi << " stopping calculation and assigning the baricenter" << std::endl;
+            #endif  
                 break;
-                //KRATOS_ERROR << "Computation of local coordinates failed at iteration" << k << std:endl;
             }
 
             if ( norm_2( DeltaXi ) < tol )
