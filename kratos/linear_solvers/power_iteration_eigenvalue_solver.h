@@ -2,27 +2,30 @@
 //    ' /   __| _` | __|  _ \   __|
 //    . \  |   (   | |   (   |\__ `
 //   _|\_\_|  \__,_|\__|\___/ ____/
-//                   Multi-Physics 
+//                   Multi-Physics
 //
-//  License:		 BSD License 
+//  License:		 BSD License
 //					 Kratos default license: kratos/license.txt
 //
 //  Main authors:    Pooyan Dadvand
-//                    
+//  Collaborator:    Vicente Mataix Ferrandiz
+//
 //
 
-#if !defined(KRATOS_POWER_ITERATION_EIGENVALUE_SOLVERR_H_INCLUDED )
-#define  KRATOS_POWER_ITERATION_EIGENVALUE_SOLVERR_H_INCLUDED
+#if !defined(KRATOS_POWER_ITERATION_EIGENVALUE_SOLVER_H_INCLUDED )
+#define  KRATOS_POWER_ITERATION_EIGENVALUE_SOLVER_H_INCLUDED
 
 // System includes
 #include <string>
 #include <iostream>
 #include <numeric>
 #include <vector>
+#include <random>
 
 // External includes
 
 // Project includes
+#include "processes/process.h"
 #include "includes/define.h"
 #include "linear_solvers/iterative_solver.h"
 
@@ -84,19 +87,53 @@ public:
     /// Default constructor.
     PowerIterationEigenvalueSolver() {}
 
-    PowerIterationEigenvalueSolver(double NewMaxTolerance, unsigned int NewMaxIterationsNumber,
-                                   unsigned int NewRequiredEigenvalueNumber, typename TLinearSolverType::Pointer pLinearSolver)
-        : BaseType(NewMaxTolerance, NewMaxIterationsNumber), mRequiredEigenvalueNumber(NewRequiredEigenvalueNumber), mpLinearSolver(pLinearSolver) {}
+    PowerIterationEigenvalueSolver(
+        double MaxTolerance,
+        unsigned int MaxIterationNumber,
+        unsigned int RequiredEigenvalueNumber,
+        typename TLinearSolverType::Pointer pLinearSolver
+    ): BaseType(MaxTolerance, MaxIterationNumber),   
+       mRequiredEigenvalueNumber(RequiredEigenvalueNumber),
+       mpLinearSolver(pLinearSolver)
+    {
 
-    /*       PowerIterationEigenvalueSolver(double NewMaxTolerance, unsigned int NewMaxIterationsNumber, typename TPreconditionerType::Pointer pNewPreconditioner) :  */
-    /*       BaseType(NewMaxTolerance, NewMaxIterationsNumber, pNewPreconditioner){} */
+    }
+
+    PowerIterationEigenvalueSolver(
+        Parameters ThisParameters,
+        typename TLinearSolverType::Pointer pLinearSolver
+        ): mpLinearSolver(pLinearSolver)
+    {
+        Parameters DefaultParameters = Parameters(R"(
+        {
+            "solver_type"             : "PowerIterationEigenvalueSolver",
+            "max_iteration"           : 500,
+            "tolerance"               : 1e-9,
+            "required_eigen_number"   : 1,
+            "shifting_convergence"    : 0.25,
+            "verbosity"               : 1
+        })" );
+
+        ThisParameters.ValidateAndAssignDefaults(DefaultParameters);
+
+        mRequiredEigenvalueNumber = ThisParameters["required_eigen_number"].GetInt();
+        mEchoLevel = ThisParameters["verbosity"].GetInt();
+        BaseType::SetTolerance( ThisParameters["tolerance"].GetDouble() );
+        BaseType::SetMaxIterationsNumber( ThisParameters["max_iteration"].GetInt() );
+    }
 
     /// Copy constructor.
-    PowerIterationEigenvalueSolver(const PowerIterationEigenvalueSolver& Other) : BaseType(Other) {}
+    PowerIterationEigenvalueSolver(const PowerIterationEigenvalueSolver& Other) : BaseType(Other)
+    {
+
+    }
 
 
     /// Destructor.
-    ~PowerIterationEigenvalueSolver() override {}
+    ~PowerIterationEigenvalueSolver() override
+    {
+
+    }
 
 
     ///@}
@@ -114,95 +151,152 @@ public:
     ///@name Operations
     ///@{
 
-    static void RandomInitialize(DenseVectorType& R)
+    static void RandomInitialize(
+        const SparseMatrixType& K,
+        DenseVectorType& R
+        )
     {
-        for(SizeType i = 0 ; i < R.size() ; i++)
-            R[i] = 1.00; //rand();
+        // We create a random vector as seed of the method
+        std::random_device this_random_device;
+        std::mt19937 generator(this_random_device());
+        
+        const SizeType size = K.size1();
+        const double normK = TSparseSpaceType::TwoNorm(K);
+        std::normal_distribution<> normal_distribution(normK, 0.25 * normK);
+        
+        for (SizeType i = 0; i < size; i++)
+        {
+            R[i] = normal_distribution(generator);
+        }
+        
+//         for(SizeType i = 0 ; i < R.size() ; i++)
+//         {
+//             R[i] = 1.00; //rand();
+//         }
 
-        R /= norm_2(R);
+//         R /= norm_2(R);
     }
 
 
-    // The power iteration algorithm
-    void Solve(SparseMatrixType& K,
-               SparseMatrixType& M,
-               DenseVectorType& Eigenvalues,
-               DenseMatrixType& Eigenvectors) override
+    /**
+     * The power iteration algorithm
+     * @param K: The stiffness matrix
+     * @param M: The mass matrix
+     * @param Eigenvalues: The vector containing the eigen values
+     * @param Eigenvectors: The matrix containing the eigen vectors
+     */
+    void Solve(
+        SparseMatrixType& K,
+        SparseMatrixType& M,
+        DenseVectorType& Eigenvalues,
+        DenseMatrixType& Eigenvectors
+        ) override
     {
 
         using boost::numeric::ublas::trans;
 
-        SizeType size = K.size1();
-        SizeType max_iteration = BaseType::GetMaxIterationsNumber();
-        double tolerance = BaseType::GetTolerance();
+        const SizeType size = K.size1();
+        const SizeType max_iteration = BaseType::GetMaxIterationsNumber();
+        const double tolerance = BaseType::GetTolerance();
 
         VectorType x = ZeroVector(size);
         VectorType y = ZeroVector(size);
 
-        RandomInitialize(y);
+        RandomInitialize(K, y);
 
         if(Eigenvalues.size() < 1)
-            Eigenvalues.resize(1,0.00);
-
-
-        // Starting with first step
-        double beta = 0.00;
-        double ro = 0.00;
-        double old_ro = Eigenvalues[0];
-        std::cout << "iteration    beta \t\t ro \t\t convergence norm" << std::endl;
-        for(SizeType i = 0 ; i < max_iteration ; i++)
         {
-            //K*x = y
-            mpLinearSolver->Solve(K,x,y);
-
-            ro = inner_prod(y,x);
-
-            //y = M*x
-            noalias(y) = prod(M,x);
-
-            beta = inner_prod(x, y);
-            if(beta <= 0.00)
-                KRATOS_THROW_ERROR(std::invalid_argument, "M is not Positive-definite", "");
-
-            ro = ro / beta;
-            beta = sqrt(beta);
-
-            double inverse_of_beta = 1.00 / beta;
-
-            y *= inverse_of_beta;
-
-            if(ro == 0.00)
-                KRATOS_THROW_ERROR(std::runtime_error, "Perpendicular eigenvector to M", "");
-
-            double convergence_norm = fabs((ro - old_ro) / ro);
-
-            std::cout << i << " \t " << beta << " \t " << ro << " \t " << convergence_norm << std::endl;
-            //std::cout << "i = " << i << ": beta = " << beta << ", ro = " << ro << ", convergence norm = " << convergence_norm << std::endl;
-
-            if(convergence_norm < tolerance)
-                break;
-
-            old_ro = ro;
-
-
-
+            Eigenvalues.resize(1, 0.0);
         }
 
-        KRATOS_WATCH(ro);
-//KRATOS_WATCH(y);
+        // Starting with first step
+        double beta = 0.0;
+        double ro = 0.0;
+        double old_ro = Eigenvalues[0];
+
+        if (mEchoLevel > 1)
+        {
+            std::cout << "Iteration  beta \t\t ro \t\t convergence norm" << std::endl;
+        }
+
+        for(SizeType i = 0 ; i < max_iteration ; i++)
+        {
+            // K*x = y
+            mpLinearSolver->Solve(K, x, y);
+            
+            ro = inner_prod(y, x);
+            
+            // y = M*x
+            noalias(y) = prod(M, x);
+            beta = inner_prod(x, y);
+            
+            if(beta <= 0.0)
+            {
+                KRATOS_ERROR << "M is not Positive-definite. beta = " << beta << std::endl;
+            }
+
+            ro /= beta;
+            beta = std::sqrt(beta);
+            y /= beta;
+
+            if(ro == 0.0)
+            {
+                KRATOS_ERROR << "Perpendicular eigenvector to M" << std::endl;
+            }
+
+            const double convergence_norm = std::abs((ro - old_ro) / ro);
+
+            if (mEchoLevel > 1)
+            {
+                std::cout << "Iteration: " << i << " \t beta: " << beta << "\tro: " << ro << " \tConvergence norm: " << convergence_norm << std::endl;
+            }
+            
+            if(convergence_norm < tolerance)
+            {
+                break;
+            }
+
+            old_ro = ro;
+        }
+
+        if (mEchoLevel > 0)
+        {
+            KRATOS_WATCH(ro);
+            KRATOS_WATCH(y);
+        }
 
         Eigenvalues[0] = ro;
 
         if((Eigenvectors.size1() < 1) || (Eigenvectors.size2() < size))
+        {
             Eigenvectors.resize(1,size);
+        }
 
         for(SizeType i = 0 ; i < size ; i++)
+        {
             Eigenvectors(0,i) = y[i];
+        }
     }
-
-
-
-
+    
+    /**
+     * This method returns directly the first eigen value obtained
+     * @param K: The stiffness matrix
+     * @param M: The mass matrix
+     * @return The first eigenvalue
+     */
+    double GetEigenValue(
+        SparseMatrixType& K,
+        SparseMatrixType& M
+        )
+    {
+        DenseVectorType eigen_values;
+        DenseMatrixType eigen_vectors;
+        
+        Solve(K, M, eigen_values, eigen_vectors);
+        
+        return eigen_values[0];
+    }
+    
     ///@}
     ///@name Access
     ///@{
@@ -291,8 +385,9 @@ private:
     ///@name Member Variables
     ///@{
 
-
     unsigned int mRequiredEigenvalueNumber;
+
+    unsigned int mEchoLevel;
 
     typename TLinearSolverType::Pointer mpLinearSolver;
 
@@ -370,7 +465,7 @@ inline std::ostream& operator << (std::ostream& OStream,
 
 }  // namespace Kratos.
 
-#endif // KRATOS_POWER_ITERATION_EIGENVALUE_SOLVERR_H_INCLUDED defined 
+#endif // KRATOS_POWER_ITERATION_EIGENVALUE_SOLVER_H_INCLUDED defined 
 
 
 
