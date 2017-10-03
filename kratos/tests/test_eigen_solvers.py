@@ -9,12 +9,12 @@ def GetFilePath(fileName):
 
 class TestEigenSolvers(KratosUnittest.TestCase):
     
-    def _RunParametrized(self, my_params_string ):
+    def _RunParametrized(self, my_params_string, eigen_value_estimated = "lowest" ):
         all_settings = KratosMultiphysics.Parameters( my_params_string )
         
         for i in range(all_settings["test_list"].size()):
             settings = all_settings["test_list"][i]
-            self._auxiliary_test_function(settings)
+            self._auxiliary_test_function(settings, "A.mm", eigen_value_estimated)
     
     def _auxiliary_test_function(self, settings, matrix_name="A.mm", eigen_value_estimated = "lowest"):
         space = KratosMultiphysics.UblasSparseSpace()
@@ -45,7 +45,7 @@ class TestEigenSolvers(KratosUnittest.TestCase):
         else:
             self.assertAlmostEqual(eigenvalue, 11.959, 3)
         
-    def test_power_in_core(self):
+    def test_lowest_power_in_core(self):
         self._RunParametrized("""
             {
                 "test_list" : [
@@ -69,6 +69,31 @@ class TestEigenSolvers(KratosUnittest.TestCase):
                 ]
             }
             """)
+        
+    def test_highest_power_in_core(self):
+        self._RunParametrized("""
+            {
+                "test_list" : [
+                    {
+                        "eigen_solver_settings"      : {
+                        "solver_type"             : "PowerIterationHighestEigenvalueSolver",
+                            "max_iteration"           : 500,
+                            "tolerance"               : 1e-9,
+                            "required_eigen_number"   : 1,
+                            "shifting_convergence"    : 0.25,
+                            "verbosity"               : 0
+                        },
+                        "linear_solver_settings"      : {
+                        "solver_type"             : "SuperLUSolver",
+                            "max_iteration"           : 500,
+                            "tolerance"               : 1e-9,
+                            "scaling"                 : false,
+                            "verbosity"               : 0
+                        }
+                    }
+                ]
+            }
+            """, "highest")
         
     def test_rayleigh_in_core(self):
         self._RunParametrized("""

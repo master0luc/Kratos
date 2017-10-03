@@ -60,6 +60,7 @@ void  AddLinearSolversToPython()
     typedef TFQMRSolver<SpaceType,  LocalSpaceType> TFQMRSolverType;
     typedef ScalingSolver<SpaceType,  LocalSpaceType> ScalingSolverType;
     typedef PowerIterationEigenvalueSolver<SpaceType, LocalSpaceType, LinearSolverType> PowerIterationEigenvalueSolverType;
+    typedef PowerIterationHighestEigenvalueSolver<SpaceType, LocalSpaceType, LinearSolverType> PowerIterationHighestEigenvalueSolverType;
     typedef RayleighQuotientIterationEigenvalueSolver<SpaceType, LocalSpaceType, LinearSolverType> RayleighQuotientIterationEigenvalueSolverType;
     typedef DeflatedGMRESSolver<SpaceType,  LocalSpaceType> DeflatedGMRESSolverType;
 
@@ -138,6 +139,12 @@ void  AddLinearSolversToPython()
     .def(init<double, unsigned int, unsigned int, LinearSolverType::Pointer>())
     .def(init<Parameters, LinearSolverType::Pointer>())
     .def( "GetEigenValue",&PowerIterationEigenvalueSolverType::GetEigenValue)
+    ;
+
+    class_<PowerIterationHighestEigenvalueSolverType, PowerIterationHighestEigenvalueSolverType::Pointer, bases<LinearSolverType>, boost::noncopyable >("PowerIterationHighestEigenvalueSolverType")
+    .def(init<double, unsigned int, unsigned int, LinearSolverType::Pointer>())
+    .def(init<Parameters, LinearSolverType::Pointer>())
+    .def( "GetEigenValue",&PowerIterationHighestEigenvalueSolverType::GetEigenValue)
     ;
 
     class_<RayleighQuotientIterationEigenvalueSolverType, RayleighQuotientIterationEigenvalueSolverType::Pointer, bases<LinearSolverType>, boost::noncopyable >("RayleighQuotientIterationEigenvalueSolver")
