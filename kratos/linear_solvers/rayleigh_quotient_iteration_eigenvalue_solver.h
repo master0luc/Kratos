@@ -259,7 +259,7 @@ public:
             ro = inner_prod(y,x);
 
             //y = M*x
-            noalias(y) = prod(M,x);
+            TSparseSpaceType::Mult(M, x, y);
 
             beta = inner_prod(x, y);
             if(beta == 0.0)

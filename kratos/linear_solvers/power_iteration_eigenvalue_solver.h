@@ -21,10 +21,13 @@
 #include <numeric>
 #include <vector>
 #include <random>
+#include <boost/range/algorithm.hpp>
 
 // External includes
 
 // Project includes
+#include "spaces/ublas_space.h"
+#include "includes/ublas_interface.h"
 #include "processes/process.h"
 #include "includes/define.h"
 #include "linear_solvers/iterative_solver.h"
@@ -50,6 +53,123 @@ namespace Kratos
 ///@}
 ///@name Kratos Classes
 ///@{
+    
+/// Utility to initialize a random vector
+/**
+ * Defines several utility functions
+ */
+template<class TDataType>
+class RandomInitializeUtil
+{
+public:
+
+    ///@name Type Definitions
+    ///@{
+
+    typedef UblasSpace<TDataType, CompressedMatrix, Vector> SparseSpaceType;
+    
+    typedef UblasSpace<TDataType, Matrix, Vector> LocalSpaceType;
+    
+    typedef typename SparseSpaceType::MatrixType SparseMatrixType;
+
+    typedef typename SparseSpaceType::VectorType VectorType;
+
+    typedef typename LocalSpaceType::MatrixType DenseMatrixType;
+
+    typedef typename LocalSpaceType::VectorType DenseVectorType;
+    
+    typedef std::size_t SizeType;
+
+    ///@}
+    ///@name Life Cycle
+    ///@{
+
+    ///@}
+    ///@name Operators
+    ///@{
+
+
+    ///@}
+    ///@name Operations
+    ///@{
+    
+    static inline void RandomInitialize(
+        const SparseMatrixType& K,
+        DenseVectorType& R,
+        const bool Inverse = false 
+        )
+    {
+        // We create a random vector as seed of the method
+        std::random_device this_random_device;
+        std::mt19937 generator(this_random_device());
+        
+        const SizeType size = K.size1();
+        const TDataType normK = SparseSpaceType::TwoNorm(K);
+        const TDataType aux_value = (Inverse == false) ? normK : 1.0/normK;
+        std::normal_distribution<> normal_distribution(aux_value, 0.25 * aux_value);
+        
+        for (SizeType i = 0; i < size; i++)
+        {
+            R[i] = normal_distribution(generator);
+        }
+    }
+    
+    ///@}
+    ///@name Access
+    ///@{
+
+
+    ///@}
+    ///@name Inquiry
+    ///@{
+
+
+    ///@}
+    ///@name Input and output
+    ///@{
+
+    ///@}
+    ///@name Friends
+    ///@{
+
+private:
+    
+    ///@name Private static Member Variables
+    ///@{
+
+    ///@}
+    ///@name Private member Variables
+    ///@{
+
+    ///@}
+    ///@name Private Operators
+    ///@{
+
+    ///@}
+    ///@name Private Operations
+    ///@{
+    
+    ///@}
+    ///@name Private  Access
+    ///@{
+
+    ///@}
+    ///@name Private Inquiry
+    ///@{
+
+    ///@}
+    ///@name Private LifeCycle
+    ///@{
+
+    ///@}
+    ///@name Unaccessible methods
+    ///@{
+
+    RandomInitializeUtil(void);
+
+    RandomInitializeUtil(RandomInitializeUtil& rSource);
+
+}; /* Class RandomInitializeUtil */
 
 /// This class uses the inverted power iteration method to obtain the lowest eigenvalue of a system
 /** Basically that
@@ -151,26 +271,6 @@ public:
     ///@name Operations
     ///@{
 
-    static void RandomInitialize(
-        const SparseMatrixType& K,
-        DenseVectorType& R
-        )
-    {
-        // We create a random vector as seed of the method
-        std::random_device this_random_device;
-        std::mt19937 generator(this_random_device());
-        
-        const SizeType size = K.size1();
-        const double normK = TSparseSpaceType::TwoNorm(K);
-        std::normal_distribution<> normal_distribution(normK, 0.25 * normK);
-        
-        for (SizeType i = 0; i < size; i++)
-        {
-            R[i] = normal_distribution(generator);
-        }
-    }
-
-
     /**
      * The power iteration algorithm
      * @param K: The stiffness matrix
@@ -195,7 +295,7 @@ public:
         VectorType x = ZeroVector(size);
         VectorType y = ZeroVector(size);
 
-        RandomInitialize(K, y);
+        RandomInitializeUtil<double>::RandomInitialize(K, y);
 
         if(Eigenvalues.size() < 1)
         {
@@ -206,7 +306,7 @@ public:
         double beta = 0.0;
         double ro = 0.0;
         double old_ro = Eigenvalues[0];
-        VectorType y_old = y;
+        VectorType y_old = ZeroVector(size);
 
         if (mEchoLevel > 1)
         {
@@ -221,7 +321,8 @@ public:
             ro = inner_prod(y, x);
             
             // y = M*x
-            noalias(y) = prod(M, x);
+            TSparseSpaceType::Mult(M, x, y);
+//             TSparseSpaceType::Mult(M, )
             beta = inner_prod(x, y);
             
             if(beta <= 0.0)
@@ -516,26 +617,6 @@ public:
     ///@name Operations
     ///@{
 
-    static void RandomInitialize(
-        const SparseMatrixType& K,
-        DenseVectorType& R
-        )
-    {
-        // We create a random vector as seed of the method
-        std::random_device this_random_device;
-        std::mt19937 generator(this_random_device());
-        
-        const SizeType size = K.size1();
-        const double normK = TSparseSpaceType::TwoNorm(K);
-        std::normal_distribution<> normal_distribution(normK, 0.25 * normK);
-        
-        for (SizeType i = 0; i < size; i++)
-        {
-            R[i] = normal_distribution(generator);
-        }
-    }
-
-
     /**
      * The power iteration algorithm
      * @param K: The stiffness matrix
@@ -550,7 +631,6 @@ public:
         DenseMatrixType& Eigenvectors
         ) override
     {
-
         using boost::numeric::ublas::trans;
 
         const SizeType size = K.size1();
@@ -560,7 +640,7 @@ public:
         VectorType x = ZeroVector(size);
         VectorType y = ZeroVector(size);
 
-        RandomInitialize(K, y);
+        RandomInitializeUtil<double>::RandomInitialize(K, y);
 
         if(Eigenvalues.size() < 1)
         {
@@ -568,35 +648,26 @@ public:
         }
 
         // Starting with first step
-        double beta = 0.0;
         double ro = 0.0;
         double old_ro = Eigenvalues[0];
-        VectorType y_old = y;
+        VectorType y_old = ZeroVector(size);
 
         if (mEchoLevel > 1)
         {
-            std::cout << "Iteration  beta \t\t ro \t\t convergence norm" << std::endl;
+            std::cout << "Iteration ro \t\t convergence norm" << std::endl;
         }
 
         for(SizeType i = 0 ; i < max_iteration ; i++)
         {
             // x = K*y
-            noalias(x) = prod(K, y);
-            
-//             ro = std::max_element(x.begin(), x.end());
+            TSparseSpaceType::Mult(K, y, x);
             
             // y = M*x
-            noalias(y) = prod(M, x);
-            beta = inner_prod(x, y);
+            TSparseSpaceType::Mult(M, x, y);
             
-            if(beta <= 0.0)
-            {
-                KRATOS_ERROR << "M is not Positive-definite. beta = " << beta << std::endl;
-            }
-
-            ro /= beta;
-            beta = std::sqrt(beta);
-            y /= beta;
+            ro = static_cast<double>(*boost::max_element(y));
+            
+            y /= ro;
 
             if(ro == 0.0)
             {
@@ -608,7 +679,7 @@ public:
 
             if (mEchoLevel > 1)
             {
-                std::cout << "Iteration: " << i << " \t beta: " << beta << "\tro: " << ro << " \tConvergence norm: " << convergence_norm << " \tConvergence ro: " << convergence_ro << std::endl;
+                std::cout << "Iteration: " << i << "\tro: " << ro << " \tConvergence norm: " << convergence_norm << " \tConvergence ro: " << convergence_ro << std::endl;
             }
             
             if(convergence_norm < tolerance || convergence_ro < tolerance)
@@ -822,35 +893,4 @@ inline std::ostream& operator << (std::ostream& OStream,
 
 }  // namespace Kratos.
 
-#endif // KRATOS_POWER_ITERATION_EIGENVALUE_SOLVER_H_INCLUDED defined 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif // KRATOS_POWER_ITERATION_EIGENVALUE_SOLVER_H_INCLUDED defined

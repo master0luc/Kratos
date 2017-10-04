@@ -10,8 +10,8 @@ def ConstructSolver(settings):
     {
         "eigen_solver_settings"      : {
             "solver_type"             : "PowerIterationEigenvalueSolver",
-            "max_iteration"           : 500,
-            "tolerance"               : 1e-9,
+            "max_iteration"           : 10000,
+            "tolerance"               : 1e-8,
             "required_eigen_number"   : 1,
             "shifting_convergence"    : 0.25,
             "verbosity"               : 0
@@ -36,6 +36,8 @@ def ConstructSolver(settings):
         
     if(solver_type == "PowerIterationEigenvalueSolver"):
         eigen_solver = KratosMultiphysics.PowerIterationEigenvalueSolver( settings["eigen_solver_settings"], linear_solver)
+    elif(solver_type == "PowerIterationHighestEigenvalueSolver"):
+        eigen_solver = KratosMultiphysics.PowerIterationHighestEigenvalueSolver( settings["eigen_solver_settings"], linear_solver)
     elif(solver_type == "RayleighQuotientIterationEigenvalueSolver"):
         eigen_solver = KratosMultiphysics.RayleighQuotientIterationEigenvalueSolver( settings["eigen_solver_settings"], linear_solver)
 

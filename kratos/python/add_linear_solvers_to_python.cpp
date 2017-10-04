@@ -141,7 +141,7 @@ void  AddLinearSolversToPython()
     .def( "GetEigenValue",&PowerIterationEigenvalueSolverType::GetEigenValue)
     ;
 
-    class_<PowerIterationHighestEigenvalueSolverType, PowerIterationHighestEigenvalueSolverType::Pointer, bases<LinearSolverType>, boost::noncopyable >("PowerIterationHighestEigenvalueSolverType")
+    class_<PowerIterationHighestEigenvalueSolverType, PowerIterationHighestEigenvalueSolverType::Pointer, bases<LinearSolverType>, boost::noncopyable >("PowerIterationHighestEigenvalueSolver")
     .def(init<double, unsigned int, unsigned int, LinearSolverType::Pointer>())
     .def(init<Parameters, LinearSolverType::Pointer>())
     .def( "GetEigenValue",&PowerIterationHighestEigenvalueSolverType::GetEigenValue)
