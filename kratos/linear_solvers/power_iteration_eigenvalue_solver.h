@@ -322,7 +322,6 @@ public:
             
             // y = M*x
             TSparseSpaceType::Mult(M, x, y);
-//             TSparseSpaceType::Mult(M, )
             beta = inner_prod(x, y);
             
             if(beta <= 0.0)
@@ -332,7 +331,7 @@ public:
 
             ro /= beta;
             beta = std::sqrt(beta);
-            y /= beta;
+            TSparseSpaceType::InplaceMult(y, 1.0/beta);
 
             if(ro == 0.0)
             {
@@ -353,7 +352,7 @@ public:
             }
 
             old_ro = ro;
-            noalias(y_old) = y;
+            TSparseSpaceType::Assign(y_old, 1.0, y);
         }
 
         if (mEchoLevel > 0)
@@ -667,7 +666,7 @@ public:
             
             ro = static_cast<double>(*boost::max_element(y));
             
-            y /= ro;
+            TSparseSpaceType::InplaceMult(y, 1.0/ro);
 
             if(ro == 0.0)
             {
@@ -688,7 +687,7 @@ public:
             }
 
             old_ro = ro;
-            noalias(y_old) = y;
+            TSparseSpaceType::Assign(y_old, 1.0, y);
         }
 
         if (mEchoLevel > 0)

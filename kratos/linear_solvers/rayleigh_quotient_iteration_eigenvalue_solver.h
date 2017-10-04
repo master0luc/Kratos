@@ -223,12 +223,12 @@ public:
             Eigenvalues.resize(1,0.0);
         }
 
-        const double epsilon = 1.00e-9;
+        const double epsilon = 1.0e-9;
         // Starting with first step
-        double beta = 0.00;
-        double ro = 0.00;
-        double shift_value = 0.00;
-        double old_ro = 0.00;//Eigenvalues[0];
+        double beta = 0.0;
+        double ro = 0.0;
+        double shift_value = 0.0;
+        double old_ro = 0.0;//Eigenvalues[0];
 
         if (mEchoLevel > 1)
         {
@@ -245,8 +245,8 @@ public:
         // Factorize it
         my_factorization.factorize();
 
-        double min_shift_value = 0.00;
-        double max_shift_value = 0.00;
+        double min_shift_value = 0.0;
+        double max_shift_value = 0.0;
 
         SizeType smaller_eigenvalue_numbers = 0;
 
@@ -267,7 +267,7 @@ public:
                 KRATOS_ERROR << "Zero beta norm!" << std::endl;
             }
 
-            double delta_ro = (ro / beta);
+            const double delta_ro = (ro / beta);
 
             ro = delta_ro + shift_value;
 
@@ -361,9 +361,7 @@ public:
                 beta = std::sqrt(beta);
             }
 
-            double inverse_of_beta = 1.00 / beta;
-
-            y *= inverse_of_beta;
+            TSparseSpaceType::InplaceMult(y, 1.0/beta);
 
             if (mEchoLevel > 1)
             {
