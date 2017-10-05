@@ -12,7 +12,7 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
     def setUp(self):
         pass
     
-    def __base_test_integration(self, input_filename, num_nodes, list_of_border_cond):
+    def __base_test_integration(self, input_filename, num_nodes):
         main_model_part = KratosMultiphysics.ModelPart("Structure")
         
         main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.DISPLACEMENT)
@@ -34,9 +34,9 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
         else:
             interface_model_part = main_model_part.CreateSubModelPart("Contact")
         
-        contact_model_part = main_model_part.GetSubModelPart("DISPLACEMENT_Displacement_Auto2")
+        self.contact_model_part = main_model_part.GetSubModelPart("DISPLACEMENT_Displacement_Auto2")
         
-        for node in contact_model_part.Nodes:
+        for node in self.contact_model_part.Nodes:
             node.Set(KratosMultiphysics.SLAVE, False)
         del(node)
         model_part_slave = main_model_part.GetSubModelPart("Parts_Parts_Auto1")
@@ -48,25 +48,25 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
             prop[ContactStructuralMechanicsApplication.INTEGRATION_ORDER_CONTACT] = 3 
             prop[ContactStructuralMechanicsApplication.ACTIVE_CHECK_FACTOR] = 3.0e-1
         
-        for node in contact_model_part.Nodes:
+        for node in self.contact_model_part.Nodes:
             node.Set(KratosMultiphysics.INTERFACE, True)
             
         Preprocess = ContactStructuralMechanicsApplication.InterfacePreprocessCondition(main_model_part)
 
         interface_parameters = KratosMultiphysics.Parameters("""{"condition_name": "", "final_string": "", "simplify_geometry": false}""")
         interface_parameters["condition_name"].SetString("ALMFrictionlessMortarContact")
-        Preprocess.GenerateInterfacePart3D(main_model_part, contact_model_part, interface_parameters)
+        Preprocess.GenerateInterfacePart3D(main_model_part, self.contact_model_part, interface_parameters)
             
         # We copy the conditions to the ContactSubModelPart
-        for cond in contact_model_part.Conditions:
+        for cond in self.contact_model_part.Conditions:
             interface_model_part.AddCondition(cond)    
         del(cond)
-        for node in contact_model_part.Nodes:
+        for node in self.contact_model_part.Nodes:
             interface_model_part.AddNode(node, 0)    
         del(node)
 
         # We initialize the conditions    
-        alm_init_var = ContactStructuralMechanicsApplication.ALMFastInit(contact_model_part) 
+        alm_init_var = ContactStructuralMechanicsApplication.ALMFastInit(self.contact_model_part) 
         alm_init_var.Execute()
 
         search_parameters = KratosMultiphysics.Parameters("""
@@ -87,29 +87,49 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
         if (num_nodes == 3): 
             ## DEBUG
             #self.__post_process(main_model_part)
-            #exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D3N(3, True)
+            #self.exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D3N(3, True)
             
-            exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D3N(3)
+            self.exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D3N(3)
         else:
             ## DEBUG
             #self.__post_process(main_model_part)
-            #exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D4N(3, True)
+            #self.exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D4N(3, True)
             
-            exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D4N(3)
+            self.exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D4N(3)
+        
+    def _double_curvature_tests(self, input_filename, num_nodes, list_of_border_cond):
+        
+        self.__base_test_integration(input_filename, num_nodes)
         
         #print("Solution obtained")
         tolerance = 5.0e-3
-        for cond in contact_model_part.Conditions:
+        for cond in self.contact_model_part.Conditions:
             if cond.Is(KratosMultiphysics.SLAVE):
                 to_test = (cond.Id in list_of_border_cond)
                 if (to_test == False):
-                    area = exact_integration.TestGetExactAreaIntegration(cond)
+                    area = self.exact_integration.TestGetExactAreaIntegration(cond)
                     condition_area = cond.GetArea() 
                     check_value = abs((area - condition_area)/condition_area)
                     if (check_value >  tolerance):
                         print(cond.Id,"\t",area,"\t", condition_area,"\t", self.__sci_str(check_value))
                     else:
                         self.assertLess(check_value, tolerance)
+                        
+    def _moving_nodes_tests(self, input_filename, num_nodes):
+        
+        self.__base_test_integration(input_filename, num_nodes)
+        
+        #print("Solution obtained")
+        tolerance = 5.0e-3
+        for cond in self.contact_model_part.Conditions:
+            if cond.Is(KratosMultiphysics.SLAVE):
+                area = self.exact_integration.TestGetExactAreaIntegration(cond)
+                condition_area = cond.GetArea() 
+                check_value = abs((area - condition_area)/condition_area)
+                if (check_value >  tolerance):
+                    print(cond.Id,"\t",area,"\t", condition_area,"\t", self.__sci_str(check_value))
+                else:
+                    self.assertLess(check_value, tolerance)
                     
     def test_double_curvature_integration_triangle(self):
         input_filename = os.path.dirname(os.path.realpath(__file__)) + "/integration_tests/test_double_curvature_integration_triangle"
@@ -117,7 +137,7 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
         # These conditions are in the border, and can not be integrated 100% accurate
         list_of_border_cond = [1262,1263,1264,1265,1269,1270,1273,1275,1278,1282,1284,1285,1286,1288,1290,1291,1292,1294,1295,1297,1298,1302,1303,1305,1306,1307,1310,1313,1314,1318,1319,1320,1323,1325,1327,1328,1329,1331,1336,1337,1338,1340,1341,1342,1343,1344,1346,1347,1348,1349,1350,1353,1355,1357,1359,1360,1366,1367,1368,1369,1370,1377,1378,1379,1381,1382,1384,1385,1387,1393,1394,1395,1399,1400,1406,1410,1411,1412,1414,1415,1418,1419,1420,1424,1427,1429,1431,1436,1438,1444,1446,1447,1448,1449,1459,1462,1463,1465,1467,1468,1474,1477,1479,1485,1491,1493,1507,1515,1517,1531,1537,1539,1547,1549,1553,1563,1569,1575,1623,1640,1644,1654,1656,1663,1667,1675,1685,1687,1693,1697,1703,1707,1713,1715,1717,1719,1721,1723,1725]
         
-        self.__base_test_integration(input_filename, 3, list_of_border_cond)
+        self._double_curvature_tests(input_filename, 3, list_of_border_cond)
         
     def test_double_curvature_integration_quad(self):
         input_filename = os.path.dirname(os.path.realpath(__file__)) + "/integration_tests/test_double_curvature_integration_quadrilateral"
@@ -125,7 +145,12 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
         # These conditions are in the border, and can not be integrated 100% accurate
         list_of_border_cond = [916,917,919,920,923,925,927,929,933,934,938,940,941,944,945,946,949,951,954,955,962,963,965,966,967,968,969,970,971,973,974,977,978,979,980,981,982,983,984,985,986,988,989,990,995,996,1000,1003,1005,1007,1008,1011,1012,1013,1014,1015,1016,1017,1018,1019,1020,1021,1022,1023,1024,1041,1042,1043,1044,1045,1046,1047,1048,1049,1050,1051,1052,1053,1054,1055,1058,1060,1064,1066,1069,1070,1071,1072,1073,1074,1075,1076]
         
-        self.__base_test_integration(input_filename, 4, list_of_border_cond)
+        self._double_curvature_tests(input_filename, 4, list_of_border_cond)
+        
+    def test_moving_mesh_integration_quad(self):
+        input_filename = os.path.dirname(os.path.realpath(__file__)) + "/integration_tests/quadrilaterals_moving_nodes"
+        
+        #self._moving_nodes_tests(input_filename, 4)
         
     def __post_process(self, main_model_part):
         from gid_output_process import GiDOutputProcess
