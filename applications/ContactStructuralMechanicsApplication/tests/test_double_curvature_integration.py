@@ -13,49 +13,49 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
         pass
     
     def __base_test_integration(self, input_filename, num_nodes):
-        main_model_part = KratosMultiphysics.ModelPart("Structure")
+        self.main_model_part = KratosMultiphysics.ModelPart("Structure")
         
-        main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.DISPLACEMENT)
-        main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.REACTION)
-        main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.NORMAL)
-        main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.NORMAL_CONTACT_STRESS)
-        main_model_part.AddNodalSolutionStepVariable(ContactStructuralMechanicsApplication.WEIGHTED_GAP)
-        main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.NODAL_H)
+        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.DISPLACEMENT)
+        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.REACTION)
+        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.NORMAL)
+        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.NORMAL_CONTACT_STRESS)
+        self.main_model_part.AddNodalSolutionStepVariable(ContactStructuralMechanicsApplication.WEIGHTED_GAP)
+        self.main_model_part.AddNodalSolutionStepVariable(KratosMultiphysics.NODAL_H)
         
-        KratosMultiphysics.ModelPartIO(input_filename).ReadModelPart(main_model_part)
+        KratosMultiphysics.ModelPartIO(input_filename).ReadModelPart(self.main_model_part)
 
-        KratosMultiphysics.VariableUtils().AddDof(KratosMultiphysics.DISPLACEMENT_X, KratosMultiphysics.REACTION_X,main_model_part)
-        KratosMultiphysics.VariableUtils().AddDof(KratosMultiphysics.DISPLACEMENT_Y, KratosMultiphysics.REACTION_Y,main_model_part)
-        KratosMultiphysics.VariableUtils().AddDof(KratosMultiphysics.DISPLACEMENT_Z, KratosMultiphysics.REACTION_Z,main_model_part)
-        KratosMultiphysics.VariableUtils().AddDof(KratosMultiphysics.NORMAL_CONTACT_STRESS, ContactStructuralMechanicsApplication.WEIGHTED_GAP, main_model_part)
+        KratosMultiphysics.VariableUtils().AddDof(KratosMultiphysics.DISPLACEMENT_X, KratosMultiphysics.REACTION_X,self.main_model_part)
+        KratosMultiphysics.VariableUtils().AddDof(KratosMultiphysics.DISPLACEMENT_Y, KratosMultiphysics.REACTION_Y,self.main_model_part)
+        KratosMultiphysics.VariableUtils().AddDof(KratosMultiphysics.DISPLACEMENT_Z, KratosMultiphysics.REACTION_Z,self.main_model_part)
+        KratosMultiphysics.VariableUtils().AddDof(KratosMultiphysics.NORMAL_CONTACT_STRESS, ContactStructuralMechanicsApplication.WEIGHTED_GAP, self.main_model_part)
 
-        if (main_model_part.HasSubModelPart("Contact")):
-            interface_model_part = main_model_part.GetSubModelPart("Contact")
+        if (self.main_model_part.HasSubModelPart("Contact")):
+            interface_model_part = self.main_model_part.GetSubModelPart("Contact")
         else:
-            interface_model_part = main_model_part.CreateSubModelPart("Contact")
+            interface_model_part = self.main_model_part.CreateSubModelPart("Contact")
         
-        self.contact_model_part = main_model_part.GetSubModelPart("DISPLACEMENT_Displacement_Auto2")
+        self.contact_model_part = self.main_model_part.GetSubModelPart("DISPLACEMENT_Displacement_Auto2")
         
         for node in self.contact_model_part.Nodes:
             node.Set(KratosMultiphysics.SLAVE, False)
         del(node)
-        model_part_slave = main_model_part.GetSubModelPart("Parts_Parts_Auto1")
+        model_part_slave = self.main_model_part.GetSubModelPart("Parts_Parts_Auto1")
         for node in model_part_slave.Nodes:
             node.Set(KratosMultiphysics.SLAVE, True)
         del(node)
         
-        for prop in main_model_part.GetProperties():
+        for prop in self.main_model_part.GetProperties():
             prop[ContactStructuralMechanicsApplication.INTEGRATION_ORDER_CONTACT] = 3 
             prop[ContactStructuralMechanicsApplication.ACTIVE_CHECK_FACTOR] = 3.0e-1
         
         for node in self.contact_model_part.Nodes:
             node.Set(KratosMultiphysics.INTERFACE, True)
             
-        Preprocess = ContactStructuralMechanicsApplication.InterfacePreprocessCondition(main_model_part)
+        Preprocess = ContactStructuralMechanicsApplication.InterfacePreprocessCondition(self.main_model_part)
 
         interface_parameters = KratosMultiphysics.Parameters("""{"condition_name": "", "final_string": "", "simplify_geometry": false}""")
         interface_parameters["condition_name"].SetString("ALMFrictionlessMortarContact")
-        Preprocess.GenerateInterfacePart3D(main_model_part, self.contact_model_part, interface_parameters)
+        Preprocess.GenerateInterfacePart3D(self.main_model_part, self.contact_model_part, interface_parameters)
             
         # We copy the conditions to the ContactSubModelPart
         for cond in self.contact_model_part.Conditions:
@@ -77,7 +77,7 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
             "use_exact_integration"       : true
         }
         """)
-        contact_search = ContactStructuralMechanicsApplication.TreeContactSearch(main_model_part, search_parameters)
+        contact_search = ContactStructuralMechanicsApplication.TreeContactSearch(self.main_model_part, search_parameters)
         
         # We initialize the search utility
         contact_search.CreatePointListMortar()
@@ -86,16 +86,16 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
 
         if (num_nodes == 3): 
             ## DEBUG
-            #self.__post_process(main_model_part)
+            #self.__post_process()
             #self.exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D3N(3, True)
-            #print(main_model_part)
+            #print(self.main_model_part)
             
             self.exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D3N(3)
         else:
             ## DEBUG
-            #self.__post_process(main_model_part)
+            #self.__post_process()
             #self.exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D4N(3, True)
-            #print(main_model_part)
+            #print(self.main_model_part)
             
             self.exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D4N(3)
         
@@ -121,17 +121,36 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
         
         self.__base_test_integration(input_filename, num_nodes)
         
-        #print("Solution obtained")
-        tolerance = 5.0e-3
-        for cond in self.contact_model_part.Conditions:
-            if cond.Is(KratosMultiphysics.SLAVE):
-                area = self.exact_integration.TestGetExactAreaIntegration(cond)
-                condition_area = cond.GetArea() 
-                check_value = abs((area - condition_area)/condition_area)
-                if (check_value >  tolerance):
-                    print(cond.Id,"\t",area,"\t", condition_area,"\t", self.__sci_str(check_value))
-                else:
-                    self.assertLess(check_value, tolerance)
+        for iter in range(2):
+            delta_disp = 1.0e-6
+            for node in self.main_model_part.GetSubModelPart("GroupPositiveX").Nodes:
+                #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_X, iter * delta_disp)
+                node.X += delta_disp
+            del(node)
+            for node in self.main_model_part.GetSubModelPart("GroupPositiveY").Nodes:
+                #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y, iter * delta_disp)
+                node.Y += delta_disp
+            del(node)
+            for node in self.main_model_part.GetSubModelPart("GroupNegativeX").Nodes:
+                #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_X, iter * -delta_disp)
+                node.X -= delta_disp
+            del(node)
+            for node in self.main_model_part.GetSubModelPart("GroupNegativeY").Nodes:
+                #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y, iter * -delta_disp)
+                node.Y -= delta_disp
+            del(node)
+            
+            #print("Solution obtained")
+            tolerance = 1.0e-5
+            for cond in self.contact_model_part.Conditions:
+                if cond.Is(KratosMultiphysics.SLAVE):
+                    area = self.exact_integration.TestGetExactAreaIntegration(cond)
+                    condition_area = cond.GetArea() 
+                    check_value = abs((area - condition_area)/condition_area)
+                    if (check_value >  tolerance):
+                        print(cond.Id,"\t",area,"\t", condition_area,"\t", self.__sci_str(check_value))
+                    else:
+                        self.assertLess(check_value, tolerance)
                     
     def test_double_curvature_integration_triangle(self):
         input_filename = os.path.dirname(os.path.realpath(__file__)) + "/integration_tests/test_double_curvature_integration_triangle"
@@ -154,9 +173,9 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
         
         self._moving_nodes_tests(input_filename, 4)
         
-    def __post_process(self, main_model_part):
+    def __post_process(self):
         from gid_output_process import GiDOutputProcess
-        self.gid_output = GiDOutputProcess(main_model_part,
+        self.gid_output = GiDOutputProcess(self.main_model_part,
                                     "gid_output",
                                     KratosMultiphysics.Parameters("""
                                         {
@@ -164,7 +183,7 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
                                                 "gidpost_flags": {
                                                     "GiDPostMode": "GiD_PostBinary",
                                                     "WriteDeformedMeshFlag": "WriteUndeformed",
-                                                    "WriteConditionsFlag": "WriteConditions",
+                                                    "WriteConditionsFlag": "WriteConditionsOnly",
                                                     "MultiFileFlag": "SingleFile"
                                                 },        
                                                 "nodal_results"       : ["DISPLACEMENT","NORMAL_CONTACT_STRESS","WEIGHTED_GAP"],

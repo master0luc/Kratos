@@ -70,6 +70,7 @@ def AssambleTestSuites():
     # Exact integration tests
     smallSuite.addTest(TTestDoubleCurvatureIntegration('test_double_curvature_integration_triangle'))
     smallSuite.addTest(TTestDoubleCurvatureIntegration('test_double_curvature_integration_quad'))
+    smallSuite.addTest(TTestDoubleCurvatureIntegration('test_moving_mesh_integration_quad'))
     
     # Mesh tying tests 
     smallSuite.addTest(TSimplePatchTestTwoDMeshTying('test_execution'))
