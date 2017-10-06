@@ -325,7 +325,7 @@ public:
         ConditionsArrayType& conditions_array = mrMainModelPart.Conditions();
         const std::size_t num_conditions = static_cast<std::size_t>(conditions_array.size());
 
-        #pragma omp for nowait schedule(static)
+//         #pragma omp for nowait schedule(static) # FIXME: Debug this !!!!!
         for(std::size_t i = 0; i < num_conditions; i++) 
         {
             auto it_cond = conditions_array.begin() + i;
