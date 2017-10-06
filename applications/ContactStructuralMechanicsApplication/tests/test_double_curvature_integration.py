@@ -88,12 +88,14 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
             ## DEBUG
             #self.__post_process(main_model_part)
             #self.exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D3N(3, True)
+            #print(main_model_part)
             
             self.exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D3N(3)
         else:
             ## DEBUG
             #self.__post_process(main_model_part)
             #self.exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D4N(3, True)
+            #print(main_model_part)
             
             self.exact_integration = KratosMultiphysics.ExactMortarIntegrationUtility3D4N(3)
         
@@ -150,7 +152,7 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
     def test_moving_mesh_integration_quad(self):
         input_filename = os.path.dirname(os.path.realpath(__file__)) + "/integration_tests/quadrilaterals_moving_nodes"
         
-        #self._moving_nodes_tests(input_filename, 4)
+        self._moving_nodes_tests(input_filename, 4)
         
     def __post_process(self, main_model_part):
         from gid_output_process import GiDOutputProcess
@@ -162,7 +164,7 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
                                                 "gidpost_flags": {
                                                     "GiDPostMode": "GiD_PostBinary",
                                                     "WriteDeformedMeshFlag": "WriteUndeformed",
-                                                    "WriteConditionsFlag": "WriteConditionsOnly",
+                                                    "WriteConditionsFlag": "WriteConditions",
                                                     "MultiFileFlag": "SingleFile"
                                                 },        
                                                 "nodal_results"       : ["DISPLACEMENT","NORMAL_CONTACT_STRESS","WEIGHTED_GAP"],
