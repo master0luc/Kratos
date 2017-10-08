@@ -34,19 +34,19 @@ class StaticMechanicalSolver(structural_mechanics_static_solver.StaticMechanical
         {
             "contact_settings" :
             {
-                "mortar_type": "",
-                "contact_tolerance": 0.0e0,
-                "condn_convergence_criterion": false,
-                "fancy_convergence_criterion": true,
-                "print_convergence_criterion": false,
-                "ensure_contact": false,
-                "adaptative_strategy": false,
-                "split_factor": 10.0,
-                "max_number_splits": 3,
+                "mortar_type"                            : "",
+                "contact_tolerance"                      : 0.0e0,
+                "condn_convergence_criterion"            : false,
+                "fancy_convergence_criterion"            : true,
+                "print_convergence_criterion"            : false,
+                "ensure_contact"                         : false,
+                "adaptative_strategy"                    : false,
+                "split_factor"                           : 10.0,
+                "max_number_splits"                      : 3,
                 "contact_displacement_relative_tolerance": 1.0e-4,
                 "contact_displacement_absolute_tolerance": 1.0e-9,
-                "contact_residual_relative_tolerance": 1.0e-4,
-                "contact_residual_absolute_tolerance": 1.0e-9
+                "contact_residual_relative_tolerance"    : 1.0e-4,
+                "contact_residual_absolute_tolerance"    : 1.0e-9
             }
         }
         """)
