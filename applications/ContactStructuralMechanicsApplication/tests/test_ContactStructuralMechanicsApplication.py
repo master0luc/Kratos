@@ -135,7 +135,7 @@ def AssambleTestSuites():
             TALMThreeDSimplestPatchMatchingAdaptativeTestContact,
             TALMThreeDSimplestPatchMatchingSlopeTestContact,
             TALMThreeDPatchComplexGeomTestContact,
-            #TALMTThreeDPatchMatchingTestContact, # FIXME: False positive!!!!
+            TALMTThreeDPatchMatchingTestContact,
             TALMThreeDPatchNotMatchingTestContact,
             ## NIGTHLY
             TALMMeshMovingMatchingTestContact,
