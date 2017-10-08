@@ -15,6 +15,7 @@
 // System includes
 
 // External includes
+#include <omp.h>
 
 // Project includes
 #include "includes/model_part.h"
@@ -321,19 +322,41 @@ public:
     
     void CreatePointListMortar()
     {
+        // Clearing the vector
+        mPointListDestination.clear();
+        
         // Iterate in the conditions
         ConditionsArrayType& conditions_array = mrMainModelPart.Conditions();
         const std::size_t num_conditions = static_cast<std::size_t>(conditions_array.size());
 
-//         #pragma omp for nowait schedule(static) # FIXME: Debug this !!!!!
-        for(std::size_t i = 0; i < num_conditions; i++) 
+        // Creating a buffer for parallel vector fill
+        const unsigned int num_threads = omp_get_max_threads();
+        std::vector<PointVector> points_buffer(num_threads);
+
+        #pragma omp parallel
         {
-            auto it_cond = conditions_array.begin() + i;
-            
-            if (it_cond->Is(MASTER) == true)
+            const unsigned int Id = omp_get_thread_num();
+
+            #pragma omp for
+            for(std::size_t i = 0; i < num_conditions; i++) 
             {
-                PointTypePointer p_point = PointTypePointer(new PointItem((*it_cond.base())));
-                (mPointListDestination).push_back(p_point);
+                auto it_cond = conditions_array.begin() + i;
+                
+                if (it_cond->Is(MASTER) == true)
+                {
+                    PointTypePointer p_point = PointTypePointer(new PointItem((*it_cond.base())));
+//                     (mPointListDestination).push_back(p_point);
+                    (points_buffer[Id]).push_back(p_point);
+                }
+            }
+            
+            // Combine buffers together
+            #pragma omp single
+            {
+                for( auto& point_buffer : points_buffer)
+                {
+                    std::move(point_buffer.begin(),point_buffer.end(),back_inserter(mPointListDestination));
+                }
             }
         }
     }
