@@ -121,22 +121,22 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
         
         self.__base_test_integration(input_filename, num_nodes)
         
-        for iter in range(2):
+        for iter in range(1):
             delta_disp = 1.0e-6
             for node in self.main_model_part.GetSubModelPart("GroupPositiveX").Nodes:
-                #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_X, iter * delta_disp)
+                #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_X, (iter + 1) * delta_disp)
                 node.X += delta_disp
             del(node)
             for node in self.main_model_part.GetSubModelPart("GroupPositiveY").Nodes:
-                #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y, iter * delta_disp)
+                #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y, (iter + 1) * delta_disp)
                 node.Y += delta_disp
             del(node)
             for node in self.main_model_part.GetSubModelPart("GroupNegativeX").Nodes:
-                #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_X, iter * -delta_disp)
+                #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_X, (iter + 1) * -delta_disp)
                 node.X -= delta_disp
             del(node)
             for node in self.main_model_part.GetSubModelPart("GroupNegativeY").Nodes:
-                #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y, iter * -delta_disp)
+                #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_Y, (iter + 1) * -delta_disp)
                 node.Y -= delta_disp
             del(node)
             
