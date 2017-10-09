@@ -1569,6 +1569,259 @@ class CADMapper
 		}
 
 		// --------------------------------------------------------------------------
+		void write_updated_georhino_file(std::string new_filename, std::string original_georhino_filename)
+		{
+			std::cout << "\n> Writing control points displacements..." << std::endl;
+			// write control point displacements
+				std::string output_filename = new_filename + ".post.res";
+				std::ofstream output_file(output_filename);
+				output_file << "Rhino Post Results File 1.0" << std::endl;
+				output_file << "Result \"Displacement\" \"Load Case\" 0 Vector OnNodes" << std::endl;
+				output_file << "Values" << std::endl;
+				unsigned int cp_itr = 0;
+				for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
+				{
+					for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
+					{
+						// It is important to iterate outside to stick to the carat settings
+						++cp_itr;
+						
+						if(cp_i->IsRelevantForMapping())
+							output_file << cp_itr << " " << cp_i->getdX() << " " << cp_i->getdY() << " " << cp_i->getdZ() << std::endl;
+					}
+				}
+				output_file << "End Values" << std::endl;
+				output_file.close();
+			std::cout << "\t\t\t DONE" << std::endl;			
+		
+			std::cout << "\n> Writing georhino file..." << std::endl;
+			// write georhino file
+				std::ifstream input_file(original_georhino_filename);
+				output_filename = new_filename + ".georhino.txt";
+				output_file.open(output_filename);
+				std::string line; // last line to be read
+				// copy all lines from the old file before the node section
+					while(std::getline(input_file, line))
+					{
+						// if the line contains the word "NODE"
+						if(find_substring(line, "NODE"))
+							break;
+						// else copy line
+							output_file << line << std::endl;
+					}
+				// read and ignore node section
+					while(std::getline(input_file, line))
+					{
+						// stop as soon as the line doesn't contain the word "NODE" anymore
+						if(!find_substring(line, "NODE"))
+							break;
+					}
+				// write node section
+					int id = 1;
+					for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
+					{
+						for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
+						{
+							// It is important to iterate outside to stick to the carat settings							
+							if(cp_i->IsRelevantForMapping())
+								// write cp
+								// "  NODE  'id'  X  'x_coord'  Y  'y_coord'  Z  'z_coord'"
+								output_file << "  NODE  " << id << "  X " << cp_i->getX0() << "  Y "<< cp_i->getY0() << "  Z " << cp_i->getZ0() << std::endl;
+							id++;
+						}
+					}
+					output_file << line << std::endl;
+				// substitute all the lines with "NODE_ID", ignore those with "GP_POINT_GEO", copy the others
+					std::vector<ControlPoint*> control_points_vector;
+					for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
+					{
+						for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
+						{
+							control_points_vector.push_back(&(*cp_i));
+						}
+					}
+					id = 1;
+					while(std::getline(input_file, line))
+					{
+						if(find_substring(line, "NODE_ID"))
+						{
+							ControlPoint cp = *(control_points_vector[id-1]);
+							if(cp.IsRelevantForMapping())
+							{
+								// "  NODE_ID  'id'  W  'weight'"
+								output_file << "  NODE_ID  " << id << "  W  " << cp.getWeight() << std::endl;
+							}
+							else
+							{
+								// "  NODE_ID  0  X  'x_coord'  Y  'y_coord'  Z  'z_coord'  W  'weight'"
+								output_file << "  NODE_ID  0  X  " << cp.getX0() << "  Y  " << cp.getY0() << "  Z  " << cp.getZ0() << "  W  " << cp.getWeight() << std::endl;
+							}
+							id++;
+						}
+						else if(find_substring(line, "GP_POINT_GEO"))
+						{
+							;// ignore line
+						}
+						else
+						{
+							// copy
+								output_file << line << std::endl;
+						}
+					}
+			std::cout << "\t\t\t DONE" << std::endl;			
+		}
+		// {
+		// 	// write control point displacements
+		// 		std::cout << "\n> Writing control points displacements..." << std::endl;
+
+		// 		std::string output_filename = new_filename + ".post.res";
+		// 		std::ofstream output_file(output_filename);
+		// 		output_file << "Rhino Post Results File 1.0" << std::endl;
+		// 		output_file << "Result \"Displacement\" \"Load Case\" 0 Vector OnNodes" << std::endl;
+		// 		output_file << "Values" << std::endl;
+		// 		unsigned int cp_itr = 0;
+		// 		for (PatchVector::iterator patch_i = m_patches.begin(); patch_i != m_patches.end(); ++patch_i)
+		// 		{
+		// 			for (ControlPointVector::iterator cp_i = (*patch_i)->GetSurface().GetControlPoints().begin(); cp_i != (*patch_i)->GetSurface().GetControlPoints().end(); ++cp_i)
+		// 			{
+		// 				// It is important to iterate outside to stick to the carat settings
+		// 				++cp_itr;
+		// 				output_file << cp_itr << " " << cp_i->getdX() << " " << cp_i->getdY() << " " << cp_i->getdZ() << std::endl;
+		// 			}
+		// 		}
+		// 		output_file << "End Values" << std::endl;
+		// 		output_file.close();
+
+		// 		std::cout << "\t\t\t DONE" << std::endl;			
+		
+		// 	std::string word; unsigned int node_id;
+		// 	// parse original georhino file
+		// 		std::list<std::string> lines_to_add_in_the_new_georhino_file;
+		// 		int id = 1;
+		// 		std::size_t start_pos, end_pos;
+
+		// 		std::ifstream input_file(original_georhino_filename);
+
+		// 		std::string line;
+		// 		while(std::getline(input_file, line))
+		// 		{
+		// 			std::size_t found = line.find("NODE_ID");
+		// 			if(found != std::string::npos)
+		// 			{
+		// 				// line has either the format:
+		// 				// "  NODE_ID  0  X  'x_coord'  Y  'y_coord'  Z  'z_coord'  W  'weight'"
+		// 				// or the format:
+		// 				// "  NODE_ID  'id'  W  'weight'"
+		// 				std::istringstream iss(line);
+		// 				iss >> word >> node_id;
+		// 				if(node_id == 0)
+		// 				{
+		// 					// create a line with the format:
+		// 					// "  NODE  'id'  X  'x_coord'  Y  'y_coord'  Z  'z_coord'"
+		// 						start_pos = line.find("X");
+		// 						end_pos = line.find("W");
+		// 						std::string line_to_save = "  NODE  " + std::to_string(id) + "  ";
+		// 						std::string substring = line.substr(start_pos, end_pos-start_pos);
+		// 						line_to_save += substring;
+		// 					lines_to_add_in_the_new_georhino_file.push_back(line_to_save);
+		// 				}
+		// 				id++;
+		// 			}
+		// 		}
+
+		// 	// write a new georhino fil
+		// 		output_filename = new_filename + ".georhino.txt";
+		// 		output_file.open(output_filename);
+
+		// 		// go to beginning of input file
+		// 			// input_file.seekg(0, std::ios::beg);
+		// 			input_file.close();
+		// 			input_file.open(original_georhino_filename);
+		// 		// copy line by line the first section of the file
+		// 			bool first_occurrence = false;
+		// 			bool last_occurrence = false;
+		// 			while(!last_occurrence && std::getline(input_file, line))
+		// 			{
+		// 				std::size_t found = line.find("NODE");
+						
+		// 				// before reaching the section
+		// 				if(!first_occurrence)
+		// 				{
+		// 					// copy line by line
+		// 					output_file << line << std::endl; // std::endl??
+
+		// 					if(found != std::string::npos)
+		// 					{
+		// 						first_occurrence = true;
+		// 					}
+		// 				}
+		// 				// while inside the section
+		// 				else
+		// 				{
+		// 					if(found == std::string::npos)
+		// 					{
+		// 						last_occurrence = true;
+		// 					}
+		// 					else
+		// 					{
+		// 						// copy line by line
+		// 						output_file << line << std::endl; // std::endl??
+		// 					}
+		// 				}
+		// 			}
+		// 		// add saved lines
+		// 			while(!lines_to_add_in_the_new_georhino_file.empty())
+		// 			{
+						
+		// 				output_file << lines_to_add_in_the_new_georhino_file.front() << std::endl; // std::endl??
+		// 				lines_to_add_in_the_new_georhino_file.pop_front();
+		// 			}
+		// 			output_file << line << std::endl;
+		// 		// copy line by line rest of the file, ignoring Gauss points at the end and
+		// 		// changing lines like:
+		// 		// "  NODE_ID  0  X  'x_coord'  Y  'y_coord'  Z  'z_coord'  W  'weight'"
+		// 		// with lines of type:
+		// 		// "  NODE_ID  'id'  W  'weight'"
+		// 			id = 1;
+		// 			while(std::getline(input_file, line))
+		// 			{
+		// 				std::size_t found_1 = line.find("NODE_ID");
+		// 				std::size_t found_2 = line.find("GP_POINT_GEO");
+		// 				if(found_1 != std::string::npos) // the line contains NODE_ID
+		// 				{
+		// 					std::istringstream iss(line);
+		// 					std::string word; unsigned int node_id;
+		// 					iss >> word >> node_id;
+		// 					if(node_id == 0)
+		// 					{
+		// 						std::size_t pos = line.find("W");
+		// 						output_file << " NODE_ID   " << id << "  " << line.substr(pos) << std::endl;
+		// 					}
+		// 					else
+		// 					{
+		// 						output_file << line << std::endl;
+		// 					}
+		// 					id++;
+		// 				}
+		// 				else if(found_2 == std::string::npos) // the line DOES NOT contain GP_POINT_GEO
+		// 				{
+		// 					output_file << line << std::endl;
+		// 				}
+		// 			}
+		// 		input_file.close();
+		// 		output_file.close();
+
+		// }		
+
+		// --------------------------------------------------------------------------
+		bool find_substring(std::string str, std::string substring)
+		{
+			std::size_t found = str.find(substring);
+			if(found != std::string::npos) return true;
+			return false;
+		}
+
+		// --------------------------------------------------------------------------
 		void output_surface_border_points(std::string output_filename, const unsigned int u_resolution, int specific_patch)
 		{
 			std::cout << "\n> Starting writing points on surface border of given CAD geometry to file..." << std::endl;
@@ -4736,6 +4989,184 @@ class CADMapper
 							
 						}
 				// regularization techniques
+					void alpha_criterion()
+						{
+							double u_x, v_x;
+							// loop over patches
+							for (unsigned int patch_cp = 0; patch_cp < m_patches.size(); patch_cp++)
+							{
+								NURBSSurface surface = m_patches[patch_cp]->GetSurface();
+								ControlPointVector CP = surface.GetControlPoints();
+
+								// loop over relevant control points
+								for(unsigned int cp_index=0; cp_index<CP.size(); cp_index++)
+								{
+									ControlPoint cp = CP[cp_index];
+									if(cp.IsActive())
+									{
+										unsigned int x = cp.GetMappingMatrixId();
+										// compute coordinates of the point on surface associated to cp
+										surface.SetGrevilleAbscissae(cp_index, u_x, v_x);
+
+										matrix<double> R; surface.EvaluateNURBSFunctions( -1, -1, u_x, v_x, R);						
+										matrix<int> control_points_ids = surface.GetRelevantControlPointsIndexes( -1, -1, u_x, v_x);
+										// LHS contribution 1
+										m_lhs_x(x, x) += m_alpha;
+										m_lhs_y(x, x) += m_alpha;
+										m_lhs_z(x, x) += m_alpha;
+
+										for(unsigned int k=0; k<control_points_ids.size1(); k++)
+										{
+											for(unsigned int l=0; l<control_points_ids.size2(); l++)
+											{
+												ControlPoint cp_j = CP[control_points_ids(k,l)];
+												double R_j = R(k,l);
+
+												if(cp_j.IsActive())
+												{
+													unsigned int j = cp_j.GetMappingMatrixId();
+													// LHS contribution 2
+													m_lhs_x(x, j) -= m_alpha * R_j;
+													m_lhs_y(x, j) -= m_alpha * R_j;
+													m_lhs_z(x, j) -= m_alpha * R_j;
+													// LHS contribution 3
+													m_lhs_x(j, x) -= m_alpha * R_j;
+													m_lhs_y(j, x) -= m_alpha * R_j;
+													m_lhs_z(j, x) -= m_alpha * R_j;
+
+													for(unsigned int m=0; m<control_points_ids.size1(); m++)
+													{
+														for(unsigned int n=0; n<control_points_ids.size2(); n++)
+														{
+															ControlPoint cp_i = CP[control_points_ids(m,n)];
+															double R_i = R(m,n);
+															if(cp_i.IsActive())
+															{
+																unsigned int i = cp_i.GetMappingMatrixId();
+																// LHS contribution 4
+																m_lhs_x(j, i) += m_alpha * R_j*R_i;
+																m_lhs_y(j, i) += m_alpha * R_j*R_i;
+																m_lhs_z(j, i) += m_alpha * R_j*R_i;
+															}
+															else
+															{
+																// RHS contribution 2
+																m_rhs_x(j) -= m_alpha * R_j*R_i*cp_i.getX();
+																m_rhs_y(j) -= m_alpha * R_j*R_i*cp_i.getY();
+																m_rhs_z(j) -= m_alpha * R_j*R_i*cp_i.getZ();
+															}
+														}
+													}
+												}
+
+												else
+												{
+													// RHS contribution 1									
+													m_rhs_x(x) += m_alpha * R_j*cp_j.getX();
+													m_rhs_y(x) += m_alpha * R_j*cp_j.getY();
+													m_rhs_z(x) += m_alpha * R_j*cp_j.getZ();
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+							
+					void alpha_criterion_NR()
+						{
+							double u_x, v_x;
+							// loop over patches
+							for (unsigned int patch_cp = 0; patch_cp < m_patches.size(); patch_cp++)
+							{
+								NURBSSurface surface = m_patches[patch_cp]->GetSurface();
+								ControlPointVector CP = surface.GetControlPoints();
+
+								// loop over relevant control points
+								for(unsigned int cp_index=0; cp_index<CP.size(); cp_index++)
+								{
+									ControlPoint cp = CP[cp_index];
+									if(cp.IsActive())
+									{
+										unsigned int x = cp.GetMappingMatrixId();
+										// compute coordinates of the point on surface associated to cp
+										surface.SetGrevilleAbscissae(cp_index, u_x, v_x);
+										std::cout << "\n\n\nold coords:" << std::endl;
+										KRATOS_WATCH(u_x); KRATOS_WATCH(v_x);
+										DataPoint data_point(cp.getX(), cp.getY(), cp.getZ());
+										data_point.setPatch(m_patches[patch_cp]);
+										data_point.updateUAndV(u_x, v_x);
+										data_point.optimize_parametrisation(1e-5, 50);
+										u_x = data_point.getU();
+										v_x = data_point.getV();
+										std::cout << "new coords:" << std::endl;
+										KRATOS_WATCH(u_x); KRATOS_WATCH(v_x);
+
+										matrix<double> R; surface.EvaluateNURBSFunctions( -1, -1, u_x, v_x, R);						
+										matrix<int> control_points_ids = surface.GetRelevantControlPointsIndexes( -1, -1, u_x, v_x);
+										// LHS contribution 1
+										m_lhs_x(x, x) += m_alpha;
+										m_lhs_y(x, x) += m_alpha;
+										m_lhs_z(x, x) += m_alpha;
+
+										for(unsigned int k=0; k<control_points_ids.size1(); k++)
+										{
+											for(unsigned int l=0; l<control_points_ids.size2(); l++)
+											{
+												ControlPoint cp_j = CP[control_points_ids(k,l)];
+												double R_j = R(k,l);
+
+												if(cp_j.IsActive())
+												{
+													unsigned int j = cp_j.GetMappingMatrixId();
+													// LHS contribution 2
+													m_lhs_x(x, j) -= m_alpha * R_j;
+													m_lhs_y(x, j) -= m_alpha * R_j;
+													m_lhs_z(x, j) -= m_alpha * R_j;
+													// LHS contribution 3
+													m_lhs_x(j, x) -= m_alpha * R_j;
+													m_lhs_y(j, x) -= m_alpha * R_j;
+													m_lhs_z(j, x) -= m_alpha * R_j;
+
+													for(unsigned int m=0; m<control_points_ids.size1(); m++)
+													{
+														for(unsigned int n=0; n<control_points_ids.size2(); n++)
+														{
+															ControlPoint cp_i = CP[control_points_ids(m,n)];
+															double R_i = R(m,n);
+															if(cp_i.IsActive())
+															{
+																unsigned int i = cp_i.GetMappingMatrixId();
+																// LHS contribution 4
+																m_lhs_x(j, i) += m_alpha * R_j*R_i;
+																m_lhs_y(j, i) += m_alpha * R_j*R_i;
+																m_lhs_z(j, i) += m_alpha * R_j*R_i;
+															}
+															else
+															{
+																// RHS contribution 2
+																m_rhs_x(j) -= m_alpha * R_j*R_i*cp_i.getX();
+																m_rhs_y(j) -= m_alpha * R_j*R_i*cp_i.getY();
+																m_rhs_z(j) -= m_alpha * R_j*R_i*cp_i.getZ();
+															}
+														}
+													}
+												}
+
+												else
+												{
+													// RHS contribution 1									
+													m_rhs_x(x) += m_alpha * R_j*cp_j.getX();
+													m_rhs_y(x) += m_alpha * R_j*cp_j.getY();
+													m_rhs_z(x) += m_alpha * R_j*cp_j.getZ();
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+
 					void beta_criterion()
 						{
 							// add contribution to lhs
@@ -4769,11 +5200,9 @@ class CADMapper
 													// boost::python::list& edges_with_enforced_tangent_continuity
 													)
 						{
-							KRATOS_WATCH("apply_boundary_conditions_5");
 							// Loop over all brep elements specifying boundary conditions 
 							for (BREPElementVector::iterator brep_elem_i = m_brep_elements.begin(); brep_elem_i != m_brep_elements.end(); ++brep_elem_i)
 							{
-								std::cout << "\n\ncurrent brep element: " << brep_elem_i->GetEdgeId() << std::endl;								
 								// Check if brep_elem_i is a element used for coupling or for Dirichlet boundary conditions
 								if(brep_elem_i->HasCouplingCondition())
 									apply_coupling_condition_small(brep_elem_i, penalty_factor_disp, penalty_factor_rot, m_edges_with_enforced_tangent_continuity);
@@ -4818,15 +5247,16 @@ class CADMapper
 							initialize_lse();
 							// add contributions
 								least_square_minimization_of_data_points();
+								if(m_alpha > 0) alpha_criterion_NR();
 								if(m_beta > 0)  beta_criterion();
 								// if boundaries
-								// if(m_penalty_factor_disp > 0 || m_penalty_factor_rot > 0) apply_boundary_conditions_5(m_penalty_factor_disp, m_penalty_factor_rot);
+								if(m_penalty_factor_disp > 0 || m_penalty_factor_rot > 0) apply_boundary_conditions_5(m_penalty_factor_disp, m_penalty_factor_rot);
 
 														std::cout << "\t\t\t DONE (" << timer3.elapsed() << " s)" << std::endl;
 							// solve and update
 							solve_update_and_test();
 							// deactivate all
-							deactivate_all();
+							// deactivate_all();
 							std::cout << "\n ****************** (" << overall.elapsed() << " s) ********************" << std::endl;
 						}
 					void map_patch_by_patch()
