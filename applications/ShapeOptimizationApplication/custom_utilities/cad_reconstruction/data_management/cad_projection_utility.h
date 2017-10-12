@@ -196,7 +196,7 @@ public:
           {
             std::cout << "WARNING!!! Newton-Raphson in projection did not converge in the following number of iterations: " << k+1 << std::endl;
             KRATOS_WATCH(current_nearest_point)
-            KRATOS_WATCH(PointOfInterest)
+            KRATOS_WATCH(*PointOfInterest)
           }
         }
     }

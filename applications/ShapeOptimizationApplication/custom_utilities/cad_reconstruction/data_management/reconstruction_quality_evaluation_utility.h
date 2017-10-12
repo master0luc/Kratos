@@ -85,20 +85,34 @@ public:
       std::cout << "EvaluateGlobalQuality CALLED" << std::endl;
 
       // compute distances from surface
+      DoubleVector distances;
       if(reconstruction_strategy.compare("mapping") == 0)
-        ComputeDistancesFromGaussPoints(rParameterResolution, integration_degree, max_iterations, projection_tolerance );
+        ComputeDistancesFromGaussPoints(rParameterResolution, integration_degree, max_iterations, projection_tolerance, distances );
       else
         KRATOS_THROW_ERROR(std::invalid_argument, "Reconstruction strategy specified to evaluate global quality is not recognized!","");
 
       // analyze the global quality of reconstruction
+        Vector distancesVector = ZeroVector(distances.size());
+        for (unsigned int i=0; i<distances.size(); ++i)
+        {
+          distancesVector(i) = distances[i];
+        }
+        std::cout << "> Max value = " << norm_inf(distancesVector) << std::endl;
+        std::cout << "> L2 norm = " << norm_2(distancesVector) << std::endl;      
+        std::cout << "> average value = " << sum(distancesVector)/distancesVector.size() << std::endl;      
+        // std::cout << std::fixed << std::setprecision(2);
+        std::cout << "> points ignored: " << outside_points_counter/points_counter << "%" << std::endl;      
+
     }
 
-    void ComputeDistancesFromGaussPoints( boost::python::list rParameterResolution, int integration_degree, int max_iterations, double projection_tolerance )
+    // --------------------------------------------------------------------------
+    void ComputeDistancesFromGaussPoints( boost::python::list rParameterResolution, int integration_degree, int max_iterations, double projection_tolerance,
+                                          DoubleVector& results_vector )
     {
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         PatchVector& patch_vector = mrReconstructionDataBase.GetPatchVector();
         ModelPart& fe_model_part = mrReconstructionDataBase.GetFEModelPart();                       // INITIALIZATION
-        DoubleVector distancesVector;
+        results_vector.clear();
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         IntegrationMethodType fem_integration_method;
         switch(integration_degree)
@@ -114,8 +128,7 @@ public:
         FE2CADProjector.Initialize( rParameterResolution );
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         
-        int points_counter=0;
-        int outside_points_counter=0;
+
 
         for (auto & elem_i : fe_model_part.Elements())                                                // COMPUTE POINTS, EVALUATE DISTANCES
         {
@@ -145,7 +158,7 @@ public:
 
                   double distance;
                   EvaluateDistanceBetweenNodes(node_of_interest, nearest_cad_node, distance);
-                  distancesVector.push_back(distance);
+                  results_vector.push_back(distance);
                 }
                 else
                   outside_points_counter++;
@@ -153,32 +166,179 @@ public:
 
             }
         }
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                // norm, max, average, (% of beyond-trimming-boundaries points)                       // STATISTICS
-        
-        
     }
+
     // --------------------------------------------------------------------------
     void EvaluateDisplacementCoupling()
     {
       std::cout << "EvaluateDisplacementCoupling CALLED" << std::endl;
+
+      double integral_d = 0;
+      double length = 0;
+      DoubleVector distances;
+
+      BREPElementVector& brep_elements_vector = mrReconstructionDataBase.GetBREPElements();
+      for(auto & brep_element_i : brep_elements_vector)
+      {
+        if(brep_element_i.HasCouplingCondition())
+        {
+          BREPGaussPointVector& coupling_gauss_points = brep_element_i.GetGaussPoints();
+          for(auto & gauss_point_i : coupling_gauss_points)
+          {
+						// Read information from Gauss point
+              unsigned int master_patch_id = gauss_point_i.GetMasterPatchId();
+              Patch& master_patch = mrReconstructionDataBase.GetPatchFromPatchId( master_patch_id );
+              unsigned int slave_patch_id = gauss_point_i.GetSlavePatchId();
+              Patch& slave_patch = mrReconstructionDataBase.GetPatchFromPatchId( slave_patch_id );                
+              double gp_i_weight = gauss_point_i.GetWeight();
+              array_1d<double,2> location_on_master_patch = gauss_point_i.GetLocationOnMasterInParameterSpace();
+              array_1d<double,2> location_on_slave_patch = gauss_point_i.GetLocationOnSlaveInParameterSpace();
+              array_1d<double,2> tangent_on_master_patch = gauss_point_i.GetTangentOnMasterInParameterSpace();
+              array_1d<double,2> tangent_on_slave_patch = gauss_point_i.GetTangentOnSlaveInParameterSpace();
+              array_1d<int, 2> knotspans_on_master_patch = master_patch.ComputeSurfaceKnotSpans(location_on_master_patch);
+              array_1d<int, 2> knotspans_on_slave_patch = slave_patch.ComputeSurfaceKnotSpans(location_on_slave_patch);
+
+            // Compute Jacobian J1
+              matrix<double> g_master = master_patch.ComputeBaseVectors(knotspans_on_master_patch, location_on_master_patch);
+              Vector g1 = ZeroVector(3);
+              g1(0) = g_master(0,0);
+              g1(1) = g_master(1,0);
+              g1(2) = g_master(2,0);
+              Vector g2 = ZeroVector(3);
+              g2(0) = g_master(0,1);
+              g2(1) = g_master(1,1);
+              g2(2) = g_master(2,1);
+              double J1 = norm_2( g1* tangent_on_master_patch(0) + g2* tangent_on_master_patch(1) );
+
+            // Compute distance between master and slave Gauss point
+              Point<3> slave_point;
+              Point<3> master_point;
+              slave_patch.EvaluateSurfacePoint(location_on_slave_patch, slave_point);
+              master_patch.EvaluateSurfacePoint(location_on_master_patch, master_point);
+              double distance;
+              EvaluateDistanceBetweenPoints(master_point, slave_point, distance);
+              distances.push_back(distance);
+
+            integral_d += distance * J1 * gp_i_weight;
+            length += J1 * gp_i_weight;
+          }
+        }
+      }
+      
+      // analyze the global quality of reconstruction
+        Vector distancesVector = ZeroVector(distances.size());
+        for (unsigned int i=0; i<distances.size(); ++i)
+        {
+          distancesVector(i) = distances[i];
+        }
+        std::cout << "\n> displacement coupling" << std::endl;
+        std::cout << "> integral mean = " << integral_d/length << std::endl;      
+        std::cout << "> Max value = " << norm_inf(distancesVector) << std::endl;
+        std::cout << "> L2 norm = " << norm_2(distancesVector) << std::endl;      
+        std::cout << "> average value = " << sum(distancesVector)/distancesVector.size() << std::endl;      
+      
     }
 
     // --------------------------------------------------------------------------
     void EvaluateRotationCoupling()
     {
       std::cout << "EvaluateRotationCoupling CALLED" << std::endl;
+
+      double integral_angle = 0;
+      double length = 0;
+      DoubleVector angles;
+
+      BREPElementVector& brep_elements_vector = mrReconstructionDataBase.GetBREPElements();
+      for(auto & brep_element_i : brep_elements_vector)
+      {
+        if(brep_element_i.HasCouplingCondition())
+        {
+          BREPGaussPointVector& coupling_gauss_points = brep_element_i.GetGaussPoints();
+          for(auto & gauss_point_i : coupling_gauss_points)
+          {
+						// Read information from Gauss point
+              unsigned int master_patch_id = gauss_point_i.GetMasterPatchId();
+              Patch& master_patch = mrReconstructionDataBase.GetPatchFromPatchId( master_patch_id );
+              unsigned int slave_patch_id = gauss_point_i.GetSlavePatchId();
+              Patch& slave_patch = mrReconstructionDataBase.GetPatchFromPatchId( slave_patch_id );                
+              double gp_i_weight = gauss_point_i.GetWeight();
+              array_1d<double,2> location_on_master_patch = gauss_point_i.GetLocationOnMasterInParameterSpace();
+              array_1d<double,2> location_on_slave_patch = gauss_point_i.GetLocationOnSlaveInParameterSpace();
+              array_1d<double,2> tangent_on_master_patch = gauss_point_i.GetTangentOnMasterInParameterSpace();
+              array_1d<double,2> tangent_on_slave_patch = gauss_point_i.GetTangentOnSlaveInParameterSpace();
+              array_1d<int, 2> knotspans_on_master_patch = master_patch.ComputeSurfaceKnotSpans(location_on_master_patch);
+              array_1d<int, 2> knotspans_on_slave_patch = slave_patch.ComputeSurfaceKnotSpans(location_on_slave_patch);
+
+            // Compute Jacobian J1
+              matrix<double> g_master = master_patch.ComputeBaseVectors(knotspans_on_master_patch, location_on_master_patch);
+              Vector g1 = ZeroVector(3);
+              g1(0) = g_master(0,0);
+              g1(1) = g_master(1,0);
+              g1(2) = g_master(2,0);
+              Vector g2 = ZeroVector(3);
+              g2(0) = g_master(0,1);
+              g2(1) = g_master(1,1);
+              g2(2) = g_master(2,1);
+              double J1 = norm_2( g1* tangent_on_master_patch(0) + g2* tangent_on_master_patch(1) );
+
+            // Compute normals on master and slave
+              Vector g3_m = ZeroVector(3);
+              g3_m(0) = g_master(0,2);
+              g3_m(1) = g_master(1,2);
+              g3_m(2) = g_master(2,2);
+              matrix<double> g_slave = slave_patch.ComputeBaseVectors(knotspans_on_slave_patch, location_on_slave_patch);
+              Vector g3_s = ZeroVector(3);
+              g3_s(0) = g_slave(0,2);
+              g3_s(1) = g_slave(1,2);
+              g3_s(2) = g_slave(2,2);
+
+            // Compute angle between normals on master and slave Gauss point
+              double cosine = inner_prod(g3_m, g3_s);
+              double angle_rad = acos(std::abs(cosine)); // abs() => ( 0 < angle_rad < PI/2 )
+              double angle_deg = angle_rad * 180 / 3.1415926535;
+              angles.push_back(angle_deg);
+
+            // Sum contribution
+              integral_angle += angle_deg * J1 * gp_i_weight;
+              length += J1 * gp_i_weight;
+          }
+        }
+      }
+      
+      // analyze the global quality of reconstruction
+        Vector anglesVector = ZeroVector(angles.size());
+        for (unsigned int i=0; i<angles.size(); ++i)
+        {
+          anglesVector(i) = angles[i];
+        }
+        std::cout << "\n> rotation coupling" << std::endl;
+        std::cout << "> integral mean = " << integral_angle/length << std::endl;      
+        std::cout << "> Max value = " << norm_inf(anglesVector) << std::endl;
+        std::cout << "> L2 norm = " << norm_2(anglesVector) << std::endl;      
+        std::cout << "> average value = " << sum(anglesVector)/anglesVector.size() << std::endl;      
+      
     }
 
     // --------------------------------------------------------------------------
-    void EvaluateDistanceBetweenNodes(NodeType::Pointer first, NodeType::Pointer second, double& distance)
+    void EvaluateDistanceBetweenNodes(NodeType::Pointer first, NodeType::Pointer second, double& rdistance)
     {
-      double dx = first->X() - second->X();
-      double dy = first->Y() - second->Y();
-      double dz = first->Z() - second->Z();
-      distance = std::sqrt( std::pow(dx,2) + std::pow(dy,2) + std::pow(dz,2) );
+      Vector distance_vector = ZeroVector(3);
+      distance_vector(0) = first->X() - second->X();
+      distance_vector(1) = first->Y() - second->Y();
+      distance_vector(2) = first->Z() - second->Z();
+      rdistance = norm_2(distance_vector);
     }
     
+    // --------------------------------------------------------------------------
+    void EvaluateDistanceBetweenPoints(Point<3>& first, Point<3>& second, double& rdistance)
+    {
+      Vector distance_vector = ZeroVector(3);
+      distance_vector(0) = first.X() - second.X();
+      distance_vector(1) = first.Y() - second.Y();
+      distance_vector(2) = first.Z() - second.Z();
+      rdistance = norm_2(distance_vector);
+    }
+
     // ==============================================================================
 
     /// Turn back information as a string.
@@ -201,7 +361,8 @@ public:
 private:
 
     ReconstructionDataBase& mrReconstructionDataBase;
-
+    int points_counter=0;
+    int outside_points_counter=0;
     /// Assignment operator.
     //      ReconstructionQualityEvaluationUtility& operator=(ReconstructionQualityEvaluationUtility const& rOther);
 

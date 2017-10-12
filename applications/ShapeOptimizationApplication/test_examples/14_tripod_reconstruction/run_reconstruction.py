@@ -100,7 +100,11 @@ class CADReconstrutionUtilities():
         #   - norm
         #   - max
         #   - mean
-        quality_evaluator.EvaluateGlobalQuality()
+        quality_evaluator.EvaluateGlobalQuality(self.ReconstructionStrategy,
+                                                self.ParameterResolutionForProjection,
+                                                self.FEMGaussIntegrationDegree,
+                                                self.MaxProjectionIterations,
+                                                self.ProjectionTolerance)
         
         # evaluate G0
         #   - integral mean over length
@@ -250,7 +254,7 @@ class CADReconstrutionUtilities():
             self.ReconstructionSolver.ComputeRHS()
             self.ReconstructionSolver.SolveEquationSystem()
 
-            self.ReconstructionSolver.UpdateControlPointsAccordingReconstructionStrategy( self.ReconstructionStrategy )
+            # self.ReconstructionSolver.UpdateControlPointsAccordingReconstructionStrategy( self.ReconstructionStrategy )
             
             self.OutputWriter.OutputResultsInRhinoFormat( iteration ) 
 
