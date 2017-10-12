@@ -23,12 +23,12 @@
 // ------------------------------------------------------------------------------
 // Project includes
 // ------------------------------------------------------------------------------
-#include "..\basic_nurbs_brep_handling\control_point.h"
-#include "..\basic_nurbs_brep_handling\nurbs_surface.h"
-#include "..\basic_nurbs_brep_handling\boundary_loop.h"
-#include "..\basic_nurbs_brep_handling\patch.h"
-#include "..\basic_nurbs_brep_handling\brep_element.h"
-#include "..\basic_nurbs_brep_handling\brep_gauss_point.h"
+#include "../basic_nurbs_brep_handling/control_point.h"
+#include "../basic_nurbs_brep_handling/nurbs_surface.h"
+#include "../basic_nurbs_brep_handling/boundary_loop.h"
+#include "../basic_nurbs_brep_handling/patch.h"
+#include "../basic_nurbs_brep_handling/brep_element.h"
+#include "../basic_nurbs_brep_handling/brep_gauss_point.h"
 
 // ==============================================================================
 

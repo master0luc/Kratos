@@ -91,7 +91,29 @@ class CADReconstrutionUtilities():
         self.__CreateReconstructionConditions()
         self.__CreateSolverForReconstruction()
         self.__RunSolutionAlorithm()
+    
+    # --------------------------------------------------------------------------
+    def EvaluateReconstructionQuality( self ):
+        quality_evaluator = ReconstructionQualityEvaluationUtility( self.DataBase )
+        # evaluate global fitting
+        # measure distances vector: very fine point cloud (discard wrong patch)
+        #   - norm
+        #   - max
+        #   - mean
+        quality_evaluator.EvaluateGlobalQuality()
         
+        # evaluate G0
+        #   - integral mean over length
+        #   - max pointwise
+        #   - mean pointwise
+        quality_evaluator.EvaluateDisplacementCoupling()
+        
+        # evaluate G1
+        #   - integral mean over length
+        #   - max pointwise
+        #   - mean pointwise
+        quality_evaluator.EvaluateRotationCoupling()
+
     # --------------------------------------------------------------------------
     def OutputFEData( self ):
         from gid_output import GiDOutput
@@ -265,6 +287,9 @@ CADReconstructionUtility.OutputCADSurfacePoints( "surface_points_of_cad_geometry
 
 # Perform reconstruction
 CADReconstructionUtility.PerformReconstruction()
+
+# Measure quality of reconstruction
+CADReconstructionUtility.EvaluateReconstructionQuality()
 
 # Some output
 CADReconstructionUtility.OutputFEData()

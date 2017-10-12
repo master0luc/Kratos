@@ -18,8 +18,8 @@
 // ------------------------------------------------------------------------------
 // Project includes
 // ------------------------------------------------------------------------------
-#include "..\basic_nurbs_brep_handling\patch.h"
-#include "..\basic_nurbs_brep_handling\brep_element.h"
+#include "../basic_nurbs_brep_handling/patch.h"
+#include "../basic_nurbs_brep_handling/brep_element.h"
 #include "cad_model_reader.h"
 
 // ==============================================================================
