@@ -46,6 +46,7 @@ class MeshSolverBase(object):
                 "use_block_matrices_if_possible" : true,
                 "coarse_enough" : 5000
             },
+            "volume_model_part_name"       : "Parts_Fluid",
             "time_order" : 2,
             "reform_dofs_each_step" : false,
             "compute_reactions"     : false
@@ -98,7 +99,12 @@ class MeshSolverBase(object):
         self.get_mesh_motion_solver().MoveMesh()
 
     def ImportModelPart(self):
-        raise Exception("::[MeshSolverBase]:: ImportModelPart() is not implemented yet.")
+        ## Read model part
+        self._ModelPartReading()
+        ## Set buffer size
+        self._SetBufferSize()
+
+        print ("Base class model reading finished.")
 
     def GetComputingModelPart(self):
         return self.model_part
@@ -128,3 +134,16 @@ class MeshSolverBase(object):
         The mesh motion solver must provide the functions defined in SolutionStrategy.
         """
         raise Exception("Mesh motion solver must be created by the derived class.")
+
+    def _ModelPartReading(self):
+            ## Model part reading
+        if(self.settings["model_import_settings"]["input_type"].GetString() == "mdpa"):
+            ## Here it would be the place to import restart data if required
+            KratosMultiphysics.ModelPartIO(self.settings["model_import_settings"]["input_filename"].GetString()).ReadModelPart(self.model_part)
+
+        else:
+            raise Exception("Other input options are not yet implemented.")
+
+    def _SetBufferSize(self):
+        ## Set the buffer size
+        current_buffer_size = self.model_part.GetBufferSize()

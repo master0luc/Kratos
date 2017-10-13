@@ -32,11 +32,11 @@ class convergence_criterion:
         if(rotation_dofs == True):
             if(convergence_criterion_parameters["convergence_criterion"].GetString() == "Displacement_criterion"):
                 self.mechanical_convergence_criterion = StructuralMechanicsApplication.DisplacementAndOtherDoFCriteria(D_RT, D_AT)
-                self.mechanical_convergence_criterion.SetEchoLevel(echo_level)
+                #self.mechanical_convergence_criterion.SetEchoLevel(echo_level)
                 
             elif(convergence_criterion_parameters["convergence_criterion"].GetString() == "Residual_criterion"):
                 self.mechanical_convergence_criterion = StructuralMechanicsApplication.ResidualDisplacementAndOtherDoFCriteria(R_RT, R_AT)
-                self.mechanical_convergence_criterion.SetEchoLevel(echo_level)
+                #self.mechanical_convergence_criterion.SetEchoLevel(echo_level)
                 
             elif(convergence_criterion_parameters["convergence_criterion"].GetString() == "And_criterion"):
                 Displacement = StructuralMechanicsApplication.DisplacementAndOtherDoFCriteria(D_RT, D_AT)

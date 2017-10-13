@@ -22,7 +22,7 @@
             "node_output"         : false,
             "skin_output"         : false,
             "plane_output"        : [],
-            "nodal_results"       : ["MESH_DISPLACEMENT"],
+            "nodal_results"       : ["MESH_DISPLACEMENT","MESH_VELOCITY"],
             "gauss_point_results" : []
         },
         "point_data_configuration"  : []
@@ -34,7 +34,7 @@
         "Restart_Step"     : 0
     },
     "solver_settings"                      : {
-            "solver_type"                  : "mesh_solver_laplacian",
+            "solver_type"                  : "mesh_solver_structural_similarity",
             "model_import_settings"        : {
             "input_type"     : "mdpa",
             "input_filename" : "01_Mesh_Test_2D3N"

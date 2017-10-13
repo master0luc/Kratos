@@ -64,7 +64,6 @@
 #include "includes/define.h"
 #include "includes/kratos_application.h"
 
-#include "custom_elements/laplacian_meshmoving_element.h"
 #include "custom_elements/structural_meshmoving_element.h"
 
 #include "includes/variables.h"
@@ -231,10 +230,6 @@ private:
     ///@}
     ///@name Member Variables
     ///@{
-    const LaplacianMeshMovingElement   mLaplacianMeshMovingElement2D3N;
-    const LaplacianMeshMovingElement   mLaplacianMeshMovingElement2D4N;
-    const LaplacianMeshMovingElement   mLaplacianMeshMovingElement3D4N;
-    const LaplacianMeshMovingElement   mLaplacianMeshMovingElement3D8N;
     const StructuralMeshMovingElement mStructuralMeshMovingElement2D3N;
     const StructuralMeshMovingElement mStructuralMeshMovingElement2D4N;
     const StructuralMeshMovingElement mStructuralMeshMovingElement3D4N;

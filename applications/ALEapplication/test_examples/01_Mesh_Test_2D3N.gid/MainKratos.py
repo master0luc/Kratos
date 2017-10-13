@@ -6,7 +6,7 @@ from math import sin,cos
 
 movementList = ["TRANSLATION_X", "TRANSLATION_Y", "BENDING", "ROTATION"]
 # =============================================================
-movement = 0             # set 0-3
+movement = 2             # set 0-3
 amplificationFactor = 2  # factor to amplify the movement
 solveMesh = True         # set to "True" to solve the mesh
 # =============================================================
@@ -32,7 +32,6 @@ def DisplacementToMesh(fluid_interface, time, movement, ampFac):
     time *= ampFac
     for node in fluid_interface:
         if movement == "TRANSLATION_X":
-            print("Setting Translation")
             valueX = 0.5 * time
             valueY = 0
         elif movement == "TRANSLATION_Y":

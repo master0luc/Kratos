@@ -57,7 +57,6 @@
 
 //strategies
 #include "solving_strategies/strategies/solving_strategy.h"
-#include "custom_strategies/strategies/laplacian_meshmoving_strategy.h"
 #include "custom_strategies/strategies/structural_meshmoving_strategy.h"
 
 //linear solvers
@@ -79,12 +78,6 @@ void  AddCustomStrategiesToPython()
 
     typedef LinearSolver<SparseSpaceType, LocalSpaceType > LinearSolverType;
     typedef SolvingStrategy< SparseSpaceType, LocalSpaceType, LinearSolverType > BaseSolvingStrategyType;
-
-    class_< LaplacianMeshMovingStrategy< SparseSpaceType, LocalSpaceType, LinearSolverType >,
-            bases< BaseSolvingStrategyType >,  boost::noncopyable >
-            ("LaplacianMeshMovingStrategy",
-             init<ModelPart&, LinearSolverType::Pointer, int, bool >() )
-            ;
 
     class_< StructuralMeshMovingStrategy< SparseSpaceType, LocalSpaceType, LinearSolverType >,
             bases< BaseSolvingStrategyType >,  boost::noncopyable >
