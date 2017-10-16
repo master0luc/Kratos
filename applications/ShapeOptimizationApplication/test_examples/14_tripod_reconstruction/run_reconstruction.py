@@ -59,6 +59,10 @@ class CADReconstrutionUtilities():
         # self.LinearSolver =  BICGSTABSolver(1e-9, 5000, DiagPrecond)
         # self.LinearSolver = AMGCLSolver(AMGCLSmoother.GAUSS_SEIDEL, AMGCLIterativeSolverType.BICGSTAB, 1e-9, 300, 2, 10)        
 
+        # Quality evaluation settings
+        self.ParameterResolutionForProjectionForGlobalQualityEvaluation = [ 300, 300 ]
+        self.MaxProjectionIterationsForGlobalQualityEvaluation = 10
+
         # Parameters for output
         self.OutputFolder = "01_Results"
         self.ParameterResolutionForOutputOfSurfacePoints = [ 50, 50 ]
@@ -101,9 +105,9 @@ class CADReconstrutionUtilities():
         #   - max
         #   - mean
         quality_evaluator.EvaluateGlobalQuality(self.ReconstructionStrategy,
-                                                self.ParameterResolutionForProjection,
+                                                self.ParameterResolutionForProjectionForGlobalQualityEvaluation,
                                                 self.FEMGaussIntegrationDegree,
-                                                self.MaxProjectionIterations,
+                                                self.MaxProjectionIterationsForGlobalQualityEvaluation,
                                                 self.ProjectionTolerance)
         
         # evaluate G0

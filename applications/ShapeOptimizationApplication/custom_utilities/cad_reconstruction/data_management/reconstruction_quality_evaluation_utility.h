@@ -100,8 +100,7 @@ public:
         std::cout << "> Max value = " << norm_inf(distancesVector) << std::endl;
         std::cout << "> L2 norm = " << norm_2(distancesVector) << std::endl;      
         std::cout << "> average value = " << sum(distancesVector)/distancesVector.size() << std::endl;      
-        // std::cout << std::fixed << std::setprecision(2);
-        std::cout << "> points ignored: " << outside_points_counter/points_counter << "%" << std::endl;      
+        std::cout << "> points ignored: " << 100 * (double) outside_points_counter / points_counter << "%" << std::endl;      
 
     }
 
