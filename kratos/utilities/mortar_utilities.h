@@ -995,7 +995,7 @@ inline void MortarUtilities::UpdateDatabase<Variable<double>, Historical>(
         )
 {
     #pragma omp parallel for
-    for (int i = 0; i < Dx.size(); ++i)
+    for (int i = 0; i < static_cast<int>(Dx.size()); ++i)
     {
         auto p_node = rThisModelPart.pGetNode(ConectivityDatabase[i]);
         p_node->FastGetSolutionStepValue(ThisVariable) += Dx[i];
@@ -1012,7 +1012,7 @@ inline void MortarUtilities::UpdateDatabase<component_type, Historical>(
         )
 {
     #pragma omp parallel for
-    for (int i = 0; i < Dx.size(); ++i)
+    for (int i = 0; i < static_cast<int>(Dx.size()); ++i)
     {
         auto p_node = rThisModelPart.pGetNode(ConectivityDatabase[i]);
         p_node->FastGetSolutionStepValue(ThisVariable) += Dx[i];
@@ -1029,7 +1029,7 @@ inline void MortarUtilities::UpdateDatabase<Variable<array_1d<double, 3>>, Histo
         )
 {
     #pragma omp parallel for
-    for (int i = 0; i < Dx.size(); ++i)
+    for (int i = 0; i < static_cast<int>(Dx.size()); ++i)
     {
         auto p_node = rThisModelPart.pGetNode(ConectivityDatabase[i]);
         auto& value = p_node->FastGetSolutionStepValue(ThisVariable); 
@@ -1046,7 +1046,7 @@ inline void MortarUtilities::UpdateDatabase<Variable<double>, NonHistorical>(
         )
 {
     #pragma omp parallel for
-    for (int i = 0; i < Dx.size(); ++i)
+    for (int i = 0; i < static_cast<int>(Dx.size()); ++i)
     {
         auto p_node = rThisModelPart.pGetNode(ConectivityDatabase[i]);
         p_node->GetValue(ThisVariable) += Dx[i];
@@ -1063,7 +1063,7 @@ inline void MortarUtilities::UpdateDatabase<component_type, NonHistorical>(
         )
 {
     #pragma omp parallel for
-    for (int i = 0; i < Dx.size(); ++i)
+    for (int i = 0; i < static_cast<int>(Dx.size()); ++i)
     {
         auto p_node = rThisModelPart.pGetNode(ConectivityDatabase[i]);
         p_node->GetValue(ThisVariable) += Dx[i];
@@ -1080,7 +1080,7 @@ inline void MortarUtilities::UpdateDatabase<Variable<array_1d<double, 3>>, NonHi
         )
 {
     #pragma omp parallel for
-    for (int i = 0; i < Dx.size(); ++i)
+    for (int i = 0; i < static_cast<int>(Dx.size()); ++i)
     {
         auto p_node = rThisModelPart.pGetNode(ConectivityDatabase[i]);
         auto& value = p_node->GetValue(ThisVariable); 
