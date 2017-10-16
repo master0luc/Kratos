@@ -256,7 +256,7 @@ public:
                                     
                                     /// MASTER CONDITION ///
                                     PointType projected_gp_global;
-                                    const array_1d<double,3> gp_normal = MortarUtilities::GaussPointNormal(this_kinematic_variables.NSlave, slave_geometry);
+                                    const array_1d<double,3> gp_normal = MortarUtilities::GaussPointUnitNormal(this_kinematic_variables.NSlave, slave_geometry);
                                     
                                     GeometryType::CoordinatesArrayType slave_gp_global;
                                     slave_geometry.GlobalCoordinates( slave_gp_global, local_point_parent );
