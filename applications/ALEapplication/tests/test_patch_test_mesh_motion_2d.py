@@ -37,40 +37,28 @@ class TestPatchTestALEMeshMotion(KratosUnittest.TestCase):
 
             
     def _define_movement(self,dim,mp,time):
-        # if(dim == 2):
-        #     #define the applied motion - the idea is that the displacement is defined as u = A*xnode + b
-        #     #so that the displcement is linear and the exact F = I + A
-        #     A = KratosMultiphysics.Matrix(3,3)
-        #     A[0,0] = 1.0e-10;  A[0,1] = 2.0e-10; A[0,2] = 0.0
-        #     A[1,0] = 0.5e-10;  A[1,1] = 0.7e-10; A[1,2] = 0.0
-        #     A[2,1] = 0.0;  A[2,1] = 0.0; A[2,2] = 0.0
-                    
-        #     b = KratosMultiphysics.Vector(3)
-        #     b[0] = 0.5e-10
-        #     b[1] = -0.2e-10     
-        #     b[2] = 0.0
-            
-        # else:
-        #     #define the applied motion - the idea is that the displacement is defined as u = A*xnode + b
-        #     #so that the displcement is linear and the exact F = I + A
-        #     A = KratosMultiphysics.Matrix(3,3)
-        #     A[0,0] = 1.0e-10;   A[0,1] = 2.0e-10; A[0,2] = 0.0
-        #     A[1,0] = 0.5e-10;   A[1,1] = 0.7e-10; A[1,2] = 0.1e-10
-        #     A[2,1] = -0.2e-10;  A[2,1] = 0.0;     A[2,2] = -0.3e-10
-                    
-        #     b = KratosMultiphysics.Vector(3)
-        #     b[0] = 0.5e-10
-        #     b[1] = -0.2e-10     
-        #     b[2] = 0.7e-10
-            
-        
-        # return A,b
 
-        u = math.cos(time) 
+        center = KratosMultiphysics.Vector(2)
+        center[0] = 0.75
+        center[1] = 0.75
+
+        disp = KratosMultiphysics.Vector(2)
+
+        omega = time
+
+        print (omega)
 
         for node in mp.Nodes:
-            node.SetSolutionStepValue(KratosMultiphysics.MESH_DISPLACEMENT_X,0,u)
 
+            relative_coordinates = KratosMultiphysics.Vector(2)
+            relative_coordinates[0] = node.X0 - center[0]
+            relative_coordinates[1] = node.Y0 + center[1]
+
+            disp[0] = math.cos(omega) * relative_coordinates[0] - math.sin(omega) * relative_coordinates[1]
+            disp[1] = math.sin(omega) * relative_coordinates[0] - math.cos(omega) * relative_coordinates[1]    
+
+            node.SetSolutionStepValue(KratosMultiphysics.MESH_DISPLACEMENT_X,0, disp[0])
+            node.SetSolutionStepValue(KratosMultiphysics.MESH_DISPLACEMENT_Y,0, disp[1])
 
         
     def _solve(self,mp):
@@ -134,7 +122,6 @@ class TestPatchTestALEMeshMotion(KratosUnittest.TestCase):
         dim = 2
         mp = KratosMultiphysics.ModelPart("ale_part")
         self._add_variables(mp)
-        #self._apply_material_properties(mp,dim)
         
         #create nodes
         mp.CreateNewNode(1,0.0,0.0,0.0)
@@ -169,8 +156,8 @@ class TestPatchTestALEMeshMotion(KratosUnittest.TestCase):
         bcs = mp.CreateSubModelPart("BoundaryCondtions")
         bcs.AddNodes([1,2,3,4,5,9,13,14,15,16,12,8])
         move_mp = mp.CreateSubModelPart("PrescribedMotion")
-        move_mp.AddNodes([6,7,10,11])
-
+        #move_mp.AddNodes([6,7,10,11])
+        move_mp.AddNodes([7,11])
                 
         #create Element
         mp.CreateNewElement("StructuralMeshMovingElement2D3N", 1, [1,2,6], mp.GetProperties()[1])
@@ -198,9 +185,9 @@ class TestPatchTestALEMeshMotion(KratosUnittest.TestCase):
         #A,b = self._define_movement(dim)
         
         #time integration parameters
-        dt = 0.005
+        dt = 0.5
         time = 0.0
-        end_time = 0.01
+        end_time = 10
         step = 0
         
         mp = self._set_and_fill_buffer(mp,2,dt)
@@ -244,6 +231,8 @@ class TestPatchTestALEMeshMotion(KratosUnittest.TestCase):
                                                     "WriteConditionsFlag": "WriteConditions",
                                                     "MultiFileFlag": "SingleFile"
                                                 },        
+                                                "file_label"          : "step",
+                                                "output_control_type" : "step",
                                                 "nodal_results"       : ["MESH_DISPLACEMENT", "MESH_VELOCITY"],
                                                 "gauss_point_results" : []
                                             }
