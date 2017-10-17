@@ -386,9 +386,9 @@ public:
         
         const bool not_zero_vector = (norm_2(normal) > std::numeric_limits<double>::epsilon());
         
-	#ifdef KRATOS_DEBUG
-		if (not_zero_vector == false) KRATOS_ERROR << "Zero norm normal vector. Norm:" << norm_2(normal) << std::endl;
-	#endif
+    #ifdef KRATOS_DEBUG
+        if (not_zero_vector == false) KRATOS_ERROR << "Zero norm normal vector. Norm:" << norm_2(normal) << std::endl;
+    #endif
         
         if (not_zero_vector == true) normal = normal/norm_2(normal);
         

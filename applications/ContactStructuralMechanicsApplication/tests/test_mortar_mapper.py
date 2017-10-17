@@ -1,6 +1,7 @@
 from __future__ import print_function, absolute_import, division  # makes KratosMultiphysics backward compatible with python 2.6 and 2.7
 
 import KratosMultiphysics 
+import KratosMultiphysics.ExternalSolversApplication as ExternalSolversApplication
 import KratosMultiphysics.StructuralMechanicsApplication as StructuralMechanicsApplication
 import KratosMultiphysics.ContactStructuralMechanicsApplication as ContactStructuralMechanicsApplication
 
@@ -13,7 +14,7 @@ class TestMortarMapping(KratosUnittest.TestCase):
     def setUp(self):
         pass
     
-    def __base_test_mapping(self, input_filename, num_nodes):
+    def __base_test_mapping(self, input_filename, num_nodes, implicit):
         self.main_model_part = KratosMultiphysics.ModelPart("Structure")
         
         ## Creation of the Kratos model (build sub_model_parts or submeshes)
@@ -103,25 +104,27 @@ class TestMortarMapping(KratosUnittest.TestCase):
             node.SetSolutionStepValue(KratosMultiphysics.VELOCITY_Z, z)
         del(node)
 
-        #linear_solver = KratosMultiphysics.SkylineLUFactorizationSolver()
+        if (implicit == True):
+            #linear_solver = ExternalSolversApplication.SuperLUSolver()
+            linear_solver = KratosMultiphysics.SkylineLUFactorizationSolver()
 
-        #if (num_nodes == 3): 
-            #self.mortar_mapping_double = KratosMultiphysics.SimpleMortarMapperProcess3D3NDoubleHistorical(self.main_model_part, KratosMultiphysics.PRESSURE, linear_solver)
-            #self.mortar_mapping_vector = KratosMultiphysics.SimpleMortarMapperProcess3D3NVectorHistorical(self.main_model_part, KratosMultiphysics.VELOCITY, linear_solver)
-        #else:
-            #self.mortar_mapping_double = KratosMultiphysics.SimpleMortarMapperProcess3D4NDoubleHistorical(self.main_model_part, KratosMultiphysics.PRESSURE, linear_solver)
-            #self.mortar_mapping_vector = KratosMultiphysics.SimpleMortarMapperProcess3D4NVectorHistorical(self.main_model_part, KratosMultiphysics.VELOCITY, linear_solver)
-            
-        if (num_nodes == 3): 
-            self.mortar_mapping_double = KratosMultiphysics.SimpleMortarMapperProcess3D3NDoubleHistorical(self.main_model_part, KratosMultiphysics.PRESSURE)
-            self.mortar_mapping_vector = KratosMultiphysics.SimpleMortarMapperProcess3D3NVectorHistorical(self.main_model_part, KratosMultiphysics.VELOCITY)
+            if (num_nodes == 3): 
+                self.mortar_mapping_double = KratosMultiphysics.SimpleMortarMapperProcess3D3NDoubleHistorical(self.main_model_part, KratosMultiphysics.PRESSURE, linear_solver)
+                self.mortar_mapping_vector = KratosMultiphysics.SimpleMortarMapperProcess3D3NVectorHistorical(self.main_model_part, KratosMultiphysics.VELOCITY, linear_solver)
+            else:
+                self.mortar_mapping_double = KratosMultiphysics.SimpleMortarMapperProcess3D4NDoubleHistorical(self.main_model_part, KratosMultiphysics.PRESSURE, linear_solver)
+                self.mortar_mapping_vector = KratosMultiphysics.SimpleMortarMapperProcess3D4NVectorHistorical(self.main_model_part, KratosMultiphysics.VELOCITY, linear_solver)
         else:
-            self.mortar_mapping_double = KratosMultiphysics.SimpleMortarMapperProcess3D4NDoubleHistorical(self.main_model_part, KratosMultiphysics.PRESSURE)
-            self.mortar_mapping_vector = KratosMultiphysics.SimpleMortarMapperProcess3D4NVectorHistorical(self.main_model_part, KratosMultiphysics.VELOCITY)
+            if (num_nodes == 3): 
+                self.mortar_mapping_double = KratosMultiphysics.SimpleMortarMapperProcess3D3NDoubleHistorical(self.main_model_part, KratosMultiphysics.PRESSURE)
+                self.mortar_mapping_vector = KratosMultiphysics.SimpleMortarMapperProcess3D3NVectorHistorical(self.main_model_part, KratosMultiphysics.VELOCITY)
+            else:
+                self.mortar_mapping_double = KratosMultiphysics.SimpleMortarMapperProcess3D4NDoubleHistorical(self.main_model_part, KratosMultiphysics.PRESSURE)
+                self.mortar_mapping_vector = KratosMultiphysics.SimpleMortarMapperProcess3D4NVectorHistorical(self.main_model_part, KratosMultiphysics.VELOCITY)
         
-    def _mapper_tests(self, input_filename, num_nodes):
+    def _mapper_tests(self, input_filename, num_nodes, implicit = True):
         
-        self.__base_test_mapping(input_filename, num_nodes)
+        self.__base_test_mapping(input_filename, num_nodes, implicit)
         
         self.mortar_mapping_double.Execute()
         self.mortar_mapping_vector.Execute()
@@ -177,21 +180,21 @@ class TestMortarMapping(KratosUnittest.TestCase):
         input_filename = os.path.dirname(os.path.realpath(__file__)) + "/integration_tests/test_integration_triangles"
         self._mapper_tests(input_filename, 3)
         
-    #def test_less_basic_2_mortar_mapping_triangle(self):
-        #input_filename = os.path.dirname(os.path.realpath(__file__)) + "/integration_tests/test_integration_triangles_2"
-        #self._mapper_tests(input_filename, 3)
+    def test_less_basic_2_mortar_mapping_triangle(self):
+        input_filename = os.path.dirname(os.path.realpath(__file__)) + "/integration_tests/test_integration_triangles_2"
+        self._mapper_tests(input_filename, 3)
         
     def test_simple_curvature_mortar_mapping_triangle(self):
         input_filename = os.path.dirname(os.path.realpath(__file__)) + "/integration_tests/test_simple_curvature"
-        self._mapper_tests(input_filename, 3)
+        self._mapper_tests(input_filename, 3, False)
         
     def test_mortar_mapping_triangle(self):
         input_filename = os.path.dirname(os.path.realpath(__file__)) + "/integration_tests/test_double_curvature_integration_triangle"
-        self._mapper_tests(input_filename, 3)
+        self._mapper_tests(input_filename, 3, False)
         
     def test_mortar_mapping_quad(self):
         input_filename = os.path.dirname(os.path.realpath(__file__)) + "/integration_tests/test_double_curvature_integration_quadrilateral"
-        self._mapper_tests(input_filename, 4)
+        self._mapper_tests(input_filename, 4, False)
         
     def __post_process(self):
         from gid_output_process import GiDOutputProcess
