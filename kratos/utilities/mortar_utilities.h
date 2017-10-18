@@ -20,6 +20,7 @@
 
 // Project includes
 #include "utilities/math_utils.h"
+#include "includes/enums.h"
 #include "includes/model_part.h"
 #include "geometries/point.h"
 #include "utilities/openmp_utils.h"
@@ -39,11 +40,6 @@ namespace Kratos
 ///@}
 ///@name  Enum's
 ///@{
-    
-#if !defined(HISTORICAL_VALUES)
-#define HISTORICAL_VALUES
-    enum HistoricalValues {Historical = 0, NonHistorical = 1};
-#endif
     
 ///@}
 ///@name  Functions
