@@ -109,7 +109,8 @@ class TestMortarMapping(KratosUnittest.TestCase):
             "echo_level"                       : 0,
             "absolute_convergence_tolerance"   : 1.0e-9,
             "relative_convergence_tolerance"   : 1.0e-4,
-            "max_number_iterations"            : 10
+            "max_number_iterations"            : 10,
+            "integration_order"                : 2
         }
         """)
 
