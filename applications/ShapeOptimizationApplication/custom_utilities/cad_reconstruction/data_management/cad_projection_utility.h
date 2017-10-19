@@ -171,6 +171,10 @@ public:
         // Newton-Raphson algorithm if iterations are specified
         for(unsigned int k=0; k<mMaxIterations; k++)
         {
+          // KRATOS_WATCH(k);
+          // KRATOS_WATCH(current_nearest_point);
+          // KRATOS_WATCH(*PointOfInterest);
+          // KRATOS_WATCH(parameter_values_of_nearest_point);
           // The distance between point on CAD surface point on the FE-mesh
           Distance(0) = current_nearest_point[0] - PointOfInterest->X();
           Distance(1) = current_nearest_point[1] - PointOfInterest->Y();

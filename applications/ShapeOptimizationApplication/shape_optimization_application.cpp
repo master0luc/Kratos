@@ -76,6 +76,7 @@ namespace Kratos
 
     // For CAD reconstruction
     KRATOS_CREATE_VARIABLE( int, CAD_RECONSTRUCTION_ID );
+    KRATOS_CREATE_VARIABLE( double, POSITIONAL_DEVIATION );
 
     // Eof variables
 
@@ -135,7 +136,8 @@ namespace Kratos
         
         // For CAD reconstruction
         KRATOS_REGISTER_VARIABLE( CAD_RECONSTRUCTION_ID )
-        
+        KRATOS_REGISTER_VARIABLE( POSITIONAL_DEVIATION )
+
         // Register elements
         KRATOS_REGISTER_ELEMENT( "SmallDisplacementAnalyticSensitivityElement3D4N", mSmallDisplacementAnalyticSensitivityElement3D4N );
         KRATOS_REGISTER_ELEMENT( "SmallDisplacementAnalyticSensitivityElement3D10N", mSmallDisplacementAnalyticSensitivityElement3D10N );

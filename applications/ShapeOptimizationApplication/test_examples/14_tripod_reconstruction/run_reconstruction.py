@@ -94,33 +94,72 @@ class CADReconstrutionUtilities():
     def PerformReconstruction( self ):
         self.__CreateReconstructionConditions()
         self.__CreateSolverForReconstruction()
-        self.__RunSolutionAlorithm()
+        #self.__RunSolutionAlorithm()
+        self.__CreateQualityEvaluator()
     
     # --------------------------------------------------------------------------
+    def EvaluateProjectionQuality( self ):
+
+        new_mdpa = ModelPart("name_of_empty_mdpa")
+        new_mdpa.AddNodalSolutionStepVariable(POSITIONAL_DEVIATION)
+
+        self.quality_evaluator.EvaluateQualityOfProjection(new_mdpa)
+
+        from gid_output import GiDOutput
+        fem_output_filename = self.OutputFolder + "/" + self.FEMInputFilename + "_with_projection_quality_measures"
+        nodal_results=["POSITIONAL_DEVIATION"]
+        gauss_points_results=[]
+        VolumeOutput = True
+        GiDPostMode = "Ascii"
+        GiDWriteMeshFlag = True
+        GiDWriteConditionsFlag = True
+        GiDWriteParticlesFlag = True
+        GiDMultiFileFlag = "Single"
+        gig_io = GiDOutput(fem_output_filename, VolumeOutput, GiDPostMode, GiDMultiFileFlag, GiDWriteMeshFlag, GiDWriteConditionsFlag)
+        gig_io.initialize_results(new_mdpa)
+        gig_io.write_results(1, new_mdpa, nodal_results, gauss_points_results)
+        gig_io.finalize_results()
+
+    # --------------------------------------------------------------------------
     def EvaluateReconstructionQuality( self ):
-        quality_evaluator = ReconstructionQualityEvaluationUtility( self.DataBase )
+        
         # evaluate global fitting
         # measure distances vector: very fine point cloud (discard wrong patch)
         #   - norm
         #   - max
         #   - mean
-        quality_evaluator.EvaluateGlobalQuality(self.ReconstructionStrategy,
-                                                self.ParameterResolutionForProjectionForGlobalQualityEvaluation,
-                                                self.FEMGaussIntegrationDegree,
-                                                self.MaxProjectionIterationsForGlobalQualityEvaluation,
-                                                self.ProjectionTolerance)
+        self.quality_evaluator.EvaluateGlobalQuality(self.ReconstructionStrategy,
+                                                     self.ParameterResolutionForProjectionForGlobalQualityEvaluation,
+                                                     self.FEMGaussIntegrationDegree,
+                                                     self.MaxProjectionIterationsForGlobalQualityEvaluation,
+                                                     self.ProjectionTolerance)
         
         # evaluate G0
         #   - integral mean over length
         #   - max pointwise
         #   - mean pointwise
-        quality_evaluator.EvaluateDisplacementCoupling()
+        self.quality_evaluator.EvaluateDisplacementCoupling()
         
         # evaluate G1
         #   - integral mean over length
         #   - max pointwise
         #   - mean pointwise
-        quality_evaluator.EvaluateRotationCoupling()
+        self.quality_evaluator.EvaluateRotationCoupling()
+
+        from gid_output import GiDOutput
+        fem_output_filename = self.OutputFolder + "/" + self.FEMInputFilename + "_with_quality_measures"
+        nodal_results=["SHAPE_CHANGE_ABSOLUTE","POSITIONAL_DEVIATION"]
+        gauss_points_results=[]
+        VolumeOutput = True
+        GiDPostMode = "Ascii"
+        GiDWriteMeshFlag = False
+        GiDWriteConditionsFlag = True
+        GiDWriteParticlesFlag = False
+        GiDMultiFileFlag = "Single"
+        gig_io = GiDOutput(fem_output_filename, VolumeOutput, GiDPostMode, GiDMultiFileFlag, GiDWriteMeshFlag, GiDWriteConditionsFlag)
+        gig_io.initialize_results(self.FEModelPart)
+        gig_io.write_results(1, self.FEModelPart, nodal_results, gauss_points_results)
+        gig_io.finalize_results()
 
     # --------------------------------------------------------------------------
     def OutputFEData( self ):
@@ -152,6 +191,7 @@ class CADReconstrutionUtilities():
         print("\n> Start importing FE data")
         self.FEModelPart = ModelPart("name_of_empty_mdpa")
         self.FEModelPart.AddNodalSolutionStepVariable(SHAPE_CHANGE_ABSOLUTE)
+        self.FEModelPart.AddNodalSolutionStepVariable(POSITIONAL_DEVIATION)
         model_part_io = ModelPartIO(self.FEMInputFilename)
         model_part_io.ReadModelPart(self.FEModelPart)
         print("> Importing FE data finished.")        
@@ -211,6 +251,11 @@ class CADReconstrutionUtilities():
         self.OutputWriter = ReconstructionOutputWriter( self.DataBase, self.OutputFolder, self.RhinoResultsFilename, self.GeorhinoFilename )    
 
     # --------------------------------------------------------------------------
+    def __CreateQualityEvaluator( self ):
+        self.quality_evaluator = QualityEvaluationUtility( self.DataBase, self.ConditionsContainer)
+        
+
+    # --------------------------------------------------------------------------
     def __CreateReconstructionConditions( self ):
 
         # Container to store all conditions (including constraints and reguarlization )
@@ -258,7 +303,7 @@ class CADReconstrutionUtilities():
             self.ReconstructionSolver.ComputeRHS()
             self.ReconstructionSolver.SolveEquationSystem()
 
-            # self.ReconstructionSolver.UpdateControlPointsAccordingReconstructionStrategy( self.ReconstructionStrategy )
+            self.ReconstructionSolver.UpdateControlPointsAccordingReconstructionStrategy( self.ReconstructionStrategy )
             
             self.OutputWriter.OutputResultsInRhinoFormat( iteration ) 
 
@@ -297,6 +342,7 @@ CADReconstructionUtility.OutputCADSurfacePoints( "surface_points_of_cad_geometry
 CADReconstructionUtility.PerformReconstruction()
 
 # Measure quality of reconstruction
+CADReconstructionUtility.EvaluateProjectionQuality()
 CADReconstructionUtility.EvaluateReconstructionQuality()
 
 # Some output

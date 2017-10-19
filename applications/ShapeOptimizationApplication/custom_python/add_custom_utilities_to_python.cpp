@@ -39,7 +39,7 @@
 #include "custom_utilities/cad_reconstruction/reconstruction_conditions/reconstruction_condition_container.h"
 #include "custom_utilities/cad_reconstruction/cad_reconstruction_solver.h"
 #include "custom_utilities/cad_reconstruction/data_management/reconstruction_output_writer.h"
-#include "custom_utilities/cad_reconstruction/data_management/reconstruction_quality_evaluation_utility.h"
+#include "custom_utilities/cad_reconstruction/data_management/quality_evaluation_utility.h"
 
 // ==============================================================================
 
@@ -173,10 +173,11 @@ void  AddCustomUtilitiesToPython()
         .def("OutputResultsInRhinoFormat", &ReconstructionOutputWriter::OutputResultsInRhinoFormat)        
         ;                            
     
-    class_<ReconstructionQualityEvaluationUtility, bases<Process> >("ReconstructionQualityEvaluationUtility", init<ReconstructionDataBase&>())
-        .def("EvaluateGlobalQuality", &ReconstructionQualityEvaluationUtility::EvaluateGlobalQuality)
-        .def("EvaluateDisplacementCoupling", &ReconstructionQualityEvaluationUtility::EvaluateDisplacementCoupling)
-        .def("EvaluateRotationCoupling", &ReconstructionQualityEvaluationUtility::EvaluateRotationCoupling)        
+    class_<QualityEvaluationUtility, bases<Process> >("QualityEvaluationUtility", init<ReconstructionDataBase&, ReconstructionConditionContainer&>())
+        .def("EvaluateQualityOfProjection", &QualityEvaluationUtility::EvaluateQualityOfProjection)
+        .def("EvaluateGlobalQuality", &QualityEvaluationUtility::EvaluateGlobalQuality)
+        .def("EvaluateDisplacementCoupling", &QualityEvaluationUtility::EvaluateDisplacementCoupling)
+        .def("EvaluateRotationCoupling", &QualityEvaluationUtility::EvaluateRotationCoupling)        
         ;                            
 
 }

@@ -24,7 +24,9 @@
 // ------------------------------------------------------------------------------
 // Project includes
 // ------------------------------------------------------------------------------
+#include "includes/node.h"
 #include "reconstruction_condition_base.h"
+#include "processes/process.h"
 
 // ==============================================================================
 
@@ -37,6 +39,7 @@ namespace Kratos
 ///@}
 ///@name Type Definitions
 ///@{
+    typedef Node<3> NodeType;
 
 ///@}
 ///@name  Enum's
@@ -188,6 +191,33 @@ public:
             RHS( 3*row_id+0 ) -= mIntegrationWeight * ( cad_cad_contribution[0] - cad_fem_contribution[0]);
             RHS( 3*row_id+1 ) -= mIntegrationWeight * ( cad_cad_contribution[1] - cad_fem_contribution[1]);
             RHS( 3*row_id+2 ) -= mIntegrationWeight * ( cad_cad_contribution[2] - cad_fem_contribution[2]);             
+        }
+    }
+
+    // --------------------------------------------------------------------------
+    virtual void EvaluateProjection( double &residual_distance, bool &is_outside_trimmed_area)
+    {
+        // evaluate if inside
+        is_outside_trimmed_area = !mrAffectedPatch.IsPointInside(mParmeterValues);
+
+        // evaluate distance
+        if(is_outside_trimmed_area)
+            residual_distance = -1;
+        else
+        {
+            // FE point
+            Point<3> fe_point;
+            fe_point = mrGeometryContainingThisCondition.IntegrationPoints(mFemIntegrationMethod)[mIntegrationPointNumber];
+            NodeType::CoordinatesArrayType fe_point_coords = mrGeometryContainingThisCondition.GlobalCoordinates(fe_point_coords, fe_point.Coordinates());
+            // CAD point
+            Point<3> cad_point;
+            mrAffectedPatch.EvaluateSurfacePoint(mParmeterValues, cad_point);
+            // distance
+            Vector distance_vector = ZeroVector(3);
+            distance_vector(0) = cad_point.X() - fe_point_coords[0];
+            distance_vector(1) = cad_point.Y() - fe_point_coords[1];
+            distance_vector(2) = cad_point.Z() - fe_point_coords[2];
+            residual_distance = norm_2(distance_vector);
         }
     }
 

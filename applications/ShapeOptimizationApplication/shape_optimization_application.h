@@ -79,6 +79,7 @@ namespace Kratos
 	
     // For CAD reconstruction
 	KRATOS_DEFINE_VARIABLE( int, CAD_RECONSTRUCTION_ID );
+	KRATOS_DEFINE_VARIABLE( double, POSITIONAL_DEVIATION );	
 	
 	///@} 
 	///@name Type Definitions

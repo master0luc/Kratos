@@ -99,6 +99,9 @@ public:
     // --------------------------------------------------------------------------
     virtual void ComputeAndAddRHSContribution( Vector& RHS ) = 0;
 
+    // --------------------------------------------------------------------------
+    virtual void EvaluateProjection( double &residual_distance, bool &is_outside_trimmed_area) = 0;
+
     // ==============================================================================
 
     ///@}

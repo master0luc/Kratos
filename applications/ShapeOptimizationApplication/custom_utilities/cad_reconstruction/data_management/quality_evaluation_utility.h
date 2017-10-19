@@ -8,8 +8,8 @@
 //
 // ==============================================================================
 
-#ifndef RECONSTRUCTION_QUALITY_EVALUATION_UTILITY_H
-#define RECONSTRUCTION_QUALITY_EVALUATION_UTILITY_H
+#ifndef QUALITY_EVALUATION_UTILITY_H
+#define QUALITY_EVALUATION_UTILITY_H
 
 // ------------------------------------------------------------------------------
 // System includes
@@ -45,7 +45,7 @@
 
 namespace Kratos
 {
-class ReconstructionQualityEvaluationUtility
+class QualityEvaluationUtility
 {
 public:
     ///@name Type Definitions
@@ -57,24 +57,66 @@ public:
     typedef std::vector<BREPGaussPoint> BREPGaussPointVector;    
     typedef Element::GeometryType::IntegrationMethod IntegrationMethodType;
     
-    /// Pointer definition of ReconstructionQualityEvaluationUtility
-    KRATOS_CLASS_POINTER_DEFINITION(ReconstructionQualityEvaluationUtility);
+    /// Pointer definition of QualityEvaluationUtility
+    KRATOS_CLASS_POINTER_DEFINITION(QualityEvaluationUtility);
 
     ///@}
     ///@name Life Cycle
     ///@{
 
     /// Default constructor.
-    ReconstructionQualityEvaluationUtility( ReconstructionDataBase& reconstruction_data_base):
-     mrReconstructionDataBase( reconstruction_data_base )
+    QualityEvaluationUtility( ReconstructionDataBase& reconstruction_data_base,
+                              ReconstructionConditionContainer& condition_container):
+     mrReconstructionDataBase( reconstruction_data_base ),
+     mrReconstructionConditions( condition_container.GetReconstructionConditions() )
     {      
     }
 
     /// Destructor.
-    virtual ~ReconstructionQualityEvaluationUtility()
+    virtual ~QualityEvaluationUtility()
     {
     }
 
+    // --------------------------------------------------------------------------
+    void EvaluateQualityOfProjection(ModelPart& MdpaToEvaluateProjectionQuality)
+    {
+      std::cout << "> Quality of projection:" << std::endl;
+      double distance;
+      bool is_outside;
+      Vector distancesVector = ZeroVector(mrReconstructionConditions.size());
+      int inside_conditions_counter = 0;
+      int outside_conditions_counter = 0;
+      for(auto & condition_i : mrReconstructionConditions)
+      {
+        condition_i->EvaluateProjection(distance, is_outside);
+        array_1d<double,3> c_coordinates; //= condition_i->GetConditionCoordinates();
+        NodeType::Pointer new_node = Node <3>::Pointer(new Node<3>((inside_conditions_counter+outside_conditions_counter), c_coordinates));
+
+
+        ConditionType::GeometryType new_geometry = GeometryType::Pointer(new Geomery)
+
+        new_node->SetSolutionStepVariablesList(&(MdpaToEvaluateProjectionQuality.GetNodalSolutionStepVariablesList()));
+        new_node->SetBufferSize(1);
+
+        new_node->FastGetSolutionStepValue(POSITIONAL_DEVIATION) = distance;
+
+        MdpaToEvaluateProjectionQuality.Nodes().push_back(new_node);
+
+        if(is_outside)
+          outside_conditions_counter++;
+        else
+        {
+          distancesVector(inside_conditions_counter)  = distance;
+          inside_conditions_counter++;
+        }
+      }
+      distancesVector.resize(inside_conditions_counter);
+
+      std::cout << ">\tMax positional deviation = " << norm_inf(distancesVector) << std::endl;
+      // std::cout << ">\tL2 norm = " << norm_2(distancesVector) << std::endl;      
+      std::cout << ">\tAverage positional deviation = " << sum(distancesVector)/distancesVector.size() << std::endl;      
+      std::cout << ">\tPercentage of CAD points outside the trimming boundaries: " << 100 * (double) outside_conditions_counter / mrReconstructionConditions.size() << "%" << std::endl;
+    }
     // --------------------------------------------------------------------------
     void EvaluateGlobalQuality(std::string reconstruction_strategy,
                                boost::python::list rParameterResolution,
@@ -113,15 +155,15 @@ public:
         ModelPart& fe_model_part = mrReconstructionDataBase.GetFEModelPart();                       // INITIALIZATION
         results_vector.clear();
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        IntegrationMethodType fem_integration_method;
-        switch(integration_degree)
-        {
-            case 1 : fem_integration_method = GeometryData::GI_GAUSS_1; break;
-            case 2 : fem_integration_method = GeometryData::GI_GAUSS_2; break;
-            case 3 : fem_integration_method = GeometryData::GI_GAUSS_3; break;
-            case 4 : fem_integration_method = GeometryData::GI_GAUSS_4; break;                       // INITIALIZE PROJECTOR 
-            case 5 : fem_integration_method = GeometryData::GI_GAUSS_5; break;
-        }
+        // IntegrationMethodType fem_integration_method;
+        // switch(integration_degree)
+        // {
+        //     case 1 : fem_integration_method = GeometryData::GI_GAUSS_1; break;
+        //     case 2 : fem_integration_method = GeometryData::GI_GAUSS_2; break;
+        //     case 3 : fem_integration_method = GeometryData::GI_GAUSS_3; break;
+        //     case 4 : fem_integration_method = GeometryData::GI_GAUSS_4; break;                       // INITIALIZE PROJECTOR 
+        //     case 5 : fem_integration_method = GeometryData::GI_GAUSS_5; break;
+        // }
         
         CADProjectionUtility FE2CADProjector( patch_vector, max_iterations, projection_tolerance );
         FE2CADProjector.Initialize( rParameterResolution );
@@ -129,24 +171,92 @@ public:
         
 
 
-        for (auto & elem_i : fe_model_part.Elements())                                                // COMPUTE POINTS, EVALUATE DISTANCES
+        // for (auto & elem_i : fe_model_part.Elements())                                                // COMPUTE POINTS, EVALUATE DISTANCES
+        // {
+        //     Element::GeometryType& geom_i = elem_i.GetGeometry();
+        //     const Element::GeometryType::IntegrationPointsArrayType& integration_points = geom_i.IntegrationPoints(fem_integration_method);
+
+        //           ProcessInfo some_process_info;
+        //           std::vector< array_1d<double,3> > displacements_of_gp(integration_points.size());
+        //           elem_i.GetValueOnIntegrationPoints(SHAPE_CHANGE_ABSOLUTE, displacements_of_gp, some_process_info);
+        //           // KRATOS_WATCH(displacements_of_gp[0]);
+        //           // KRATOS_WATCH(displacements_of_gp[1]);
+        //           // KRATOS_WATCH(displacements_of_gp[2]);
+        //           // KRATOS_WATCH(displacements_of_gp[3]);
+        //           // KRATOS_WATCH(displacements_of_gp[4]);
+        //           // KRATOS_WATCH(displacements_of_gp[5]);
+        //           // KRATOS_WATCH(displacements_of_gp[6]);
+        //           // KRATOS_WATCH(displacements_of_gp[7]);
+        //           // KRATOS_WATCH(displacements_of_gp[8]);
+        //           // KRATOS_WATCH(displacements_of_gp[9]);
+        //           // KRATOS_WATCH(displacements_of_gp[10]);
+        //           // KRATOS_WATCH(displacements_of_gp[11]);
+        //     //
+
+        //     int integration_point_counter = 0;
+        //     for (auto & integration_point_i : integration_points)
+        //     {
+        //       KRATOS_WATCH(displacements_of_gp[integration_point_counter]);
+
+        //         // int integration_point_number = &integration_point_i - &integration_points[0];
+        //         NodeType::CoordinatesArrayType ip_coordinates = geom_i.GlobalCoordinates(ip_coordinates, integration_point_i.Coordinates());
+        //         ///////////
+        //         ip_coordinates[0] += displacements_of_gp[integration_point_counter][0];
+        //         ip_coordinates[1] += displacements_of_gp[integration_point_counter][1];
+        //         ip_coordinates[2] += displacements_of_gp[integration_point_counter][2];
+        //         ///////////
+        //         NodeType::Pointer node_of_interest = Node <3>::Pointer(new Node<3>(1, ip_coordinates));
+
+        //         array_1d<double,2> parameter_values_of_nearest_point;
+        //         int patch_index_of_nearest_point = -1;
+
+        //     KRATOS_WATCH("looking for nearest CAD");
+        //     KRATOS_WATCH(*node_of_interest);
+        //     KRATOS_WATCH(parameter_values_of_nearest_point);
+        //     KRATOS_WATCH(patch_index_of_nearest_point);
+        //         FE2CADProjector.DetermineNearestCADPoint( node_of_interest, 
+        //                                                   parameter_values_of_nearest_point, 
+        //                                                   patch_index_of_nearest_point );
+        //     KRATOS_WATCH(*node_of_interest);
+        //     KRATOS_WATCH(parameter_values_of_nearest_point);
+        //     KRATOS_WATCH(patch_index_of_nearest_point);
+        //     KRATOS_WATCH("done");
+
+        //         Patch patch_of_nearest_point = patch_vector[patch_index_of_nearest_point];
+        //         bool is_inside = patch_of_nearest_point.IsPointInside(parameter_values_of_nearest_point);
+        //         if(is_inside)
+        //         {
+        //           Point<3> nearest_point_coordinates;
+        //           patch_of_nearest_point.EvaluateSurfacePoint(parameter_values_of_nearest_point, nearest_point_coordinates);
+        //           NodeType::Pointer nearest_cad_node = Node <3>::Pointer(new Node<3>(1, nearest_point_coordinates));
+
+        //           double distance;
+        //           EvaluateDistanceBetweenNodes(node_of_interest, nearest_cad_node, distance);
+        //           results_vector.push_back(distance);
+        //         }
+        //         else
+        //         {
+        //           outside_points_counter++;
+        //         } 
+        //         points_counter++;
+
+        //         integration_point_counter++;
+        //     }
+        // }
+        for (auto & node_i : fe_model_part.Nodes())
         {
-            Element::GeometryType& geom_i = elem_i.GetGeometry();
-            const Element::GeometryType::IntegrationPointsArrayType& integration_points = geom_i.IntegrationPoints(fem_integration_method);
-
-            for (auto & integration_point_i : integration_points)
-            {
-                // int integration_point_number = &integration_point_i - &integration_points[0];
-                NodeType::CoordinatesArrayType ip_coordinates = geom_i.GlobalCoordinates(ip_coordinates, integration_point_i.Coordinates());
-                NodeType::Pointer node_of_interest = Node <3>::Pointer(new Node<3>(1, ip_coordinates));
-
+            array_1d<double,3>& nodalResult = node_i.FastGetSolutionStepValue(SHAPE_CHANGE_ABSOLUTE);
+            double x = node_i.X() + nodalResult[0];
+            double y = node_i.Y() + nodalResult[1];
+            double z = node_i.Z() + nodalResult[2];
+            NodeType::Pointer node_of_interest = Node <3>::Pointer(new Node<3>(1, x, y, z));
+            ///////////////////////////////////////////////////////////////////
                 array_1d<double,2> parameter_values_of_nearest_point;
                 int patch_index_of_nearest_point = -1;
 
                 FE2CADProjector.DetermineNearestCADPoint( node_of_interest, 
                                                           parameter_values_of_nearest_point, 
                                                           patch_index_of_nearest_point );
-
                 Patch patch_of_nearest_point = patch_vector[patch_index_of_nearest_point];
                 bool is_inside = patch_of_nearest_point.IsPointInside(parameter_values_of_nearest_point);
                 if(is_inside)
@@ -158,12 +268,15 @@ public:
                   double distance;
                   EvaluateDistanceBetweenNodes(node_of_interest, nearest_cad_node, distance);
                   results_vector.push_back(distance);
+                  node_i.FastGetSolutionStepValue(POSITIONAL_DEVIATION) = distance;
                 }
                 else
+                {
                   outside_points_counter++;
+                  node_i.FastGetSolutionStepValue(POSITIONAL_DEVIATION) = -1.0;
+                  
+                } 
                 points_counter++;
-
-            }
         }
     }
 
@@ -343,13 +456,13 @@ public:
     /// Turn back information as a string.
     virtual std::string Info() const
     {
-		return "ReconstructionQualityEvaluationUtility";
+		return "QualityEvaluationUtility";
     }
 
     /// Print information about this object.
     virtual void PrintInfo(std::ostream &rOStream) const
     {
-		rOStream << "ReconstructionQualityEvaluationUtility";
+		rOStream << "QualityEvaluationUtility";
     }
 
     /// Print object's data.
@@ -360,15 +473,16 @@ public:
 private:
 
     ReconstructionDataBase& mrReconstructionDataBase;
+    std::vector<ReconstructionCondition::Pointer>& mrReconstructionConditions;
     int points_counter=0;
     int outside_points_counter=0;
     /// Assignment operator.
-    //      ReconstructionQualityEvaluationUtility& operator=(ReconstructionQualityEvaluationUtility const& rOther);
+    //      QualityEvaluationUtility& operator=(QualityEvaluationUtility const& rOther);
 
     /// Copy constructor.
-    //      ReconstructionQualityEvaluationUtility(ReconstructionQualityEvaluationUtility const& rOther);
+    //      QualityEvaluationUtility(QualityEvaluationUtility const& rOther);
 
-}; // Class ReconstructionQualityEvaluationUtility
+}; // Class QualityEvaluationUtility
 } // namespace Kratos.
 
-#endif // RECONSTRUCTION_QUALITY_EVALUATION_UTILITY_H
+#endif // QUALITY_EVALUATION_UTILITY_H
