@@ -109,12 +109,13 @@ public:
     {
         Parameters DefaultParameters = Parameters(R"(
             {
-                "solver_type"             : "RayleighQuotientIterationEigenvalueSolver",
+                "solver_type"             : "rayleigh_quotient_iteration_eigenvalue_solver",
                 "max_iteration"           : 500,
                 "tolerance"               : 1e-9,
                 "required_eigen_number"   : 1,
                 "shifting_convergence"    : 0.25,
-                "verbosity"               : 1
+                "verbosity"               : 1,
+                "linear_solver_settings"  : {}
             })" );
 
         ThisParameters.ValidateAndAssignDefaults(DefaultParameters);
@@ -137,7 +138,7 @@ public:
     }
 
     /// Destructor.
-    ~RayleighQuotientIterationEigenvalueSolver() override {}
+    virtual ~RayleighQuotientIterationEigenvalueSolver() {}
 
     ///@}
     ///@name Operators
@@ -205,7 +206,7 @@ public:
         SparseMatrixType& M,
         DenseVectorType& Eigenvalues,
         DenseMatrixType& Eigenvectors
-    ) override
+    )
     {
         using boost::numeric::ublas::trans;
 
@@ -429,7 +430,7 @@ public:
     ///@{
 
     /// Turn back information as a string.
-    std::string Info() const override
+    virtual std::string Info() const
     {
         std::stringstream buffer;
         buffer << "Power iteration eigenvalue solver with " << BaseType::GetPreconditioner()->Info();
@@ -437,13 +438,13 @@ public:
     }
 
     /// Print information about this object.
-    void PrintInfo(std::ostream& rOStream) const override
+    virtual void PrintInfo(std::ostream& rOStream) const
     {
         rOStream << Info();
     }
 
     /// Print object's data.
-    void PrintData(std::ostream& rOStream) const override
+    virtual void PrintData(std::ostream& rOStream) const
     {
         BaseType::PrintData(rOStream);
     }
