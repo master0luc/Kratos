@@ -164,7 +164,7 @@ StructuralMeshMovingElement::MatrixType StructuralMeshMovingElement::SetAndModif
 
     // Stiffening of elements using Jacobian determinants and exponent between
     // 0.0 and 2.0
-    const double J0 = 100; // Factor influences how far the displacement spreads
+    const double J0 = 10; // Factor influences how far the displacement spreads
                            // into the fluid mesh
     const double xi = 1.5; // 1.5 Exponent influences stiffening of smaller
                            // elements; 0 = no stiffening
@@ -176,7 +176,7 @@ StructuralMeshMovingElement::MatrixType StructuralMeshMovingElement::SetAndModif
     // volume or shape change.
     double lambda = weight * poisson_coefficient /
                     ((1 + poisson_coefficient) * (1 - 2 * poisson_coefficient));
-    double mu = weight / (2 * (1 - poisson_coefficient));
+    double mu = weight / (2 * (1 + poisson_coefficient));
 
     MatrixType constitutive_matrix;
 
@@ -307,6 +307,7 @@ void StructuralMeshMovingElement::CalculateLocalSystem(MatrixType& rLeftHandSide
 
         // Compute RHS
         VectorType last_values;
+        
         this->GetDisplacementValues(last_values, 0);
         noalias(rRightHandSideVector) = -prod(rLeftHandSideMatrix, last_values);
     }

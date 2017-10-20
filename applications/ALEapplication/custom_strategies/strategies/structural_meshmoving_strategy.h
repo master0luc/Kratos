@@ -146,6 +146,7 @@ class StructuralMeshMovingStrategy : public SolvingStrategy<TSparseSpace,
         ( new ResidualBasedLinearStrategy<TSparseSpace,TDenseSpace,TLinearSolver >
     (*mpMeshModelPart,pscheme,pNewLinearSolver,pBuilderSolver,compute_reactions,ReformDofAtEachIteration,CalculateNormDxFlag) );
 
+
     KRATOS_CATCH("")
   }
 
@@ -158,6 +159,8 @@ class StructuralMeshMovingStrategy : public SolvingStrategy<TSparseSpace,
   double Solve() override
   {
     KRATOS_TRY;
+
+    
 
 
     // Setting mesh to initial configuration
@@ -181,6 +184,8 @@ class StructuralMeshMovingStrategy : public SolvingStrategy<TSparseSpace,
     mstrategy->Clear();
 
     return 0.0;
+
+    
 
     KRATOS_CATCH("");
   }
