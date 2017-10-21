@@ -20,8 +20,6 @@
 #include <iostream>
 #include <numeric>
 #include <vector>
-#include <random>
-#include <boost/range/algorithm.hpp>
 
 // External includes
 
@@ -54,15 +52,6 @@ namespace Kratos
 ///@}
 ///@name Kratos Classes
 ///@{
-    
-/// Utility to initialize a random vector
-/**
- * Defines several utility functions
- */
-template<class TDataType>
-class RandomInitializeUtil
-{
-public:
 
 /// This class uses the inverted power iteration method to obtain the lowest eigenvalue of a system
 /** Basically that
@@ -408,7 +397,7 @@ private:
 
     ///@}
 
-}; // Class PowerIterationHighestEigenvalueSolver
+}; // Class PowerIterationEigenvalueSolver
 
 ///@}
 

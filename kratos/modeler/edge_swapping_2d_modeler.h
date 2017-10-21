@@ -142,7 +142,7 @@ public:
     }
 
     /// Empty destructor.
-    ~EdgeSwapping2DModeler() override {}
+    virtual ~EdgeSwapping2DModeler() {}
 
 
 
@@ -327,19 +327,19 @@ public:
     ///@{
 
     /// Turn back information as a string.
-    std::string Info() const override
+    virtual std::string Info() const override
     {
         return "EdgeSwapping2DModeler";
     }
 
     /// Print information about this object.
-    void PrintInfo(std::ostream& rOStream) const override
+    virtual void PrintInfo(std::ostream& rOStream) const override
     {
         rOStream << Info();
     }
 
     /// Print object's data.
-    void PrintData(std::ostream& rOStream) const override
+    virtual void PrintData(std::ostream& rOStream) const override
     {
     }
 

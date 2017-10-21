@@ -911,7 +911,7 @@ protected:
             {
                 ArrayTriangleType points_locals;
                 
-                const bool inverted_triangle = (FastTriagleCheck2D(PointList[0], PointList[index_vector[elem] + 1], PointList[index_vector[elem + 1] + 1]) <= 0.0);
+                const bool inverted_triangle = (FastTriagleCheck2D(PointList[0], PointList[index_vector[elem] + 1], PointList[index_vector[elem + 1] + 1]) < 0.0);
                 
                 points_locals[(inverted_triangle == false) ? 0 : 2] = PointList[0];
                 points_locals[1] = PointList[index_vector[elem + 0] + 1];

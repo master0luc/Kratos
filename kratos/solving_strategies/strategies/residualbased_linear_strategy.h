@@ -433,13 +433,6 @@ public:
         {
             normDx = TSparseSpace::TwoNorm(mDx);
         }
-        
-        //Finalisation of the solution step,
-        //operations to be done after achieving convergence, for example the
-        //Final Residual Vector (mb) has to be saved in there
-        //to avoid error accumulation
-        pScheme->FinalizeSolutionStep(BaseType::GetModelPart(), mA, mDx, mb);
-        pBuilderAndSolver->FinalizeSolutionStep(BaseType::GetModelPart(), mA, mDx, mb);
 
         //calculate reactions if required
         if (mCalculateReactionsFlag == true)
@@ -447,7 +440,13 @@ public:
             pBuilderAndSolver->CalculateReactions(pScheme, BaseType::GetModelPart(), mA, mDx, mb);
         }
 
-        
+        //Finalisation of the solution step,
+        //operations to be done after achieving convergence, for example the
+        //Final Residual Vector (mb) has to be saved in there
+        //to avoid error accumulation
+        pScheme->FinalizeSolutionStep(BaseType::GetModelPart(), mA, mDx, mb);
+        pBuilderAndSolver->FinalizeSolutionStep(BaseType::GetModelPart(), mA, mDx, mb);
+
         //deallocate the systemvectors if needed
         if (mReformDofSetAtEachStep == true)
         {
@@ -476,11 +475,6 @@ public:
         TSystemMatrixType& mA = *mpA;
 
         return mA;
-    }
-    
-    void GetDirectSystemMatrix(TSystemMatrixType& A)
-    {
-        A = *mpA;
     }
     //*********************************************************************************
 

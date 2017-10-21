@@ -109,7 +109,7 @@ public:
     {}
 
     /// Destructor.
-    ~Bucket() override {}
+    virtual ~Bucket() {}
 
 
     ///@}
@@ -133,20 +133,20 @@ public:
         return mPointsEnd;
     }
 
-    void SearchNearestPoint(PointType const& ThisPoint, PointerType& rResult, CoordinateType& rResultDistance ) override
+    void SearchNearestPoint(PointType const& ThisPoint, PointerType& rResult, CoordinateType& rResultDistance )
     {
         if(mPointsBegin == mPointsEnd)
             return;
         SearchNearestInRange()( mPointsBegin, mPointsEnd, ThisPoint, rResult, rResultDistance );
     }
 
-    void SearchNearestPoint(PointType const& ThisPoint, PointerType& Result, CoordinateType& ResultDistance, SearchStructureType& Auxiliar ) override
+    void SearchNearestPoint(PointType const& ThisPoint, PointerType& Result, CoordinateType& ResultDistance, SearchStructureType& Auxiliar )
     {
         SearchNearestPoint(ThisPoint,Result,ResultDistance);
     }
 
     void SearchInRadius(PointType const& ThisPoint, CoordinateType const& Radius, CoordinateType const& Radius2, IteratorType& Results,
-                        DistanceIteratorType& ResultsDistances, SizeType& NumberOfResults, SizeType const& MaxNumberOfResults) override
+                        DistanceIteratorType& ResultsDistances, SizeType& NumberOfResults, SizeType const& MaxNumberOfResults)
     {
         if(mPointsBegin == mPointsEnd)
             return;
@@ -154,14 +154,14 @@ public:
     }
 
     void SearchInRadius(PointType const& ThisPoint, CoordinateType const& Radius, CoordinateType const& Radius2, IteratorType& Results,
-                        DistanceIteratorType& ResultsDistances, SizeType& NumberOfResults, SizeType const& MaxNumberOfResults, SearchStructureType& Auxiliar) override
+                        DistanceIteratorType& ResultsDistances, SizeType& NumberOfResults, SizeType const& MaxNumberOfResults, SearchStructureType& Auxiliar)
     {
         SearchInRadius(ThisPoint,Radius,Radius2,Results,ResultsDistances,NumberOfResults,MaxNumberOfResults);
     }
 
 
     void SearchInRadius(PointType const& ThisPoint, CoordinateType const& Radius, CoordinateType const& Radius2, IteratorType& Results,
-                        SizeType& NumberOfResults, SizeType const& MaxNumberOfResults) override
+                        SizeType& NumberOfResults, SizeType const& MaxNumberOfResults)
     {
         if(mPointsBegin == mPointsEnd)
             return;
@@ -169,13 +169,13 @@ public:
     }
 
     void SearchInRadius(PointType const& ThisPoint, CoordinateType const& Radius, CoordinateType const& Radius2, IteratorType& Results,
-                        SizeType& NumberOfResults, SizeType const& MaxNumberOfResults, SearchStructureType& Auxiliar) override
+                        SizeType& NumberOfResults, SizeType const& MaxNumberOfResults, SearchStructureType& Auxiliar)
     {
         SearchInRadius(ThisPoint,Radius,Radius2,Results,NumberOfResults,MaxNumberOfResults);
     }
 
     void SearchInBox(PointType const& SearchMinPoint, PointType const& SearchMaxPoint, IteratorType& Results, SizeType& NumberOfResults,
-                     SizeType const& MaxNumberOfResults ) override
+                     SizeType const& MaxNumberOfResults )
     {
         SearchBoxInRange()(SearchMinPoint,SearchMaxPoint,mPointsBegin,mPointsEnd,Results,NumberOfResults,MaxNumberOfResults);
     }
@@ -208,7 +208,7 @@ public:
     }
 
     /// Print object's data.
-    void PrintData(std::ostream& rOStream, std::string const& Perfix = std::string()) const override
+    virtual void PrintData(std::ostream& rOStream, std::string const& Perfix = std::string()) const
     {
         rOStream << Perfix << "Leaf[" << SearchUtils::PointerDistance(mPointsBegin, mPointsEnd) << "] : ";
         for(IteratorType i = mPointsBegin ; i != mPointsEnd ; i++)

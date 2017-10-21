@@ -70,7 +70,7 @@ namespace Kratos
 	  }
 
       /// Destructor
-	  ~FixedSizeMemoryPool() override {
+	  virtual ~FixedSizeMemoryPool() {
 
 	  }
 
