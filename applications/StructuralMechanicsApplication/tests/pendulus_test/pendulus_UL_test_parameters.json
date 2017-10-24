@@ -10,10 +10,10 @@
         "echo_level"      : 0
     },
     "solver_settings"          : {
-        "solver_type"                        : "structural_mechanics_implicit_dynamic_solver",
+        "solver_type"                        : "Dynamic",
         "echo_level"                         : 0,
-        "solution_type"                      : "Dynamic",
         "time_integration_method"            : "Implicit",
+        "analysis_type"                      : "Linear",
         "scheme_type"                        : "Bossak",
         "model_import_settings"              : {
             "input_type"       : "mdpa",
