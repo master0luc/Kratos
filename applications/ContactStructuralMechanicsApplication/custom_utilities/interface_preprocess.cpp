@@ -140,7 +140,7 @@ namespace Kratos
             Element::Pointer rpElem,
             Geometry<Node<3> > & rGeometry,
             const unsigned int CondId,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         KRATOS_TRY;
@@ -151,7 +151,7 @@ namespace Kratos
         GeometryType& this_geometry = p_cond->GetGeometry();
         if (ConditionName.find("Mortar") != std::string::npos)
         {
-            p_cond->GetValue(ELEMENT_POINTER) = rpElem;
+            p_cond->SetValue(ELEMENT_POINTER, rpElem);
             
             // We set the condition as master or slave (master by default)
             if (ConditionName.find("ALM") != std::string::npos || ConditionName.find("MeshTying") != std::string::npos)
@@ -175,7 +175,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateLine2NInterfacePart(
             const ModelPart& rOriginPart,
             ModelPart& InterfacePart,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         KRATOS_TRY;
@@ -228,7 +228,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateLine3NInterfacePart(
             const ModelPart& rOriginPart,
             ModelPart& InterfacePart,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         KRATOS_TRY;
@@ -283,7 +283,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateTriangle3NInterfacePart(
             const ModelPart& rOriginPart,
             ModelPart& InterfacePart,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         KRATOS_TRY;
@@ -329,7 +329,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateTriangle6NInterfacePart(
             const ModelPart& rOriginPart,
             ModelPart& InterfacePart,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         KRATOS_TRY;
@@ -378,7 +378,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateQuadrilateral4NInterfacePart(
             const ModelPart& rOriginPart,
             ModelPart& InterfacePart,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         KRATOS_TRY;
@@ -425,7 +425,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateQuadrilateral8NInterfacePart(
             const ModelPart& rOriginPart,
             ModelPart& InterfacePart,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         KRATOS_TRY;
@@ -476,7 +476,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateQuadrilateral9NInterfacePart(
             const ModelPart& rOriginPart,
             ModelPart& InterfacePart,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         KRATOS_TRY;
@@ -528,7 +528,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateLine2D2NConditions(
             const ModelPart::ConditionsContainerType& rOriginConds,
             ModelPart::ConditionsContainerType& rLinConds,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         // Define a condition to use as reference for all new triangle conditions
@@ -568,7 +568,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateLine3D2NConditions(
             const ModelPart::ConditionsContainerType& rOriginConds,
             ModelPart::ConditionsContainerType& rLinConds,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         // Define a condition to use as reference for all new triangle conditions
@@ -608,7 +608,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateLine2D3NConditions(
             const ModelPart::ConditionsContainerType& rOriginConds,
             ModelPart::ConditionsContainerType& rLinConds,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         // Define a condition to use as reference for all new triangle conditions
@@ -640,7 +640,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateLine3D3NConditions(
             const ModelPart::ConditionsContainerType& rOriginConds,
             ModelPart::ConditionsContainerType& rLinConds,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         // Define a condition to use as reference for all new triangle conditions
@@ -672,7 +672,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateTriangular3D3NConditions(
             const ModelPart::ConditionsContainerType& rOriginConds,
             ModelPart::ConditionsContainerType& rTriConds,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         // Define a condition to use as reference for all new triangle conditions
@@ -760,7 +760,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateTriangular3D6NConditions(
             const ModelPart::ConditionsContainerType& rOriginConds,
             ModelPart::ConditionsContainerType& rTriConds,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         // Define a condition to use as reference for all new triangle conditions
@@ -800,7 +800,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateQuadrilateral3D4NConditions(
             const ModelPart::ConditionsContainerType& rOriginConds,
             ModelPart::ConditionsContainerType& rQuadConds,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         // Define a condition to use as reference for all new triangle conditions
@@ -844,7 +844,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateQuadrilateral3D8NConditions(
             const ModelPart::ConditionsContainerType& rOriginConds,
             ModelPart::ConditionsContainerType& rQuadConds,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         // Define a condition to use as reference for all new triangle conditions
@@ -874,7 +874,7 @@ namespace Kratos
     void InterfacePreprocessCondition::GenerateQuadrilateral3D9NConditions(
             const ModelPart::ConditionsContainerType& rOriginConds,
             ModelPart::ConditionsContainerType& rQuadConds,
-            const std::string ConditionName
+            const std::string& ConditionName
             )
     {
         // Define a condition to use as reference for all new triangle conditions
@@ -902,11 +902,11 @@ namespace Kratos
     /***********************************************************************************/
     
     void InterfacePreprocessCondition::PrintNodesAndConditions(
-            const int NodesCounter,
-            const int CondCounter
+            const int& NodesCounter,
+            const int& CondCounter
             )
     {
-        std::cout << "    " << NodesCounter << " nodes ";
+        std::cout << "\t" << NodesCounter << " nodes ";
         std::cout << "and " << CondCounter <<  " conditions found." << std::endl;
 
         // Check that we actually found something
