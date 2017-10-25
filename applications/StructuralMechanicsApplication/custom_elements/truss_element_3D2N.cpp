@@ -564,6 +564,7 @@ namespace Kratos
 		TrussElement3D2N::msLocalSize,TrussElement3D2N::msLocalSize>& rRotationMatrix){
 
 		KRATOS_TRY
+		const double numerical_tollerance = std::numeric_limits<double>::epsilon();
 		//1st calculate transformation matrix
 		bounded_vector<double,msDimension> DirectionVectorX = ZeroVector(msDimension);
 		bounded_vector<double,msDimension> DirectionVectorY = ZeroVector(msDimension);
@@ -587,19 +588,19 @@ namespace Kratos
 		// local x-axis (e1_local) is the beam axis  (in GID is e3_local)
 		double VectorNorm;
 		VectorNorm = MathUtils<double>::Norm(DirectionVectorX);
-		if (VectorNorm != 0) DirectionVectorX /= VectorNorm;
+		if (VectorNorm > numerical_tollerance) DirectionVectorX /= VectorNorm;
 
-		if (DirectionVectorX[2] == 1.00) {
+		if (std::abs(DirectionVectorX[2]-1.00) < numerical_tollerance) {
 			DirectionVectorY[1] = 1.0;
 			DirectionVectorZ[0] = -1.0;
 		}
 
-		if (DirectionVectorX[2] == -1.00) {
+		if (std::abs(DirectionVectorX[2]+1.00) < numerical_tollerance) {
 			DirectionVectorY[1] = 1.0;
 			DirectionVectorZ[0] = 1.0;
 		}
 
-		if (fabs(DirectionVectorX[2]) != 1.00) {
+		if (std::abs(DirectionVectorX[2])-1.00 > numerical_tollerance) {
 
 			DirectionVectorY = MathUtils<double>::CrossProduct(GlobalZ,
 				DirectionVectorX);
