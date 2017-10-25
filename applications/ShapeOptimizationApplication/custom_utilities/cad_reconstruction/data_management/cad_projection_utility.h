@@ -61,11 +61,22 @@ public:
     ///@{
 
     /// Default constructor.
-    CADProjectionUtility( PatchVector& patch_vector, int max_projection_iterations, double projection_tolerance )
+    CADProjectionUtility( PatchVector& patch_vector, int max_projection_iterations, double projection_tolerance, std::string projection_strategy="" )
     : mrPatchVector( patch_vector ),
       mMaxIterations( max_projection_iterations ),
-      mTolerance( projection_tolerance )
-    {      
+      mTolerance( projection_tolerance ),
+      mProjectionStrategy( projection_strategy)
+    {
+      NodeVector dummy_list_of_nodes;
+      mOrderedListOfNodesVector.push_back(dummy_list_of_nodes);
+
+      if(mProjectionStrategy == "multiple_tree")
+      {
+        for(auto & patch : mrPatchVector)
+        {
+          mOrderedListOfNodesVector.push_back(dummy_list_of_nodes);
+        }      
+      }
     }
 
     /// Destructor.
@@ -88,11 +99,13 @@ public:
     // --------------------------------------------------------------------------
     void CreateCADPointCloudUsingLists( boost::python::list ParameterResolutionForCoarseNeighborSearch )
     {
-      int u_resolution = ExtractInt( ParameterResolutionForCoarseNeighborSearch[0] );
-      int v_resolution = ExtractInt( ParameterResolutionForCoarseNeighborSearch[1] );
-
-      for (auto & patch_i : mrPatchVector)
+      if(mProjectionStrategy == "single_tree")
       {
+        int u_resolution = ExtractInt( ParameterResolutionForCoarseNeighborSearch[0] );
+        int v_resolution = ExtractInt( ParameterResolutionForCoarseNeighborSearch[1] );
+
+        for (auto & patch_i : mrPatchVector)
+        {
             int index_in_patch_vector = &patch_i - &mrPatchVector[0];
             DoubleVector& knot_vec_u_i = patch_i.GetSurfaceKnotVectorU();
             DoubleVector& knot_vec_v_i = patch_i.GetSurfaceKnotVectorV();
@@ -122,21 +135,75 @@ public:
                         Point<3> cad_point_coordinates;
                         patch_i.EvaluateSurfacePoint( point_in_parameter_space, cad_point_coordinates );
 
-                         NodeType::Pointer new_cad_node = Node <3>::Pointer(new Node<3>(mNumberOfNodesInCADPointCloud, cad_point_coordinates));
+                        NodeType::Pointer new_cad_node = Node <3>::Pointer(new Node<3>(mNumberOfNodesInCADPointCloud, cad_point_coordinates));
 
-                        mOrderedListOfNodes.push_back(new_cad_node);
+                        mOrderedListOfNodesVector[0].push_back(new_cad_node);
                         mOrderedListOfParameterValues.push_back(point_in_parameter_space);
                         mOrderedListOfPatchIndices.push_back(index_in_patch_vector);
                     }
                 }
             }
+        }  
+      }
+      else if(mProjectionStrategy == "multiple_tree")
+      {
+        int u_resolution = ExtractInt( ParameterResolutionForCoarseNeighborSearch[0] );
+        int v_resolution = ExtractInt( ParameterResolutionForCoarseNeighborSearch[1] );
+
+        for (auto & patch_i : mrPatchVector)
+        {
+            int index_in_patch_vector = &patch_i - &mrPatchVector[0];
+            DoubleVector& knot_vec_u_i = patch_i.GetSurfaceKnotVectorU();
+            DoubleVector& knot_vec_v_i = patch_i.GetSurfaceKnotVectorV();
+            std::cout << "> Processing Patch with brep_id " << patch_i.GetId() << std::endl;
+      
+            double u_min = knot_vec_u_i[0];
+            double u_max = knot_vec_u_i[knot_vec_u_i.size()-1];
+            double v_min = knot_vec_v_i[0];
+            double v_max = knot_vec_v_i[knot_vec_v_i.size()-1];
+            double delta_u = (u_max-u_min) / u_resolution;
+            double delta_v = (v_max-v_min) / v_resolution;
+
+            // Loop over all u & v according to specified resolution
+            array_1d<double,2> point_in_parameter_space;
+            for(unsigned int i=0; i<=u_resolution; i++)
+            {
+                point_in_parameter_space[0] = u_min + i*delta_u;
+
+                for(unsigned int j=0; j<=v_resolution; j++)
+                {
+                    point_in_parameter_space[1] = v_min + j*delta_v;
+
+                    bool point_is_inside = patch_i.IsPointInside(point_in_parameter_space);
+                    if(point_is_inside)
+                    {
+                        ++mNumberOfNodesInCADPointCloud;					
+                        Point<3> cad_point_coordinates;
+                        patch_i.EvaluateSurfacePoint( point_in_parameter_space, cad_point_coordinates );
+
+                        NodeType::Pointer new_cad_node = Node <3>::Pointer(new Node<3>(mNumberOfNodesInCADPointCloud, cad_point_coordinates));
+
+                        mOrderedListOfNodesVector[0].push_back(new_cad_node);
+                        mOrderedListOfParameterValues.push_back(point_in_parameter_space);
+                        mOrderedListOfPatchIndices.push_back(index_in_patch_vector);
+
+                        mOrderedListOfNodesVector[index_in_patch_vector+1].push_back(new_cad_node);
+                    }
+                }
+            }
         }      
+        
+      }
+      else
+        KRATOS_THROW_ERROR(std::runtime_error, "Projection strategy not recognized", "");
+
     }
 
     // --------------------------------------------------------------------------
     void CreateSearchTreeWithCADPointCloud()
     {
-      mpSearchTree = boost::shared_ptr<KDTree>(new KDTree(mOrderedListOfNodes.begin(), mOrderedListOfNodes.end(), mBucketSize));
+      for(auto & list_of_nodes : mOrderedListOfNodesVector)
+        mpSearchTrees.push_back( boost::shared_ptr<KDTree>(new KDTree(list_of_nodes.begin(), list_of_nodes.end(), mBucketSize)) );
     }     
 
     // --------------------------------------------------------------------------
@@ -144,16 +211,60 @@ public:
                                    array_1d<double,2>& parameter_values_of_nearest_point,
                                    int& patch_index_of_nearest_point )
     {
-        // 1) Coarse search in the point cloud
-        NodeType::Pointer nearest_point = mpSearchTree->SearchNearestPoint( *PointOfInterest );
+      // get nearest neighbour from global tree
+        NodeType::Pointer nearest_point = mpSearchTrees[0]->SearchNearestPoint( *PointOfInterest );
 
-        // 2) Detailed projection using Newton-Raphson
-        
-        // Recover CAD information from lists representing point cloud
         parameter_values_of_nearest_point = mOrderedListOfParameterValues[nearest_point->Id()-1];
         patch_index_of_nearest_point = mOrderedListOfPatchIndices[nearest_point->Id()-1];
         Patch& patch_of_nearest_point = mrPatchVector[patch_index_of_nearest_point];
-        
+
+      //
+        OptimizeGuessWithNewtonRaphson(PointOfInterest,
+                                       nearest_point,
+                                       parameter_values_of_nearest_point,
+                                       patch_of_nearest_point);
+
+      if(mProjectionStrategy == "single_tree")
+      {
+        return;
+      }
+      
+      else if(mProjectionStrategy == "multiple_tree")
+      {       
+        if(patch_of_nearest_point.IsPointInside(parameter_values_of_nearest_point))
+          return;
+
+        else
+        {
+          for(int tree_index = 1; tree_index < mpSearchTrees.size(); tree_index++)
+          {
+            // get nearest neighbour from local trees
+              NodeType::Pointer nearest_point = mpSearchTrees[tree_index]->SearchNearestPoint( *PointOfInterest );
+              parameter_values_of_nearest_point = mOrderedListOfParameterValues[nearest_point->Id()-1];
+              patch_index_of_nearest_point = mOrderedListOfPatchIndices[nearest_point->Id()-1];
+              Patch& patch_of_nearest_point = mrPatchVector[patch_index_of_nearest_point];
+            //
+              OptimizeGuessWithNewtonRaphson(PointOfInterest, nearest_point, parameter_values_of_nearest_point, patch_of_nearest_point);
+
+            if(patch_of_nearest_point.IsPointInside(parameter_values_of_nearest_point))
+            {
+              return;
+            }
+          }
+        }
+        KRATOS_THROW_ERROR(std::runtime_error, "Unable to find CAD nearest neighbour inside trimming boundary", "")
+      }
+
+      else 
+        KRATOS_THROW_ERROR(std::runtime_error, "Projection strategy not recognized", "");
+    }
+
+    // --------------------------------------------------------------------------
+    void OptimizeGuessWithNewtonRaphson(NodeType::Pointer PointOfInterest,
+                                        NodeType::Pointer nearest_point,
+                                        array_1d<double,2>& parameter_values_of_nearest_point,
+                                        Patch& patch_of_nearest_point)
+    {
 				// Initialize what's needed in the Newton-Raphson iteration				
 				Vector Distance = ZeroVector(3); 
 				Matrix hessian = ZeroMatrix(2,2);
@@ -171,15 +282,11 @@ public:
         // Newton-Raphson algorithm if iterations are specified
         for(unsigned int k=0; k<mMaxIterations; k++)
         {
-          // KRATOS_WATCH(k);
-          // KRATOS_WATCH(current_nearest_point);
-          // KRATOS_WATCH(*PointOfInterest);
-          // KRATOS_WATCH(parameter_values_of_nearest_point);
           // The distance between point on CAD surface point on the FE-mesh
           Distance(0) = current_nearest_point[0] - PointOfInterest->X();
           Distance(1) = current_nearest_point[1] - PointOfInterest->Y();
           Distance(2) = current_nearest_point[2] - PointOfInterest->Z();
-          
+
           // The distance is used to compute hessian and gradient
           patch_of_nearest_point.EvaluateGradientsForClosestPointSearch( Distance, hessian, gradient , parameter_values_of_nearest_point );
 
@@ -198,13 +305,40 @@ public:
             break;
           else if(k+1==mMaxIterations)
           {
-            std::cout << "WARNING!!! Newton-Raphson in projection did not converge in the following number of iterations: " << k+1 << std::endl;
-            KRATOS_WATCH(current_nearest_point)
-            KRATOS_WATCH(*PointOfInterest)
+            // std::cout << "WARNING!!! Newton-Raphson in projection did not converge in the following number of iterations: " << k+1 << std::endl;
+            // KRATOS_WATCH(current_nearest_point)
+            // KRATOS_WATCH(*PointOfInterest)
+            parameter_values_of_nearest_point[0] = 1.0/0.0;
+            parameter_values_of_nearest_point[1] = 1.0/0.0;
+          }
+          if(boost::math::isnan(current_nearest_point[0]) ||
+             boost::math::isnan(current_nearest_point[1]) ||
+             boost::math::isnan(current_nearest_point[2]) )
+          {
+            // std::cout << "WARNING!!! Newton-Raphson in projection lead to NAN CAD coordinates" << std::endl;
+            // KRATOS_WATCH(current_nearest_point)
+            parameter_values_of_nearest_point[0] = 1.0/0.0;
+            parameter_values_of_nearest_point[1] = 1.0/0.0;
+            break;            
           }
         }
     }
-    
+
+    // --------------------------------------------------------------------------
+    void GetNearestCADCoordinates(array_1d<double,3> CoordsOfInterest,
+                                  array_1d<double,3>& NearestCoords)
+    {
+            NodeType::Pointer PointOfInterest = Node <3>::Pointer(new Node<3>(1, CoordsOfInterest));
+            array_1d<double,2> parameters; int patch_index = -1;
+
+            DetermineNearestCADPoint( PointOfInterest, parameters, patch_index );
+
+            Point<3> cad_point_in_deformed_configuration;
+            mrPatchVector[patch_index].EvaluateSurfacePoint(parameters, cad_point_in_deformed_configuration);
+
+            NearestCoords = cad_point_in_deformed_configuration;      
+    }
+
     // ==============================================================================
 
     /// Turn back information as a string.
@@ -233,16 +367,17 @@ public:
     PatchVector& mrPatchVector;
     int mMaxIterations;
     double mTolerance;
+    std::string mProjectionStrategy;
 
     // ==============================================================================
     // Variables for spatial search
     // ==============================================================================
     unsigned int mNumberOfNodesInCADPointCloud = 0;
-    NodeVector mOrderedListOfNodes;
+    std::vector< NodeVector > mOrderedListOfNodesVector;
     std::vector<array_1d<double,2>> mOrderedListOfParameterValues; 
     std::vector<int> mOrderedListOfPatchIndices;
     unsigned int mBucketSize = 100;
-    KDTree::Pointer mpSearchTree;
+    std::vector<KDTree::Pointer> mpSearchTrees;
 
     /// Assignment operator.
     //      CADProjectionUtility& operator=(CADProjectionUtility const& rOther);

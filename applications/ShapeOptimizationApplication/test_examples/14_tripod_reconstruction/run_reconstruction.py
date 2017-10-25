@@ -48,6 +48,7 @@ class CADReconstrutionUtilities():
         self.ParameterResolutionForProjection = [ 100, 100 ]
         self.MaxProjectionIterations = 20
         self.ProjectionTolerance = 1e-5
+        self.ProjectionStrategy = "multiple_tree" # "single_tree" / "multiple_tree"
 
         # Regularization settings
         self.MinimizeControlPointDisplacement = True
@@ -60,7 +61,7 @@ class CADReconstrutionUtilities():
         # self.LinearSolver = AMGCLSolver(AMGCLSmoother.GAUSS_SEIDEL, AMGCLIterativeSolverType.BICGSTAB, 1e-9, 300, 2, 10)        
 
         # Quality evaluation settings
-        self.ParameterResolutionForProjectionForGlobalQualityEvaluation = [ 300, 300 ]
+        self.ParameterResolutionForProjectionForGlobalQualityEvaluation = [ 30, 30 ]
         self.MaxProjectionIterationsForGlobalQualityEvaluation = 10
 
         # Parameters for output
@@ -94,72 +95,27 @@ class CADReconstrutionUtilities():
     def PerformReconstruction( self ):
         self.__CreateReconstructionConditions()
         self.__CreateSolverForReconstruction()
-        #self.__RunSolutionAlorithm()
+        self.__RunSolutionAlorithm()
         self.__CreateQualityEvaluator()
     
     # --------------------------------------------------------------------------
-    def EvaluateProjectionQuality( self ):
-
-        new_mdpa = ModelPart("name_of_empty_mdpa")
-        new_mdpa.AddNodalSolutionStepVariable(POSITIONAL_DEVIATION)
-
-        self.quality_evaluator.EvaluateQualityOfProjection(new_mdpa)
-
-        from gid_output import GiDOutput
-        fem_output_filename = self.OutputFolder + "/" + self.FEMInputFilename + "_with_projection_quality_measures"
-        nodal_results=["POSITIONAL_DEVIATION"]
-        gauss_points_results=[]
-        VolumeOutput = True
-        GiDPostMode = "Ascii"
-        GiDWriteMeshFlag = True
-        GiDWriteConditionsFlag = True
-        GiDWriteParticlesFlag = True
-        GiDMultiFileFlag = "Single"
-        gig_io = GiDOutput(fem_output_filename, VolumeOutput, GiDPostMode, GiDMultiFileFlag, GiDWriteMeshFlag, GiDWriteConditionsFlag)
-        gig_io.initialize_results(new_mdpa)
-        gig_io.write_results(1, new_mdpa, nodal_results, gauss_points_results)
-        gig_io.finalize_results()
-
-    # --------------------------------------------------------------------------
-    def EvaluateReconstructionQuality( self ):
-        
-        # evaluate global fitting
-        # measure distances vector: very fine point cloud (discard wrong patch)
-        #   - norm
-        #   - max
-        #   - mean
-        self.quality_evaluator.EvaluateGlobalQuality(self.ReconstructionStrategy,
-                                                     self.ParameterResolutionForProjectionForGlobalQualityEvaluation,
-                                                     self.FEMGaussIntegrationDegree,
-                                                     self.MaxProjectionIterationsForGlobalQualityEvaluation,
-                                                     self.ProjectionTolerance)
-        
-        # evaluate G0
-        #   - integral mean over length
-        #   - max pointwise
-        #   - mean pointwise
+    def EvaluateQuality( self ):
+        self.quality_evaluator.EvaluateQuality(self.MaxProjectionIterationsForGlobalQualityEvaluation,
+                                               self.ProjectionTolerance,
+                                               self.ParameterResolutionForProjectionForGlobalQualityEvaluation)
         self.quality_evaluator.EvaluateDisplacementCoupling()
-        
-        # evaluate G1
-        #   - integral mean over length
-        #   - max pointwise
-        #   - mean pointwise
+        self.quality_evaluator.EvaluateRotationCoupling()
+    # --------------------------------------------------------------------------
+    def EvaluateQualityAndOutputVtk( self, name ):
+        new_mdpa = ModelPart(name)
+        self.quality_evaluator.EvaluateQualityAndOutputVtk(new_mdpa,
+                                                           self.MaxProjectionIterationsForGlobalQualityEvaluation,
+                                                           self.ProjectionTolerance,
+                                                           self.ParameterResolutionForProjectionForGlobalQualityEvaluation)
+        self.quality_evaluator.EvaluateDisplacementCoupling()
         self.quality_evaluator.EvaluateRotationCoupling()
 
-        from gid_output import GiDOutput
-        fem_output_filename = self.OutputFolder + "/" + self.FEMInputFilename + "_with_quality_measures"
-        nodal_results=["SHAPE_CHANGE_ABSOLUTE","POSITIONAL_DEVIATION"]
-        gauss_points_results=[]
-        VolumeOutput = True
-        GiDPostMode = "Ascii"
-        GiDWriteMeshFlag = False
-        GiDWriteConditionsFlag = True
-        GiDWriteParticlesFlag = False
-        GiDMultiFileFlag = "Single"
-        gig_io = GiDOutput(fem_output_filename, VolumeOutput, GiDPostMode, GiDMultiFileFlag, GiDWriteMeshFlag, GiDWriteConditionsFlag)
-        gig_io.initialize_results(self.FEModelPart)
-        gig_io.write_results(1, self.FEModelPart, nodal_results, gauss_points_results)
-        gig_io.finalize_results()
+        self._OutputQualityVtk(new_mdpa, name)
 
     # --------------------------------------------------------------------------
     def OutputFEData( self ):
@@ -192,6 +148,7 @@ class CADReconstrutionUtilities():
         self.FEModelPart = ModelPart("name_of_empty_mdpa")
         self.FEModelPart.AddNodalSolutionStepVariable(SHAPE_CHANGE_ABSOLUTE)
         self.FEModelPart.AddNodalSolutionStepVariable(POSITIONAL_DEVIATION)
+        self.FEModelPart.AddNodalSolutionStepVariable(VTK_DUMMY)
         model_part_io = ModelPartIO(self.FEMInputFilename)
         model_part_io.ReadModelPart(self.FEModelPart)
         print("> Importing FE data finished.")        
@@ -266,7 +223,8 @@ class CADReconstrutionUtilities():
             self.ConditionsContainer.CreateDisplacementMappingConditions( self.ParameterResolutionForProjection, 
                                                                           self.FEMGaussIntegrationDegree,
                                                                           self.MaxProjectionIterations,
-                                                                          self.ProjectionTolerance )
+                                                                          self.ProjectionTolerance,
+                                                                          self.ProjectionStrategy )
         else:
             raise ValueError( "The following reconstruction strategy does not exist: ", self.ReconstructionStrategy )
 
@@ -311,6 +269,14 @@ class CADReconstrutionUtilities():
         print("Finished reconstruction loop.")
         print("===========================================")                    
 
+    # --------------------------------------------------------------------------
+    def _OutputQualityVtk( self, mdpa, filename ):
+        print("\n> Start writing quality measures to .vtk file...")
+        parameter_file = open("ProjectParameters.json",'r')
+        ProjectParameters = Parameters( parameter_file.read())
+        vtk_writer = VtkOutput(mdpa, filename, ProjectParameters)
+        vtk_writer.PrintOutput()
+
 # ======================================================================================================================================
 # Reconstruction
 # ======================================================================================================================================    
@@ -342,8 +308,9 @@ CADReconstructionUtility.OutputCADSurfacePoints( "surface_points_of_cad_geometry
 CADReconstructionUtility.PerformReconstruction()
 
 # Measure quality of reconstruction
-CADReconstructionUtility.EvaluateProjectionQuality()
-CADReconstructionUtility.EvaluateReconstructionQuality()
+CADReconstructionUtility.EvaluateQuality()
+# CADReconstructionUtility.EvaluateQualityAndOutputVtk( "quality" )
+
 
 # Some output
 CADReconstructionUtility.OutputFEData()

@@ -17,6 +17,7 @@
 #include <string>
 #include <cmath>
 #include <iostream>
+#include <numeric>
 
 // ------------------------------------------------------------------------------
 // External includes
@@ -78,213 +79,165 @@ public:
     }
 
     // --------------------------------------------------------------------------
-    void EvaluateQualityOfProjection(ModelPart& MdpaToEvaluateProjectionQuality)
+    void EvaluateQuality(int max_iterations, double projection_tolerance, boost::python::list rParameterResolution)
     {
-      std::cout << "> Quality of projection:" << std::endl;
-      double distance;
-      bool is_outside;
-      Vector distancesVector = ZeroVector(mrReconstructionConditions.size());
-      int inside_conditions_counter = 0;
-      int outside_conditions_counter = 0;
+      CADProjectionUtility FE2CADProjector( mrReconstructionDataBase.GetPatchVector(), max_iterations, projection_tolerance, "multiple_tree" );
+      FE2CADProjector.Initialize(rParameterResolution);
+
+      std::vector<double> projection_distances_to_qk;
+      std::vector<double> reconstruction_distances_to_qk;
+      std::vector<double> reconstruction_distances_to_q;
+      std::vector<unsigned int> qk_is_outside;
+      
       for(auto & condition_i : mrReconstructionConditions)
       {
-        condition_i->EvaluateProjection(distance, is_outside);
-        array_1d<double,3> c_coordinates; //= condition_i->GetConditionCoordinates();
-        NodeType::Pointer new_node = Node <3>::Pointer(new Node<3>((inside_conditions_counter+outside_conditions_counter), c_coordinates));
+        // get data
+            array_1d<double,3> fe_coordinates_undeformed;        condition_i->GetFECoordinatesInUndeformedConfiguration(fe_coordinates_undeformed);
+            array_1d<double,3> fe_coordinates_deformed;          condition_i->GetFECoordinatesInDeformedConfiguration(fe_coordinates_deformed);
+            array_1d<double,3> cad_coordinates_undeformed;       condition_i->GetCADCoordinatesInUndeformedConfiguration(cad_coordinates_undeformed);
+            array_1d<double,3> cad_coordinates_deformed;         condition_i->GetCADCoordinatesInDeformedConfiguration(cad_coordinates_deformed);
+            array_1d<double,3> nearest_cad_coordinates_deformed; FE2CADProjector.GetNearestCADCoordinates(fe_coordinates_deformed, nearest_cad_coordinates_deformed);
+            bool qk_is_inside = condition_i->IsCADPointInside();
+        
+        // compute distances
+          double projection_distance_to_qk =  EvaluateDistanceBetweenCoordinates(cad_coordinates_undeformed, fe_coordinates_undeformed);
+          double reconstruction_distance_to_qk =  EvaluateDistanceBetweenCoordinates(cad_coordinates_deformed, fe_coordinates_deformed);
+          double reconstruction_distance_to_q =  EvaluateDistanceBetweenCoordinates(nearest_cad_coordinates_deformed, fe_coordinates_deformed);
 
+        // push_back results
+          if(qk_is_inside)
+          {
+            projection_distances_to_qk.push_back(projection_distance_to_qk);
+            reconstruction_distances_to_qk.push_back(reconstruction_distance_to_qk);
+            qk_is_outside.push_back(0);
+          }
+          else
+            qk_is_outside.push_back(1);          
 
-        ConditionType::GeometryType new_geometry = GeometryType::Pointer(new Geomery)
-
-        new_node->SetSolutionStepVariablesList(&(MdpaToEvaluateProjectionQuality.GetNodalSolutionStepVariablesList()));
-        new_node->SetBufferSize(1);
-
-        new_node->FastGetSolutionStepValue(POSITIONAL_DEVIATION) = distance;
-
-        MdpaToEvaluateProjectionQuality.Nodes().push_back(new_node);
-
-        if(is_outside)
-          outside_conditions_counter++;
-        else
-        {
-          distancesVector(inside_conditions_counter)  = distance;
-          inside_conditions_counter++;
-        }
+          reconstruction_distances_to_q.push_back(reconstruction_distance_to_q);
       }
-      distancesVector.resize(inside_conditions_counter);
 
-      std::cout << ">\tMax positional deviation = " << norm_inf(distancesVector) << std::endl;
-      // std::cout << ">\tL2 norm = " << norm_2(distancesVector) << std::endl;      
-      std::cout << ">\tAverage positional deviation = " << sum(distancesVector)/distancesVector.size() << std::endl;      
-      std::cout << ">\tPercentage of CAD points outside the trimming boundaries: " << 100 * (double) outside_conditions_counter / mrReconstructionConditions.size() << "%" << std::endl;
-    }
-    // --------------------------------------------------------------------------
-    void EvaluateGlobalQuality(std::string reconstruction_strategy,
-                               boost::python::list rParameterResolution,
-                               int integration_degree,
-                               int max_iterations,
-                               double projection_tolerance)
-    {
-      std::cout << "EvaluateGlobalQuality CALLED" << std::endl;
 
-      // compute distances from surface
-      DoubleVector distances;
-      if(reconstruction_strategy.compare("mapping") == 0)
-        ComputeDistancesFromGaussPoints(rParameterResolution, integration_degree, max_iterations, projection_tolerance, distances );
-      else
-        KRATOS_THROW_ERROR(std::invalid_argument, "Reconstruction strategy specified to evaluate global quality is not recognized!","");
+      // write statistics to console
+      double average_dist = std::accumulate( projection_distances_to_qk.begin(), projection_distances_to_qk.end(), 0.0 ) / projection_distances_to_qk.size();
+      double max = *std::max_element( projection_distances_to_qk.begin(), projection_distances_to_qk.end());
+      int number_of_qk_outside = std::accumulate( qk_is_outside.begin(), qk_is_outside.end(), 0 );
+      double percentage_of_qk_outside = (100.0 * number_of_qk_outside) / qk_is_outside.size();
+      // double l2_norm = std::sqrt( std::inner_product(projection_distances_to_qk.begin(), projection_distances_to_qk.end(), projection_distances_to_qk.begin(), 0) );
+      std::cout << "\n> Quality of projection:" << std::endl;
+      std::cout << "\t average distance = " << std::fixed << std::scientific << std::setprecision(6) << average_dist << std::endl;
+      std::cout << "\t max distance = " << std::fixed << std::setprecision(6) << max << std::endl;
+      std::cout << "\t " << number_of_qk_outside << " out of " << qk_is_outside.size() << " points are outside of trimming boundaries (" << std::fixed << std::setprecision(2) << percentage_of_qk_outside << "%)" << std::endl;
+      
+      average_dist = std::accumulate( reconstruction_distances_to_qk.begin(), reconstruction_distances_to_qk.end(), 0.0 ) / reconstruction_distances_to_qk.size();
+      max = *std::max_element( reconstruction_distances_to_qk.begin(), reconstruction_distances_to_qk.end());
+      // l2_norm = std::sqrt( std::inner_product(reconstruction_distances_to_qk.begin(), reconstruction_distances_to_qk.end(), reconstruction_distances_to_qk.begin(), 0) );
+      std::cout << "\n> Quality of reconstruction: | P - Q_k |" << std::endl;
+      std::cout << "\t average distance = " << std::fixed << std::scientific << std::setprecision(6) << average_dist << std::endl;
+      std::cout << "\t max distance = " << std::fixed << std::setprecision(6) << max << std::endl;
+      
+      average_dist = std::accumulate( reconstruction_distances_to_q.begin(), reconstruction_distances_to_q.end(), 0.0 ) / reconstruction_distances_to_q.size();
+      max = *std::max_element( reconstruction_distances_to_q.begin(), reconstruction_distances_to_q.end());
+      // l2_norm = std::sqrt( std::inner_product(reconstruction_distances_to_q.begin(), reconstruction_distances_to_q.end(), reconstruction_distances_to_q.begin(), 0) );
+      std::cout << "\n> Quality of reconstruction: | P - Q |" << std::endl;
+      std::cout << "\t average distance = " << std::fixed << std::scientific << std::setprecision(6) << average_dist << std::endl;
+      std::cout << "\t max distance = " << std::fixed << std::setprecision(6) << max << std::endl;
+      
 
-      // analyze the global quality of reconstruction
-        Vector distancesVector = ZeroVector(distances.size());
-        for (unsigned int i=0; i<distances.size(); ++i)
-        {
-          distancesVector(i) = distances[i];
-        }
-        std::cout << "> Max value = " << norm_inf(distancesVector) << std::endl;
-        std::cout << "> L2 norm = " << norm_2(distancesVector) << std::endl;      
-        std::cout << "> average value = " << sum(distancesVector)/distancesVector.size() << std::endl;      
-        std::cout << "> points ignored: " << 100 * (double) outside_points_counter / points_counter << "%" << std::endl;      
-
-    }
+    } 
 
     // --------------------------------------------------------------------------
-    void ComputeDistancesFromGaussPoints( boost::python::list rParameterResolution, int integration_degree, int max_iterations, double projection_tolerance,
-                                          DoubleVector& results_vector )
+    void EvaluateQualityAndOutputVtk(ModelPart& MdpaToEvaluateProjectionQuality, int max_iterations, double projection_tolerance, boost::python::list rParameterResolution)
     {
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        PatchVector& patch_vector = mrReconstructionDataBase.GetPatchVector();
-        ModelPart& fe_model_part = mrReconstructionDataBase.GetFEModelPart();                       // INITIALIZATION
-        results_vector.clear();
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // IntegrationMethodType fem_integration_method;
-        // switch(integration_degree)
-        // {
-        //     case 1 : fem_integration_method = GeometryData::GI_GAUSS_1; break;
-        //     case 2 : fem_integration_method = GeometryData::GI_GAUSS_2; break;
-        //     case 3 : fem_integration_method = GeometryData::GI_GAUSS_3; break;
-        //     case 4 : fem_integration_method = GeometryData::GI_GAUSS_4; break;                       // INITIALIZE PROJECTOR 
-        //     case 5 : fem_integration_method = GeometryData::GI_GAUSS_5; break;
-        // }
-        
-        CADProjectionUtility FE2CADProjector( patch_vector, max_iterations, projection_tolerance );
-        FE2CADProjector.Initialize( rParameterResolution );
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        
+      // add nodal solution step variables to the mdpa
+        MdpaToEvaluateProjectionQuality.AddNodalSolutionStepVariable(PROJECTION_DISTANCE_TO_QK);
+        MdpaToEvaluateProjectionQuality.AddNodalSolutionStepVariable(PATCH_ID_OF_QK);
+        MdpaToEvaluateProjectionQuality.AddNodalSolutionStepVariable(INSIDE_TRIMMING_BOUNDARY_QK);
+        MdpaToEvaluateProjectionQuality.AddNodalSolutionStepVariable(SHAPE_CHANGE_ABSOLUTE);
+        MdpaToEvaluateProjectionQuality.AddNodalSolutionStepVariable(RECONSTRUCTION_DISTANCE_TO_QK);
+        MdpaToEvaluateProjectionQuality.AddNodalSolutionStepVariable(RECONSTRUCTION_DISTANCE_TO_Q);
 
+      CADProjectionUtility FE2CADProjector( mrReconstructionDataBase.GetPatchVector(), max_iterations, projection_tolerance, "multiple_tree" );
+      FE2CADProjector.Initialize(rParameterResolution);
 
-        // for (auto & elem_i : fe_model_part.Elements())                                                // COMPUTE POINTS, EVALUATE DISTANCES
-        // {
-        //     Element::GeometryType& geom_i = elem_i.GetGeometry();
-        //     const Element::GeometryType::IntegrationPointsArrayType& integration_points = geom_i.IntegrationPoints(fem_integration_method);
+      std::vector<double> projection_distances_to_qk;
+      std::vector<double> reconstruction_distances_to_qk;
+      std::vector<double> reconstruction_distances_to_q;
+      std::vector<unsigned int> qk_is_outside;
 
-        //           ProcessInfo some_process_info;
-        //           std::vector< array_1d<double,3> > displacements_of_gp(integration_points.size());
-        //           elem_i.GetValueOnIntegrationPoints(SHAPE_CHANGE_ABSOLUTE, displacements_of_gp, some_process_info);
-        //           // KRATOS_WATCH(displacements_of_gp[0]);
-        //           // KRATOS_WATCH(displacements_of_gp[1]);
-        //           // KRATOS_WATCH(displacements_of_gp[2]);
-        //           // KRATOS_WATCH(displacements_of_gp[3]);
-        //           // KRATOS_WATCH(displacements_of_gp[4]);
-        //           // KRATOS_WATCH(displacements_of_gp[5]);
-        //           // KRATOS_WATCH(displacements_of_gp[6]);
-        //           // KRATOS_WATCH(displacements_of_gp[7]);
-        //           // KRATOS_WATCH(displacements_of_gp[8]);
-        //           // KRATOS_WATCH(displacements_of_gp[9]);
-        //           // KRATOS_WATCH(displacements_of_gp[10]);
-        //           // KRATOS_WATCH(displacements_of_gp[11]);
-        //     //
+      int counter=0;
+      for(auto & condition_i : mrReconstructionConditions)
+      {
+        // get data
+            array_1d<double,3> fe_coordinates_undeformed;        condition_i->GetFECoordinatesInUndeformedConfiguration(fe_coordinates_undeformed);
+            array_1d<double,3> fe_coordinates_deformed;          condition_i->GetFECoordinatesInDeformedConfiguration(fe_coordinates_deformed);
+            array_1d<double,3> cad_coordinates_undeformed;       condition_i->GetCADCoordinatesInUndeformedConfiguration(cad_coordinates_undeformed);
+            array_1d<double,3> cad_coordinates_deformed;         condition_i->GetCADCoordinatesInDeformedConfiguration(cad_coordinates_deformed);
+            array_1d<double,3> nearest_cad_coordinates_deformed; FE2CADProjector.GetNearestCADCoordinates(fe_coordinates_deformed, nearest_cad_coordinates_deformed);
+            bool qk_is_inside = condition_i->IsCADPointInside();
 
-        //     int integration_point_counter = 0;
-        //     for (auto & integration_point_i : integration_points)
-        //     {
-        //       KRATOS_WATCH(displacements_of_gp[integration_point_counter]);
+        // compute distances
+          double projection_distance_to_qk =  EvaluateDistanceBetweenCoordinates(cad_coordinates_undeformed, fe_coordinates_undeformed);
+          double reconstruction_distance_to_qk =  EvaluateDistanceBetweenCoordinates(cad_coordinates_deformed, fe_coordinates_deformed);
+          double reconstruction_distance_to_q =  EvaluateDistanceBetweenCoordinates(nearest_cad_coordinates_deformed, fe_coordinates_deformed);
 
-        //         // int integration_point_number = &integration_point_i - &integration_points[0];
-        //         NodeType::CoordinatesArrayType ip_coordinates = geom_i.GlobalCoordinates(ip_coordinates, integration_point_i.Coordinates());
-        //         ///////////
-        //         ip_coordinates[0] += displacements_of_gp[integration_point_counter][0];
-        //         ip_coordinates[1] += displacements_of_gp[integration_point_counter][1];
-        //         ip_coordinates[2] += displacements_of_gp[integration_point_counter][2];
-        //         ///////////
-        //         NodeType::Pointer node_of_interest = Node <3>::Pointer(new Node<3>(1, ip_coordinates));
+        // push_back results
+          if(qk_is_inside)
+          {
+            projection_distances_to_qk.push_back(projection_distance_to_qk);
+            reconstruction_distances_to_qk.push_back(reconstruction_distance_to_qk);
+            qk_is_outside.push_back(0);
+          }
+          else
+            qk_is_outside.push_back(1);
 
-        //         array_1d<double,2> parameter_values_of_nearest_point;
-        //         int patch_index_of_nearest_point = -1;
+          reconstruction_distances_to_q.push_back(reconstruction_distance_to_q);
 
-        //     KRATOS_WATCH("looking for nearest CAD");
-        //     KRATOS_WATCH(*node_of_interest);
-        //     KRATOS_WATCH(parameter_values_of_nearest_point);
-        //     KRATOS_WATCH(patch_index_of_nearest_point);
-        //         FE2CADProjector.DetermineNearestCADPoint( node_of_interest, 
-        //                                                   parameter_values_of_nearest_point, 
-        //                                                   patch_index_of_nearest_point );
-        //     KRATOS_WATCH(*node_of_interest);
-        //     KRATOS_WATCH(parameter_values_of_nearest_point);
-        //     KRATOS_WATCH(patch_index_of_nearest_point);
-        //     KRATOS_WATCH("done");
+        // create node at FE coordinates in undeformed configuration
+          NodeType::Pointer new_node = Node <3>::Pointer(new Node<3>(counter, fe_coordinates_undeformed));
+          new_node->SetSolutionStepVariablesList(&(MdpaToEvaluateProjectionQuality.GetNodalSolutionStepVariablesList()));
+          MdpaToEvaluateProjectionQuality.AddNode(new_node);
+          counter++;
 
-        //         Patch patch_of_nearest_point = patch_vector[patch_index_of_nearest_point];
-        //         bool is_inside = patch_of_nearest_point.IsPointInside(parameter_values_of_nearest_point);
-        //         if(is_inside)
-        //         {
-        //           Point<3> nearest_point_coordinates;
-        //           patch_of_nearest_point.EvaluateSurfacePoint(parameter_values_of_nearest_point, nearest_point_coordinates);
-        //           NodeType::Pointer nearest_cad_node = Node <3>::Pointer(new Node<3>(1, nearest_point_coordinates));
+        // Add nodal results
+          new_node->FastGetSolutionStepValue(PROJECTION_DISTANCE_TO_QK) = cad_coordinates_undeformed - fe_coordinates_undeformed;
+          new_node->FastGetSolutionStepValue(PATCH_ID_OF_QK) = condition_i->GetPatch().GetId();
+          new_node->FastGetSolutionStepValue(INSIDE_TRIMMING_BOUNDARY_QK) = qk_is_inside;
+          new_node->FastGetSolutionStepValue(SHAPE_CHANGE_ABSOLUTE) = fe_coordinates_deformed - fe_coordinates_undeformed;
+          new_node->FastGetSolutionStepValue(RECONSTRUCTION_DISTANCE_TO_QK) = cad_coordinates_deformed - fe_coordinates_deformed;
+          new_node->FastGetSolutionStepValue(RECONSTRUCTION_DISTANCE_TO_Q) = nearest_cad_coordinates_deformed - fe_coordinates_deformed;                 
+      }
 
-        //           double distance;
-        //           EvaluateDistanceBetweenNodes(node_of_interest, nearest_cad_node, distance);
-        //           results_vector.push_back(distance);
-        //         }
-        //         else
-        //         {
-        //           outside_points_counter++;
-        //         } 
-        //         points_counter++;
+      // write statistics to console
+      double average_dist = std::accumulate( projection_distances_to_qk.begin(), projection_distances_to_qk.end(), 0.0 ) / projection_distances_to_qk.size();
+      double max = *std::max_element( projection_distances_to_qk.begin(), projection_distances_to_qk.end());
+      int number_of_qk_outside = std::accumulate( qk_is_outside.begin(), qk_is_outside.end(), 0 );
+      double percentage_of_qk_outside = (100.0 * number_of_qk_outside) / qk_is_outside.size();
+      // double l2_norm = std::sqrt( std::inner_product(projection_distances_to_qk.begin(), projection_distances_to_qk.end(), projection_distances_to_qk.begin(), 0) );
+      std::cout << "\n> Quality of projection:" << std::endl;
+      std::cout << "\t average distance = " << std::fixed << std::scientific << std::setprecision(6) << average_dist << std::endl;
+      std::cout << "\t max distance = " << std::fixed << std::setprecision(6) << max << std::endl;
+      std::cout << "\t " << number_of_qk_outside << " out of " << qk_is_outside.size() << " points are outside of trimming boundaries (" << std::fixed << std::setprecision(2) << percentage_of_qk_outside << "%)" << std::endl;
+      
+      average_dist = std::accumulate( reconstruction_distances_to_qk.begin(), reconstruction_distances_to_qk.end(), 0.0 ) / reconstruction_distances_to_qk.size();
+      max = *std::max_element( reconstruction_distances_to_qk.begin(), reconstruction_distances_to_qk.end());
+      // l2_norm = std::sqrt( std::inner_product(reconstruction_distances_to_qk.begin(), reconstruction_distances_to_qk.end(), reconstruction_distances_to_qk.begin(), 0) );
+      std::cout << "\n> Quality of reconstruction: | P - Q_k |" << std::endl;
+      std::cout << "\t average distance = " << std::fixed << std::scientific << std::setprecision(6) << average_dist << std::endl;
+      std::cout << "\t max distance = " << std::fixed << std::setprecision(6) << max << std::endl;
+      
+      average_dist = std::accumulate( reconstruction_distances_to_q.begin(), reconstruction_distances_to_q.end(), 0.0 ) / reconstruction_distances_to_q.size();
+      max = *std::max_element( reconstruction_distances_to_q.begin(), reconstruction_distances_to_q.end());
+      // l2_norm = std::sqrt( std::inner_product(reconstruction_distances_to_q.begin(), reconstruction_distances_to_q.end(), reconstruction_distances_to_q.begin(), 0) );
+      std::cout << "\n> Quality of reconstruction: | P - Q |" << std::endl;
+      std::cout << "\t average distance = " << std::fixed << std::scientific << std::setprecision(6) << average_dist << std::endl;
+      std::cout << "\t max distance = " << std::fixed << std::setprecision(6) << max << std::endl;
 
-        //         integration_point_counter++;
-        //     }
-        // }
-        for (auto & node_i : fe_model_part.Nodes())
-        {
-            array_1d<double,3>& nodalResult = node_i.FastGetSolutionStepValue(SHAPE_CHANGE_ABSOLUTE);
-            double x = node_i.X() + nodalResult[0];
-            double y = node_i.Y() + nodalResult[1];
-            double z = node_i.Z() + nodalResult[2];
-            NodeType::Pointer node_of_interest = Node <3>::Pointer(new Node<3>(1, x, y, z));
-            ///////////////////////////////////////////////////////////////////
-                array_1d<double,2> parameter_values_of_nearest_point;
-                int patch_index_of_nearest_point = -1;
-
-                FE2CADProjector.DetermineNearestCADPoint( node_of_interest, 
-                                                          parameter_values_of_nearest_point, 
-                                                          patch_index_of_nearest_point );
-                Patch patch_of_nearest_point = patch_vector[patch_index_of_nearest_point];
-                bool is_inside = patch_of_nearest_point.IsPointInside(parameter_values_of_nearest_point);
-                if(is_inside)
-                {
-                  Point<3> nearest_point_coordinates;
-                  patch_of_nearest_point.EvaluateSurfacePoint(parameter_values_of_nearest_point, nearest_point_coordinates);
-                  NodeType::Pointer nearest_cad_node = Node <3>::Pointer(new Node<3>(1, nearest_point_coordinates));
-
-                  double distance;
-                  EvaluateDistanceBetweenNodes(node_of_interest, nearest_cad_node, distance);
-                  results_vector.push_back(distance);
-                  node_i.FastGetSolutionStepValue(POSITIONAL_DEVIATION) = distance;
-                }
-                else
-                {
-                  outside_points_counter++;
-                  node_i.FastGetSolutionStepValue(POSITIONAL_DEVIATION) = -1.0;
-                  
-                } 
-                points_counter++;
-        }
-    }
+    }    
 
     // --------------------------------------------------------------------------
     void EvaluateDisplacementCoupling()
     {
-      std::cout << "EvaluateDisplacementCoupling CALLED" << std::endl;
-
       double integral_d = 0;
       double length = 0;
       DoubleVector distances;
@@ -297,7 +250,7 @@ public:
           BREPGaussPointVector& coupling_gauss_points = brep_element_i.GetGaussPoints();
           for(auto & gauss_point_i : coupling_gauss_points)
           {
-						// Read information from Gauss point
+            // Read information from Gauss point
               unsigned int master_patch_id = gauss_point_i.GetMasterPatchId();
               Patch& master_patch = mrReconstructionDataBase.GetPatchFromPatchId( master_patch_id );
               unsigned int slave_patch_id = gauss_point_i.GetSlavePatchId();
@@ -338,24 +291,18 @@ public:
       }
       
       // analyze the global quality of reconstruction
-        Vector distancesVector = ZeroVector(distances.size());
-        for (unsigned int i=0; i<distances.size(); ++i)
-        {
-          distancesVector(i) = distances[i];
-        }
-        std::cout << "\n> displacement coupling" << std::endl;
-        std::cout << "> integral mean = " << integral_d/length << std::endl;      
-        std::cout << "> Max value = " << norm_inf(distancesVector) << std::endl;
-        std::cout << "> L2 norm = " << norm_2(distancesVector) << std::endl;      
-        std::cout << "> average value = " << sum(distancesVector)/distancesVector.size() << std::endl;      
+        double average_dist = std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
+        double max = *std::max_element(distances.begin(), distances.end());
+        std::cout << "\n> Quality of reconstruction: G0 (displacement coupling)" << std::endl;
+        std::cout << "\t average distance = " << std::fixed << std::scientific << std::setprecision(6) << average_dist << std::endl;
+        std::cout << "\t max distance = " << std::fixed << std::setprecision(6) << max << std::endl;
+        std::cout << "\t integral mean = " << std::fixed << std::setprecision(6) << integral_d/length << std::endl;
       
     }
 
     // --------------------------------------------------------------------------
     void EvaluateRotationCoupling()
     {
-      std::cout << "EvaluateRotationCoupling CALLED" << std::endl;
-
       double integral_angle = 0;
       double length = 0;
       DoubleVector angles;
@@ -368,7 +315,7 @@ public:
           BREPGaussPointVector& coupling_gauss_points = brep_element_i.GetGaussPoints();
           for(auto & gauss_point_i : coupling_gauss_points)
           {
-						// Read information from Gauss point
+            // Read information from Gauss point
               unsigned int master_patch_id = gauss_point_i.GetMasterPatchId();
               Patch& master_patch = mrReconstructionDataBase.GetPatchFromPatchId( master_patch_id );
               unsigned int slave_patch_id = gauss_point_i.GetSlavePatchId();
@@ -418,29 +365,15 @@ public:
       }
       
       // analyze the global quality of reconstruction
-        Vector anglesVector = ZeroVector(angles.size());
-        for (unsigned int i=0; i<angles.size(); ++i)
-        {
-          anglesVector(i) = angles[i];
-        }
-        std::cout << "\n> rotation coupling" << std::endl;
-        std::cout << "> integral mean = " << integral_angle/length << std::endl;      
-        std::cout << "> Max value = " << norm_inf(anglesVector) << std::endl;
-        std::cout << "> L2 norm = " << norm_2(anglesVector) << std::endl;      
-        std::cout << "> average value = " << sum(anglesVector)/anglesVector.size() << std::endl;      
+        double average_angle = std::accumulate(angles.begin(), angles.end(), 0.0) / angles.size();
+        double max = *std::max_element(angles.begin(), angles.end());
+        std::cout << "\n> Quality of reconstruction: G1 (rotation coupling)" << std::endl;
+        std::cout << "\t average angle = " << std::fixed << std::scientific << std::setprecision(6) << average_angle << " deg" << std::endl;
+        std::cout << "\t max angle = " << std::fixed << std::setprecision(6) << max << " deg" << std::endl;
+        std::cout << "\t integral mean = " << std::fixed << std::setprecision(6) << integral_angle/length << " deg" << std::endl;
       
     }
 
-    // --------------------------------------------------------------------------
-    void EvaluateDistanceBetweenNodes(NodeType::Pointer first, NodeType::Pointer second, double& rdistance)
-    {
-      Vector distance_vector = ZeroVector(3);
-      distance_vector(0) = first->X() - second->X();
-      distance_vector(1) = first->Y() - second->Y();
-      distance_vector(2) = first->Z() - second->Z();
-      rdistance = norm_2(distance_vector);
-    }
-    
     // --------------------------------------------------------------------------
     void EvaluateDistanceBetweenPoints(Point<3>& first, Point<3>& second, double& rdistance)
     {
@@ -449,6 +382,13 @@ public:
       distance_vector(1) = first.Y() - second.Y();
       distance_vector(2) = first.Z() - second.Z();
       rdistance = norm_2(distance_vector);
+    }
+
+    // --------------------------------------------------------------------------
+    double EvaluateDistanceBetweenCoordinates(array_1d<double,3>& first, array_1d<double,3>& second)
+    {
+      array_1d<double,3> d  = first - second;
+      return std::sqrt( d[0]*d[0] + d[1]*d[1] + d[2]*d[2] );
     }
 
     // ==============================================================================

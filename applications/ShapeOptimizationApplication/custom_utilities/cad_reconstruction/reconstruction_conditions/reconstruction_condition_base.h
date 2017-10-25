@@ -100,7 +100,25 @@ public:
     virtual void ComputeAndAddRHSContribution( Vector& RHS ) = 0;
 
     // --------------------------------------------------------------------------
-    virtual void EvaluateProjection( double &residual_distance, bool &is_outside_trimmed_area) = 0;
+    virtual void GetFECoordinatesInUndeformedConfiguration(array_1d<double,3>& coords) = 0;
+
+    // --------------------------------------------------------------------------
+    virtual void GetFECoordinatesInDeformedConfiguration(array_1d<double,3>& coords) = 0;
+
+    // --------------------------------------------------------------------------
+    virtual void GetCADCoordinatesInUndeformedConfiguration(array_1d<double,3>& coords) = 0;
+
+    // --------------------------------------------------------------------------
+    virtual void GetCADCoordinatesInDeformedConfiguration(array_1d<double,3>& coords) = 0;
+
+    // --------------------------------------------------------------------------
+    virtual bool IsCADPointInside() = 0;
+
+    // --------------------------------------------------------------------------
+    virtual Patch& GetPatch() = 0;
+
+    // --------------------------------------------------------------------------
+    virtual array_1d<double,2> GetParameters() = 0;
 
     // ==============================================================================
 

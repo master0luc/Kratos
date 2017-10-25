@@ -40,6 +40,7 @@
 #include "custom_utilities/cad_reconstruction/cad_reconstruction_solver.h"
 #include "custom_utilities/cad_reconstruction/data_management/reconstruction_output_writer.h"
 #include "custom_utilities/cad_reconstruction/data_management/quality_evaluation_utility.h"
+#include "custom_utilities/cad_reconstruction/quality_evaluation/vtk_output.h"
 
 // ==============================================================================
 
@@ -174,11 +175,15 @@ void  AddCustomUtilitiesToPython()
         ;                            
     
     class_<QualityEvaluationUtility, bases<Process> >("QualityEvaluationUtility", init<ReconstructionDataBase&, ReconstructionConditionContainer&>())
-        .def("EvaluateQualityOfProjection", &QualityEvaluationUtility::EvaluateQualityOfProjection)
-        .def("EvaluateGlobalQuality", &QualityEvaluationUtility::EvaluateGlobalQuality)
+        .def("EvaluateQuality", &QualityEvaluationUtility::EvaluateQuality)
+        .def("EvaluateQualityAndOutputVtk", &QualityEvaluationUtility::EvaluateQualityAndOutputVtk)
         .def("EvaluateDisplacementCoupling", &QualityEvaluationUtility::EvaluateDisplacementCoupling)
         .def("EvaluateRotationCoupling", &QualityEvaluationUtility::EvaluateRotationCoupling)        
         ;                            
+    
+    class_<VtkOutput, bases<Process> >("VtkOutput", init<ModelPart&, std::string, Parameters&>())
+        .def("PrintOutput", &VtkOutput::PrintOutput)
+        ;         
 
 }
 

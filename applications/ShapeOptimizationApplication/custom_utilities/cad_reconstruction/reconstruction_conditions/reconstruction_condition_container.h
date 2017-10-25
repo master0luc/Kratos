@@ -106,7 +106,7 @@ public:
     ///@{
 
     // ==============================================================================
-    void CreateDisplacementMappingConditions( boost::python::list rParameterResolution, int integration_degree, int max_iterations, double projection_tolerance )
+    void CreateDisplacementMappingConditions( boost::python::list rParameterResolution, int integration_degree, int max_iterations, double projection_tolerance, std::string projection_strategy )
     {
         std::cout << "\n> Starting to create displacement mapping conditions...";
 
@@ -123,7 +123,8 @@ public:
             case 5 : fem_integration_method = GeometryData::GI_GAUSS_5; break;
         }
         
-        CADProjectionUtility FE2CADProjector( patch_vector, max_iterations, projection_tolerance );
+        CADProjectionUtility FE2CADProjector( patch_vector, max_iterations, projection_tolerance, projection_strategy );
+        
         FE2CADProjector.Initialize( rParameterResolution );
         
         std::cout << "> Starting to create a condition for every integration point..." << std::endl;
@@ -144,12 +145,12 @@ public:
 
                 array_1d<double,2> parameter_values_of_nearest_point;
                 int patch_index_of_nearest_point = -1;
-
                 FE2CADProjector.DetermineNearestCADPoint( node_of_interest, 
                                                           parameter_values_of_nearest_point, 
                                                           patch_index_of_nearest_point );
 
-                NewCondition = ReconstructionCondition::Pointer( new DisplacementMappingCondition( geom_i,
+                NewCondition = ReconstructionCondition::Pointer( new DisplacementMappingCondition( elem_i,
+                                                                                                   geom_i,
                                                                                                    fem_integration_method,
                                                                                                    integration_point_number,
                                                                                                    patch_vector[patch_index_of_nearest_point],

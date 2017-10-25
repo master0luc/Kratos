@@ -16,6 +16,7 @@
 // ------------------------------------------------------------------------------
 #include <iostream>
 #include <string>
+#include <cmath>
 
 // ------------------------------------------------------------------------------
 // External includes
@@ -75,12 +76,14 @@ public:
     ///@{
 
     /// Default constructor.
-    DisplacementMappingCondition( Element::GeometryType&  geometry,
+    DisplacementMappingCondition( Element&  element,
+                                  Element::GeometryType& geometry,
                                   IntegrationMethodType int_method,
                                   int int_point_number,
                                   Patch& patch,
                                   array_1d<double,2> param_values )
-    : mrGeometryContainingThisCondition( geometry ),
+    : mrElementContainingThisCondition( element ),
+      mrGeometryContainingThisCondition( geometry),      
       mFemIntegrationMethod( int_method ),
       mIntegrationPointNumber( int_point_number ),
       mrAffectedPatch( patch ),
@@ -195,30 +198,67 @@ public:
     }
 
     // --------------------------------------------------------------------------
-    virtual void EvaluateProjection( double &residual_distance, bool &is_outside_trimmed_area)
+    void GetFECoordinatesInUndeformedConfiguration(array_1d<double,3>& fe_point_coords)
     {
-        // evaluate if inside
-        is_outside_trimmed_area = !mrAffectedPatch.IsPointInside(mParmeterValues);
+        Point<3> fe_point;
+        fe_point = mrGeometryContainingThisCondition.IntegrationPoints(mFemIntegrationMethod)[mIntegrationPointNumber];
+        fe_point_coords = mrGeometryContainingThisCondition.GlobalCoordinates(fe_point_coords, fe_point.Coordinates());
+    }
+    // --------------------------------------------------------------------------
+    void GetFECoordinatesInDeformedConfiguration(array_1d<double,3>& fe_point_coords_in_deformed_configuration)
+    {
+        Point<3> fe_point;
+        fe_point = mrGeometryContainingThisCondition.IntegrationPoints(mFemIntegrationMethod)[mIntegrationPointNumber];
+        array_1d<double, 3> fe_point_coords = mrGeometryContainingThisCondition.GlobalCoordinates(fe_point_coords, fe_point.Coordinates());
 
-        // evaluate distance
-        if(is_outside_trimmed_area)
-            residual_distance = -1;
-        else
+        array_1d<double,3> displacement;
+        array_1d<double,3> shape_change_absolute_i;
+        for(int i = 0; i < mrGeometryContainingThisCondition.size(); i++)
         {
-            // FE point
-            Point<3> fe_point;
-            fe_point = mrGeometryContainingThisCondition.IntegrationPoints(mFemIntegrationMethod)[mIntegrationPointNumber];
-            NodeType::CoordinatesArrayType fe_point_coords = mrGeometryContainingThisCondition.GlobalCoordinates(fe_point_coords, fe_point.Coordinates());
-            // CAD point
-            Point<3> cad_point;
-            mrAffectedPatch.EvaluateSurfacePoint(mParmeterValues, cad_point);
-            // distance
-            Vector distance_vector = ZeroVector(3);
-            distance_vector(0) = cad_point.X() - fe_point_coords[0];
-            distance_vector(1) = cad_point.Y() - fe_point_coords[1];
-            distance_vector(2) = cad_point.Z() - fe_point_coords[2];
-            residual_distance = norm_2(distance_vector);
+            shape_change_absolute_i = mrGeometryContainingThisCondition[i].FastGetSolutionStepValue(SHAPE_CHANGE_ABSOLUTE);
+            displacement[0] += mFEMFunctionValues[i] * shape_change_absolute_i[0];
+            displacement[1] += mFEMFunctionValues[i] * shape_change_absolute_i[1];
+            displacement[2] += mFEMFunctionValues[i] * shape_change_absolute_i[2];
         }
+
+        fe_point_coords_in_deformed_configuration[0] = fe_point_coords[0] + displacement[0];
+        fe_point_coords_in_deformed_configuration[1] = fe_point_coords[1] + displacement[1];
+        fe_point_coords_in_deformed_configuration[2] = fe_point_coords[2] + displacement[2];
+    }
+    // --------------------------------------------------------------------------
+    void GetCADCoordinatesInUndeformedConfiguration(array_1d<double,3>& cad_point_coords)
+    {
+        Point<3> cad_point_in_deformed_configuration;
+        mrAffectedPatch.EvaluateSurfacePoint(mParmeterValues, cad_point_in_deformed_configuration);
+        array_1d<double,3> displacement;
+        mrAffectedPatch.EvaluateSurfaceDisplacement(mParmeterValues, displacement);
+        cad_point_coords[0] = cad_point_in_deformed_configuration(0) - displacement[0];
+        cad_point_coords[1] = cad_point_in_deformed_configuration(1) - displacement[1];
+        cad_point_coords[2] = cad_point_in_deformed_configuration(2) - displacement[2];        
+    }
+    // --------------------------------------------------------------------------
+    void GetCADCoordinatesInDeformedConfiguration(array_1d<double,3>& cad_point_coords_in_deformed_configuration)
+    {
+        Point<3> cad_point_in_deformed_configuration;
+        mrAffectedPatch.EvaluateSurfacePoint(mParmeterValues, cad_point_in_deformed_configuration);
+        cad_point_coords_in_deformed_configuration[0] = cad_point_in_deformed_configuration(0);
+        cad_point_coords_in_deformed_configuration[1] = cad_point_in_deformed_configuration(1);
+        cad_point_coords_in_deformed_configuration[2] = cad_point_in_deformed_configuration(2);        
+    }
+    // --------------------------------------------------------------------------
+    bool IsCADPointInside()
+    {
+        return mrAffectedPatch.IsPointInside(mParmeterValues);
+    }        
+    // --------------------------------------------------------------------------
+    Patch& GetPatch()
+    {
+        return mrAffectedPatch;
+    }
+    // --------------------------------------------------------------------------
+    array_1d<double,2> GetParameters()
+    {
+        return mParmeterValues;
     }
 
     // ==============================================================================
@@ -303,6 +343,7 @@ private:
     // ==============================================================================
     // Initialized by class constructor
     // ==============================================================================
+    Element&  mrElementContainingThisCondition;
     Element::GeometryType& mrGeometryContainingThisCondition;
     IntegrationMethodType mFemIntegrationMethod;
     int mIntegrationPointNumber;
