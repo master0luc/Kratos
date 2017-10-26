@@ -914,6 +914,8 @@ bool AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     
     const bool& consider_normal_variation = rCurrentProcessInfo[CONSIDER_NORMAL_VARIATION];
     
+    GeometryType& slave_geometry = GetGeometry();
+    
     for (unsigned int i_geom = 0; i_geom < ConditionsPointsSlave.size(); i_geom++)
     {
         std::vector<PointType::Pointer> points_array (TDim); // The points are stored as local coordinates, we calculate the global coordinates of this points
@@ -921,14 +923,14 @@ bool AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
         for (unsigned int i_node = 0; i_node < TDim; i_node++)
         {
             PointType global_point;
-            GetGeometry().GlobalCoordinates(global_point, ConditionsPointsSlave[i_geom][i_node]);
+            slave_geometry.GlobalCoordinates(global_point, ConditionsPointsSlave[i_geom][i_node]);
             points_array[i_node] = boost::make_shared<PointType>(global_point);
             belong_array[i_node] = ConditionsPointsSlave[i_geom][i_node].GetBelong();
         }
         
         DecompositionType decomp_geom( points_array );
         
-        const bool bad_shape = (TDim == 2) ? MortarUtilities::LengthCheck(decomp_geom, this->GetGeometry().Length() * 1.0e-6) : MortarUtilities::HeronCheck(decomp_geom);
+        const bool bad_shape = (TDim == 2) ? MortarUtilities::LengthCheck(decomp_geom, slave_geometry.Length() * 1.0e-6) : MortarUtilities::HeronCheck(decomp_geom);
         
         if (bad_shape == false)
         {
@@ -945,7 +947,7 @@ bool AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
                 PointType local_point_parent;
                 PointType gp_global;
                 decomp_geom.GlobalCoordinates(gp_global, local_point_decomp);
-                GetGeometry().PointLocalCoordinates(local_point_parent, gp_global);
+                slave_geometry.PointLocalCoordinates(local_point_parent, gp_global);
                 
                 // Calculate the kinematic variables
                 this->CalculateKinematics( rVariables, rDerivativeData, MasterNormal, PairIndex, local_point_decomp, local_point_parent, decomp_geom, false);//, delta_position_slave);
@@ -1042,9 +1044,9 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     master_geometry.ShapeFunctionsLocalGradients( rVariables.DNDeMaster, projected_gp_local );
     
     // JACOBIAN
-    Matrix delta_position_master; // MASTER
-    delta_position_master = CalculateDeltaPosition(delta_position_master, master_geometry);
-    rVariables.jMaster = master_geometry.Jacobian( rVariables.jMaster, projected_gp_local, delta_position_master); // Add delta Position
+//     Matrix delta_position_master; // MASTER
+//     delta_position_master = CalculateDeltaPosition(delta_position_master, master_geometry);
+    rVariables.jMaster = master_geometry.Jacobian( rVariables.jMaster, projected_gp_local);//, delta_position_master); // Add delta Position
 }
 
 /***********************************************************************************/
