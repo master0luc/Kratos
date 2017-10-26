@@ -49,7 +49,8 @@ class CADReconstrutionUtilities():
         self.MaxProjectionIterations = 20
         self.ProjectionTolerance = 1e-5
         self.ProjectionStrategy = "multiple_tree" # "single_tree" / "multiple_tree"
-        self.ProjectionRadius = 2 # relevant only with multiple_tree
+        self.ProjectionRadius = 0.0000005 # relevant only with multiple_tree
+        # self.ProjectionRadius = 2 # relevant only with multiple_tree
 
         # Regularization settings
         self.MinimizeControlPointDisplacement = True
@@ -103,7 +104,8 @@ class CADReconstrutionUtilities():
     def EvaluateQuality( self ):
         self.quality_evaluator.EvaluateQuality(self.MaxProjectionIterationsForGlobalQualityEvaluation,
                                                self.ProjectionTolerance,
-                                               self.ParameterResolutionForProjectionForGlobalQualityEvaluation)
+                                               self.ParameterResolutionForProjectionForGlobalQualityEvaluation,
+                                               self.ProjectionRadius)
         self.quality_evaluator.EvaluateDisplacementCoupling()
         self.quality_evaluator.EvaluateRotationCoupling()
     # --------------------------------------------------------------------------
@@ -112,7 +114,8 @@ class CADReconstrutionUtilities():
         self.quality_evaluator.EvaluateQualityAndOutputVtk(new_mdpa,
                                                            self.MaxProjectionIterationsForGlobalQualityEvaluation,
                                                            self.ProjectionTolerance,
-                                                           self.ParameterResolutionForProjectionForGlobalQualityEvaluation)
+                                                           self.ParameterResolutionForProjectionForGlobalQualityEvaluation,
+                                                           self.ProjectionRadius)
         self.quality_evaluator.EvaluateDisplacementCoupling()
         self.quality_evaluator.EvaluateRotationCoupling()
 
@@ -310,8 +313,8 @@ CADReconstructionUtility.OutputCADSurfacePoints( "surface_points_of_cad_geometry
 CADReconstructionUtility.PerformReconstruction()
 
 # Measure quality of reconstruction
-CADReconstructionUtility.EvaluateQuality()
-# CADReconstructionUtility.EvaluateQualityAndOutputVtk( "quality" )
+# CADReconstructionUtility.EvaluateQuality()
+CADReconstructionUtility.EvaluateQualityAndOutputVtk( "quality" )
 
 
 # Some output
