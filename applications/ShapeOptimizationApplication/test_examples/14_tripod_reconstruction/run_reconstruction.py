@@ -49,8 +49,8 @@ class CADReconstrutionUtilities():
         self.MaxProjectionIterations = 20
         self.ProjectionTolerance = 1e-5
         self.ProjectionStrategy = "multiple_tree" # "single_tree" / "multiple_tree"
-        self.ProjectionRadius = 0.0000005 # relevant only with multiple_tree
-        # self.ProjectionRadius = 2 # relevant only with multiple_tree
+        # self.ProjectionRadius = 0.0000005 # relevant only with multiple_tree
+        self.ProjectionRadius = 2 # relevant only with multiple_tree
 
         # Regularization settings
         self.MinimizeControlPointDisplacement = True

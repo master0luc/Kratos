@@ -246,12 +246,15 @@ public:
               Patch& patch_of_nearest_point = mrPatchVector[patch_index_of_nearest_point];
             //
             if(DistanceBetweenNodes(PointOfInterest, nearest_point) < mSearchRadius) //////////////////////////////
-              OptimizeGuessWithNewtonRaphson(PointOfInterest, nearest_point, parameter_values_of_nearest_point, patch_of_nearest_point);
-
-            if(patch_of_nearest_point.IsPointInside(parameter_values_of_nearest_point))
             {
-              return;
+              OptimizeGuessWithNewtonRaphson(PointOfInterest, nearest_point, parameter_values_of_nearest_point, patch_of_nearest_point);
+              if(patch_of_nearest_point.IsPointInside(parameter_values_of_nearest_point))
+              {
+                return;
+              }
             }
+
+
           }
         }
         KRATOS_THROW_ERROR(std::runtime_error, "Unable to find CAD nearest neighbour inside trimming boundary", "")
