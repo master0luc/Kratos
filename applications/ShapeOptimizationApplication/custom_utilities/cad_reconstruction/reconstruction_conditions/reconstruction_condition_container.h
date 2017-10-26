@@ -106,7 +106,7 @@ public:
     ///@{
 
     // ==============================================================================
-    void CreateDisplacementMappingConditions( boost::python::list rParameterResolution, int integration_degree, int max_iterations, double projection_tolerance, std::string projection_strategy )
+    void CreateDisplacementMappingConditions( boost::python::list rParameterResolution, int integration_degree, int max_iterations, double projection_tolerance, std::string projection_strategy, double projection_radius )
     {
         std::cout << "\n> Starting to create displacement mapping conditions...";
 
@@ -123,7 +123,7 @@ public:
             case 5 : fem_integration_method = GeometryData::GI_GAUSS_5; break;
         }
         
-        CADProjectionUtility FE2CADProjector( patch_vector, max_iterations, projection_tolerance, projection_strategy );
+        CADProjectionUtility FE2CADProjector( patch_vector, max_iterations, projection_tolerance, projection_strategy, projection_radius );
         
         FE2CADProjector.Initialize( rParameterResolution );
         

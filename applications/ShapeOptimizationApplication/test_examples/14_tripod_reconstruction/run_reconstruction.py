@@ -49,6 +49,7 @@ class CADReconstrutionUtilities():
         self.MaxProjectionIterations = 20
         self.ProjectionTolerance = 1e-5
         self.ProjectionStrategy = "multiple_tree" # "single_tree" / "multiple_tree"
+        self.ProjectionRadius = 2 # relevant only with multiple_tree
 
         # Regularization settings
         self.MinimizeControlPointDisplacement = True
@@ -224,7 +225,8 @@ class CADReconstrutionUtilities():
                                                                           self.FEMGaussIntegrationDegree,
                                                                           self.MaxProjectionIterations,
                                                                           self.ProjectionTolerance,
-                                                                          self.ProjectionStrategy )
+                                                                          self.ProjectionStrategy,
+                                                                          self.ProjectionRadius )
         else:
             raise ValueError( "The following reconstruction strategy does not exist: ", self.ReconstructionStrategy )
 

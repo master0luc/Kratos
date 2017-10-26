@@ -79,9 +79,9 @@ public:
     }
 
     // --------------------------------------------------------------------------
-    void EvaluateQuality(int max_iterations, double projection_tolerance, boost::python::list rParameterResolution)
+    void EvaluateQuality(int max_iterations, double projection_tolerance, boost::python::list rParameterResolution, double projection_radius)
     {
-      CADProjectionUtility FE2CADProjector( mrReconstructionDataBase.GetPatchVector(), max_iterations, projection_tolerance, "multiple_tree" );
+      CADProjectionUtility FE2CADProjector( mrReconstructionDataBase.GetPatchVector(), max_iterations, projection_tolerance, "multiple_tree", projection_radius );
       FE2CADProjector.Initialize(rParameterResolution);
 
       std::vector<double> projection_distances_to_qk;
@@ -147,7 +147,7 @@ public:
     } 
 
     // --------------------------------------------------------------------------
-    void EvaluateQualityAndOutputVtk(ModelPart& MdpaToEvaluateProjectionQuality, int max_iterations, double projection_tolerance, boost::python::list rParameterResolution)
+    void EvaluateQualityAndOutputVtk(ModelPart& MdpaToEvaluateProjectionQuality, int max_iterations, double projection_tolerance, boost::python::list rParameterResolution, double projection_radius)
     {
       // add nodal solution step variables to the mdpa
         MdpaToEvaluateProjectionQuality.AddNodalSolutionStepVariable(PROJECTION_DISTANCE_TO_QK);
@@ -157,7 +157,7 @@ public:
         MdpaToEvaluateProjectionQuality.AddNodalSolutionStepVariable(RECONSTRUCTION_DISTANCE_TO_QK);
         MdpaToEvaluateProjectionQuality.AddNodalSolutionStepVariable(RECONSTRUCTION_DISTANCE_TO_Q);
 
-      CADProjectionUtility FE2CADProjector( mrReconstructionDataBase.GetPatchVector(), max_iterations, projection_tolerance, "multiple_tree" );
+      CADProjectionUtility FE2CADProjector( mrReconstructionDataBase.GetPatchVector(), max_iterations, projection_tolerance, "multiple_tree", projection_radius );
       FE2CADProjector.Initialize(rParameterResolution);
 
       std::vector<double> projection_distances_to_qk;

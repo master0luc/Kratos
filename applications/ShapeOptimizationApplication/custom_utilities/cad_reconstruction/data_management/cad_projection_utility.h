@@ -61,11 +61,12 @@ public:
     ///@{
 
     /// Default constructor.
-    CADProjectionUtility( PatchVector& patch_vector, int max_projection_iterations, double projection_tolerance, std::string projection_strategy="" )
+    CADProjectionUtility( PatchVector& patch_vector, int max_projection_iterations, double projection_tolerance, std::string projection_strategy, double search_radius )
     : mrPatchVector( patch_vector ),
       mMaxIterations( max_projection_iterations ),
       mTolerance( projection_tolerance ),
-      mProjectionStrategy( projection_strategy)
+      mProjectionStrategy( projection_strategy),
+      mSearchRadius( search_radius )
     {
       NodeVector dummy_list_of_nodes;
       mOrderedListOfNodesVector.push_back(dummy_list_of_nodes);
@@ -244,6 +245,7 @@ public:
               patch_index_of_nearest_point = mOrderedListOfPatchIndices[nearest_point->Id()-1];
               Patch& patch_of_nearest_point = mrPatchVector[patch_index_of_nearest_point];
             //
+            if(DistanceBetweenNodes(PointOfInterest, nearest_point) < mSearchRadius) //////////////////////////////
               OptimizeGuessWithNewtonRaphson(PointOfInterest, nearest_point, parameter_values_of_nearest_point, patch_of_nearest_point);
 
             if(patch_of_nearest_point.IsPointInside(parameter_values_of_nearest_point))
@@ -315,8 +317,8 @@ public:
              boost::math::isnan(current_nearest_point[1]) ||
              boost::math::isnan(current_nearest_point[2]) )
           {
-            // std::cout << "WARNING!!! Newton-Raphson in projection lead to NAN CAD coordinates" << std::endl;
-            // KRATOS_WATCH(current_nearest_point)
+            std::cout << "WARNING!!! Newton-Raphson in projection lead to NAN CAD coordinates" << std::endl;
+            KRATOS_WATCH(current_nearest_point)
             parameter_values_of_nearest_point[0] = 1.0/0.0;
             parameter_values_of_nearest_point[1] = 1.0/0.0;
             break;            
@@ -339,6 +341,13 @@ public:
             NearestCoords = cad_point_in_deformed_configuration;      
     }
 
+    // --------------------------------------------------------------------------
+    double DistanceBetweenNodes(NodeType::Pointer node_1, NodeType::Pointer node_2)
+    {
+      return std::sqrt( (node_1->X() - node_2->X()) * (node_1->X() - node_2->X()) +
+                        (node_1->Y() - node_2->Y()) * (node_1->Y() - node_2->Y()) + 
+                        (node_1->Z() - node_2->Z()) * (node_1->Z() - node_2->Z()) );
+    }
     // ==============================================================================
 
     /// Turn back information as a string.
@@ -368,6 +377,7 @@ public:
     int mMaxIterations;
     double mTolerance;
     std::string mProjectionStrategy;
+    double mSearchRadius;
 
     // ==============================================================================
     // Variables for spatial search
