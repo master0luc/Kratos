@@ -1003,6 +1003,11 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
 //     rVariables.DetjSlave = MathUtils<double>::GeneralizedDet(rVariables.jSlave);
     rVariables.DetjSlave = GeometryDecomp.DeterminantOfJacobian( LocalPointDecomp );
     
+    if (rVariables.DetjSlave < 0.0)
+    {
+        KRATOS_ERROR << "WARNING:: ELEMENT ID: " << this->Id() << " INVERTED. DETJ0: " << rVariables.DetjSlave << std::endl;
+    }
+    
     /// MASTER CONDITION ///
     this->MasterShapeFunctionValue( rVariables, MasterNormal, LocalPointParent, PairIndex);
 }
