@@ -1376,16 +1376,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     const VectorType& N2 = rVariables.NMaster;
     
     const GeometryType& slave_geometry = GetGeometry();
-    
-    if (ConsiderNormalVariation == true)
-    {
-        for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave )
-        {
-            delta_normal += this->LocalDeltaNormal(slave_geometry, i_slave); // TODO: Check this!!!!
-        }
-        
-        delta_normal /= static_cast<double>(TNumNodes);
-    }
+    const double aux_nodes_coeff = static_cast<double>(TNumNodes);
     
     for (unsigned i_triangle = 0; i_triangle < 3; ++i_triangle) 
     {
@@ -1438,9 +1429,19 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
             aux_vertex_vector0 = ZeroVector(3);
             aux_vertex_vector1 = ZeroVector(3);
             
+            if (ConsiderNormalVariation == true && belong_index_master_end < TNumNodes) delta_normal = this->LocalDeltaNormal(slave_geometry, belong_index_master_end) * (1.0/aux_nodes_coeff);
+            else delta_normal = ZeroMatrix(3, 3);
+            
             for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
             {
                 aux_vertex_vector0 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_master_end, ConsiderNormalVariation, MasterGeometry, 1.0);
+            }
+            
+            if (ConsiderNormalVariation == true && belong_index_master_start < TNumNodes) delta_normal = this->LocalDeltaNormal(slave_geometry, belong_index_master_start) * (1.0/aux_nodes_coeff);
+            else delta_normal = ZeroMatrix(3, 3);
+            
+            for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
+            {
                 aux_vertex_vector1 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_master_start, ConsiderNormalVariation, MasterGeometry, - 1.0);   
             }
 
@@ -1461,10 +1462,19 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
             aux_vertex_vector0 = ZeroVector(3);
             aux_vertex_vector1 = ZeroVector(3);
             
+            if (ConsiderNormalVariation == true && belong_index_slave_end < TNumNodes) delta_normal = this->LocalDeltaNormal(slave_geometry, belong_index_slave_end) * (1.0/aux_nodes_coeff);
+            else delta_normal = ZeroMatrix(3, 3);
+            
             for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
             {
                 aux_vertex_vector0 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_slave_end, ConsiderNormalVariation, MasterGeometry, - 1.0);
+            }
                 
+            if (ConsiderNormalVariation == true && belong_index_master_end < TNumNodes) delta_normal = this->LocalDeltaNormal(slave_geometry, belong_index_master_end) * (1.0/aux_nodes_coeff);
+            else delta_normal = ZeroMatrix(3, 3);
+
+            for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
+            {
                 aux_vertex_vector1 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_slave_start, ConsiderNormalVariation, MasterGeometry, 1.0);   
             }
 
@@ -1484,11 +1494,20 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
             // Fourth term
             aux_vertex_vector0 = ZeroVector(3);
             aux_vertex_vector1 = ZeroVector(3);
+
+            if (ConsiderNormalVariation == true && belong_index_master_end < TNumNodes) delta_normal = this->LocalDeltaNormal(slave_geometry, belong_index_master_end) * (1.0/aux_nodes_coeff);
+            else delta_normal = ZeroMatrix(3, 3);
             
             for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
             {
                 aux_vertex_vector0 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_master_end, ConsiderNormalVariation, MasterGeometry, - 1.0);
+            }
                 
+            if (ConsiderNormalVariation == true && belong_index_master_end < TNumNodes) delta_normal = this->LocalDeltaNormal(slave_geometry, belong_index_master_end) * (1.0/aux_nodes_coeff);
+            else delta_normal = ZeroMatrix(3, 3);
+                
+            for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
+            {
                 aux_vertex_vector0 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_master_start, ConsiderNormalVariation, MasterGeometry, 1.0);   
             }
 
@@ -1505,9 +1524,11 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
                 row(local_delta_vertexb, i_triangle) -= num * coeff4b/std::pow(denom, 2) * aux_coords; 
             }
             
-            // Part corresponding to the delta normal // TODO: Pending to reorganize
+            // Part corresponding to the delta normal
             for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave)
             {
+                delta_normal = this->LocalDeltaNormal(slave_geometry, i_slave) * (1.0/aux_nodes_coeff);
+                
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                 {
                     bounded_matrix<double, 3, 3>& local_delta_vertex =  rDerivativeData.DeltaCellVertex[i_slave * TDim + i_dof];
@@ -1520,13 +1541,23 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
             
             // We compute the second part
             const double coeff0 = num/denom;
+            
+            if (ConsiderNormalVariation == true && belong_index_slave_end < TNumNodes) delta_normal = this->LocalDeltaNormal(slave_geometry, belong_index_slave_end) * (1.0/aux_nodes_coeff);
+            else delta_normal = ZeroMatrix(3, 3);
+                
             for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
             {
                 // The term corresponding to xe1
                 bounded_matrix<double, 3, 3>& delta_cell_vertex_slave_end = rDerivativeData.DeltaCellVertex[belong_index_slave_end * TDim + i_dof];
                 
                 LocalDeltaVertex(delta_cell_vertex_slave_end, normal, delta_normal, N1, N2, i_dof, i_triangle, belong_index_slave_end, ConsiderNormalVariation, MasterGeometry, - coeff0);
-                
+            }
+            
+            if (ConsiderNormalVariation == true && belong_index_slave_start < TNumNodes) delta_normal = this->LocalDeltaNormal(slave_geometry, belong_index_slave_start) * (1.0/aux_nodes_coeff);
+            else delta_normal = ZeroMatrix(3, 3);
+
+            for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
+            {
                 // The term corresponding to xs1
                 bounded_matrix<double, 3, 3>& delta_cell_vertex_slave_start = rDerivativeData.DeltaCellVertex[belong_index_slave_start * TDim + i_dof];
                 
@@ -1536,6 +1567,9 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
         else // It belongs to a master/slave node
         {
             const unsigned int belong_index = static_cast<unsigned int>(TheseBelongs[i_triangle]);
+            
+            if (ConsiderNormalVariation == true && belong_index < TNumNodes) delta_normal = this->LocalDeltaNormal(slave_geometry, belong_index) * (1.0/aux_nodes_coeff);
+            else delta_normal = ZeroMatrix(3, 3);
             
             for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
             {
