@@ -1375,11 +1375,13 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     const VectorType& N1 = rVariables.NSlave;
     const VectorType& N2 = rVariables.NMaster;
     
+    const GeometryType& slave_geometry = GetGeometry();
+    
     if (ConsiderNormalVariation == true)
     {
-        for ( unsigned int i_slave = 0, i = 0; i_slave < TNumNodes; ++i_slave, i += TDim )
+        for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave )
         {
-            delta_normal += this->LocalDeltaNormal(GetGeometry(), i_slave); // TODO: Check this!!!!
+            delta_normal += this->LocalDeltaNormal(slave_geometry, i_slave); // TODO: Check this!!!!
         }
         
         delta_normal /= static_cast<double>(TNumNodes);
@@ -1399,10 +1401,10 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
 //                 LocalDeltaVertex(row(rDerivativeData.DeltaCellVertex[belong_index_slave_start * TDim + i_dof], i_belong), normal, delta_normal, N1, N2, i_dof, belong_index_slave_start, ConsiderNormalVariation, MasterGeometry);
 //             }
             
-            const array_1d<double, 3> xs1 = GetGeometry()[belong_index_slave_start].Coordinates();
-            const array_1d<double, 3> xe1 = GetGeometry()[belong_index_slave_end].Coordinates();
-            const array_1d<double, 3> xs2 = MasterGeometry[belong_index_master_start].Coordinates();
-            const array_1d<double, 3> xe2 = MasterGeometry[belong_index_master_end].Coordinates();
+            const array_1d<double, 3>& xs1 = slave_geometry[belong_index_slave_start].Coordinates();
+            const array_1d<double, 3>& xe1 = slave_geometry[belong_index_slave_end].Coordinates();
+            const array_1d<double, 3>& xs2 = MasterGeometry[belong_index_master_start].Coordinates();
+            const array_1d<double, 3>& xe2 = MasterGeometry[belong_index_master_end].Coordinates();
             
             array_1d<double, 3> aux_num, aux_denom;
             MathUtils<double>::CrossProduct(aux_num, xs1 - xs2, xe2 - xs2);
@@ -1411,7 +1413,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
             const double denom = inner_prod(aux_denom, normal);
             
             // We compute the first part
-            array_1d<double, 3> aux_coords = (xe1 - xs1);
+            const array_1d<double, 3>& aux_coords = (xe1 - xs1);
             array_1d<double, 3> aux_vertex_matrix;
             array_1d<double, 3> aux_cross_product;
             for (unsigned i_dof = 0; i_dof < TDim; i_dof++)
@@ -1534,15 +1536,16 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
    const unsigned & iDoF,
    const unsigned & BelongIndex,
    const bool& ConsiderNormalVariation,
-   GeometryType& MasterGeometry,
+   const GeometryType& MasterGeometry,
    const double Coeff 
    ) 
 {
-    const array_1d<double, 3> coords_center = GetGeometry().Center().Coordinates();
+    const GeometryType& slave_geometry = GetGeometry();
+    const array_1d<double, 3> coords_center = slave_geometry.Center().Coordinates();
     array_1d<double, 3> coords_node;
     if (BelongIndex < TNumNodes)
     {
-        coords_node = GetGeometry()[BelongIndex].Coordinates();
+        coords_node = slave_geometry[BelongIndex].Coordinates();
     }
     else
     {

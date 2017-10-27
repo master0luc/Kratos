@@ -691,7 +691,7 @@ protected:
         const unsigned & iDoF,
         const unsigned & BelongIndex,
         const bool& ConsiderNormalVariation,
-        GeometryType& MasterGeometry,
+        const GeometryType& MasterGeometry,
         const double Coeff = 1.0
         );
     
