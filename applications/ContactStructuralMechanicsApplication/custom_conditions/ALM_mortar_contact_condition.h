@@ -682,14 +682,30 @@ protected:
     /**
      * This method is used to compute the directional derivatives of the cell vertex (locally)
      */
-    void LocalDeltaVertex(
-        array_1d<double, 3> DeltaVertexMatrix,
+    array_1d<double, 3> LocalDeltaVertex(
         const array_1d<double, 3>& Normal,
         const bounded_matrix<double, TDim, TDim>& DeltaNormal,
         const VectorType& N1,
         const VectorType& N2,
-        const unsigned & iDoF,
-        const unsigned & BelongIndex,
+        const unsigned& iDoF,
+        const unsigned& BelongIndex,
+        const bool& ConsiderNormalVariation,
+        const GeometryType& MasterGeometry,
+        const double Coeff = 1.0
+        );
+    
+    /**
+     * This method is used to compute the directional derivatives of the cell vertex (locally)
+     */
+    void LocalDeltaVertex(
+        bounded_matrix<double, 3, 3>& DeltaVertexMatrix,
+        const array_1d<double, 3>& Normal,
+        const bounded_matrix<double, TDim, TDim>& DeltaNormal,
+        const VectorType& N1,
+        const VectorType& N2,
+        const unsigned& iDoF,
+        const unsigned& iTriangle,
+        const unsigned& BelongIndex,
         const bool& ConsiderNormalVariation,
         const GeometryType& MasterGeometry,
         const double Coeff = 1.0
