@@ -1408,76 +1408,104 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
             
             // We compute the first part
             const array_1d<double, 3>& aux_coords = (xe1 - xs1);
-            array_1d<double, 3> aux_vertex_vector, aux_cross_product;
+            array_1d<double, 3> aux_vertex_vector0, aux_vertex_vector1, aux_cross_product;
             
             // First term 
-            aux_vertex_vector = ZeroVector(3);
+            aux_vertex_vector0 = ZeroVector(3);
+            aux_vertex_vector1 = ZeroVector(3);
             
             for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
             {
-                aux_vertex_vector += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_slave_start, ConsiderNormalVariation, MasterGeometry, 1.0);
-                aux_vertex_vector += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_slave_end, ConsiderNormalVariation, MasterGeometry, - 1.0);   
+                aux_vertex_vector0 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_slave_start, ConsiderNormalVariation, MasterGeometry, 1.0);
+                
+                aux_vertex_vector1 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_slave_end, ConsiderNormalVariation, MasterGeometry, - 1.0);   
             }
             
-            MathUtils<double>::CrossProduct(aux_cross_product, aux_vertex_vector, xe2 - xs2);
+            MathUtils<double>::CrossProduct(aux_cross_product, aux_vertex_vector0, xe2 - xs2);
+            const double coeff1a = inner_prod(aux_cross_product, normal);
+            MathUtils<double>::CrossProduct(aux_cross_product, aux_vertex_vector1, xe2 - xs2);
+            const double coeff1b = inner_prod(aux_cross_product, normal);
             
-            const double coeff1 = inner_prod(aux_cross_product, normal);
+            for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
+            {
+                bounded_matrix<double, 3, 3>& local_delta_vertexa =  rDerivativeData.DeltaCellVertex[belong_index_slave_start * TDim + i_dof];
+                bounded_matrix<double, 3, 3>& local_delta_vertexb =  rDerivativeData.DeltaCellVertex[belong_index_slave_end * TDim + i_dof];
+                row(local_delta_vertexa, i_triangle) -= coeff1a/denom * aux_coords;
+                row(local_delta_vertexb, i_triangle) -= coeff1b/denom * aux_coords; 
+            }
             
             // Second term
-            aux_vertex_vector = ZeroVector(3);
+            aux_vertex_vector0 = ZeroVector(3);
+            aux_vertex_vector1 = ZeroVector(3);
             
             for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
             {
-                aux_vertex_vector += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_master_end, ConsiderNormalVariation, MasterGeometry, 1.0);
-                aux_vertex_vector += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_master_start, ConsiderNormalVariation, MasterGeometry, - 1.0);   
+                aux_vertex_vector0 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_master_end, ConsiderNormalVariation, MasterGeometry, 1.0);
+                aux_vertex_vector1 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_master_start, ConsiderNormalVariation, MasterGeometry, - 1.0);   
             }
 
-            MathUtils<double>::CrossProduct(aux_cross_product, xs1 - xs2, aux_vertex_vector);
+            MathUtils<double>::CrossProduct(aux_cross_product, xs1 - xs2, aux_vertex_vector0);
+            const double coeff2a = inner_prod(aux_cross_product, normal);
+            MathUtils<double>::CrossProduct(aux_cross_product, xs1 - xs2, aux_vertex_vector1);
+            const double coeff2b = inner_prod(aux_cross_product, normal);
             
-            const double coeff2 = inner_prod(aux_cross_product, normal);
+            for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
+            {
+                bounded_matrix<double, 3, 3>& local_delta_vertexa =  rDerivativeData.DeltaCellVertex[belong_index_master_end * TDim + i_dof];
+                bounded_matrix<double, 3, 3>& local_delta_vertexb =  rDerivativeData.DeltaCellVertex[belong_index_master_start * TDim + i_dof];
+                row(local_delta_vertexa, i_triangle) -= coeff2a/denom * aux_coords;
+                row(local_delta_vertexb, i_triangle) -= coeff2b/denom * aux_coords; 
+            }
             
             // Third term
-            aux_vertex_vector = ZeroVector(3);
+            aux_vertex_vector0 = ZeroVector(3);
+            aux_vertex_vector1 = ZeroVector(3);
             
             for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
             {
-                aux_vertex_vector += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof,  belong_index_slave_end, ConsiderNormalVariation, MasterGeometry, - 1.0);
+                aux_vertex_vector0 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_slave_end, ConsiderNormalVariation, MasterGeometry, - 1.0);
                 
-                aux_vertex_vector += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof,  belong_index_slave_start, ConsiderNormalVariation, MasterGeometry, 1.0);   
+                aux_vertex_vector1 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_slave_start, ConsiderNormalVariation, MasterGeometry, 1.0);   
             }
 
-            MathUtils<double>::CrossProduct(aux_cross_product, aux_vertex_vector, xe2 - xs2);
+            MathUtils<double>::CrossProduct(aux_cross_product, aux_vertex_vector0, xe2 - xs2);
+            const double coeff3a = inner_prod(aux_cross_product, normal);
+            MathUtils<double>::CrossProduct(aux_cross_product, aux_vertex_vector1, xe2 - xs2);
+            const double coeff3b = inner_prod(aux_cross_product, normal);
             
-            const double coeff3 = inner_prod(aux_cross_product, normal);
+            for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
+            {
+                bounded_matrix<double, 3, 3>& local_delta_vertexa =  rDerivativeData.DeltaCellVertex[belong_index_slave_end * TDim + i_dof];
+                bounded_matrix<double, 3, 3>& local_delta_vertexb =  rDerivativeData.DeltaCellVertex[belong_index_slave_start * TDim + i_dof];
+                row(local_delta_vertexa, i_triangle) -= num * coeff3a/std::pow(denom, 2) * aux_coords; 
+                row(local_delta_vertexb, i_triangle) -= num * coeff3b/std::pow(denom, 2) * aux_coords; 
+            }
             
             // Fourth term
-            aux_vertex_vector = ZeroVector(3);
+            aux_vertex_vector0 = ZeroVector(3);
+            aux_vertex_vector1 = ZeroVector(3);
             
             for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
             {
-                aux_vertex_vector += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_master_end, ConsiderNormalVariation, MasterGeometry, - 1.0);
+                aux_vertex_vector0 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_master_end, ConsiderNormalVariation, MasterGeometry, - 1.0);
                 
-                aux_vertex_vector += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_master_start, ConsiderNormalVariation, MasterGeometry, 1.0);   
+                aux_vertex_vector0 += LocalDeltaVertex(normal, delta_normal, N1, N2, i_dof, belong_index_master_start, ConsiderNormalVariation, MasterGeometry, 1.0);   
             }
 
-            MathUtils<double>::CrossProduct(aux_cross_product, xe1 - xs1, aux_vertex_vector);
-            const double coeff4 = inner_prod(aux_cross_product, normal);
+            MathUtils<double>::CrossProduct(aux_cross_product, xe1 - xs1, aux_vertex_vector0);
+            const double coeff4a = inner_prod(aux_cross_product, normal);
+            MathUtils<double>::CrossProduct(aux_cross_product, xe1 - xs1, aux_vertex_vector1);
+            const double coeff4b = inner_prod(aux_cross_product, normal);
             
-            // Part corresponding to the vectorial products
-            for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave)
+            for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
             {
-                for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
-                {
-                    bounded_matrix<double, 3, 3>& local_delta_vertex =  rDerivativeData.DeltaCellVertex[i_slave * TDim + i_dof];
-                    
-                    row(local_delta_vertex, i_triangle) -= coeff1/denom * aux_coords; 
-                    row(local_delta_vertex, i_triangle) -= coeff2/denom * aux_coords; 
-                    row(local_delta_vertex, i_triangle) -= num * coeff3/std::pow(denom, 2) * aux_coords; 
-                    row(local_delta_vertex, i_triangle) -= num * coeff4/std::pow(denom, 2) * aux_coords; 
-                }
+                bounded_matrix<double, 3, 3>& local_delta_vertexa =  rDerivativeData.DeltaCellVertex[belong_index_master_end * TDim + i_dof];
+                bounded_matrix<double, 3, 3>& local_delta_vertexb =  rDerivativeData.DeltaCellVertex[belong_index_master_start * TDim + i_dof];
+                row(local_delta_vertexa, i_triangle) -= num * coeff4a/std::pow(denom, 2) * aux_coords; 
+                row(local_delta_vertexb, i_triangle) -= num * coeff4b/std::pow(denom, 2) * aux_coords; 
             }
             
-            // Part corresponding to the delta normal
+            // Part corresponding to the delta normal // TODO: Pending to reorganize
             for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave)
             {
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
