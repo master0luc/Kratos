@@ -798,7 +798,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                                 // Update the derivative of DetJ
                                 this->CalculateDeltaDetjSlave(rVariables, rDerivativeData);
                                 // Update the derivatives of the shape functions and the gap
-                                this->CalculateDeltaN(rVariables, rDerivativeData, master_geometry, master_normal, decomp_geom, local_point_decomp, local_point_parent);
+//                                 this->CalculateDeltaN(rVariables, rDerivativeData, master_geometry, master_normal, decomp_geom, local_point_decomp, local_point_parent);
                                 // The derivatives of the dual shape function 
                                 this->CalculateDeltaPhi(rVariables, rDerivativeData);
                                 
