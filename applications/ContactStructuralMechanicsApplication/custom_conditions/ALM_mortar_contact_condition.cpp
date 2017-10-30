@@ -1059,8 +1059,6 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     const unsigned int rPairIndex
     )
 {
-    /* DEFINITIONS */
-
     if ( rLocalSystem.CalculationFlags.Is( AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>::COMPUTE_LHS_MATRIX_WITH_COMPONENTS ) )
     {
         /* COMPONENT-WISE LHS MATRIX */
@@ -1378,6 +1376,13 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     const GeometryType& slave_geometry = GetGeometry();
     const double aux_nodes_coeff = static_cast<double>(TNumNodes);
     
+// #ifdef KRATOS_DEBUG
+//     for (unsigned i_triangle = 0; i_triangle < 3; ++i_triangle) 
+//     {
+//         KRATOS_WATCH(static_cast<unsigned int>(TheseBelongs[i_triangle]));
+//     }
+// #endif
+    
     for (unsigned i_triangle = 0; i_triangle < 3; ++i_triangle) 
     {
         if (TheseBelongs[i_triangle] >= 2 * TNumNodes) // It belongs to an intersection
@@ -1621,47 +1626,32 @@ array_1d<double, 3> AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNod
    ) 
 {
     // We create the auxiliar array
-    array_1d<double, 3> aux_delta_vertex = ZeroVector(3);
+    array_1d<double, 3> aux_delta_vertex(0.0);
+    
+    // This is the coefficient of the center contribution
+    const double auxiliar_coeff = 1.0/static_cast<double>(TNumNodes);
     
     //  We initialize some values
     const GeometryType& slave_geometry = GetGeometry();
-    const array_1d<double, 3> coords_center = slave_geometry.Center().Coordinates();
-    array_1d<double, 3> coords_node;
-    if (BelongIndex < TNumNodes) coords_node = slave_geometry[BelongIndex].Coordinates();
-    else coords_node = MasterGeometry[BelongIndex - TNumNodes].Coordinates();
-    
+    const array_1d<double, 3>& coords_center = slave_geometry.Center().Coordinates();
+    const array_1d<double, 3>& coords_node = (BelongIndex < TNumNodes) ? slave_geometry[BelongIndex].Coordinates() : MasterGeometry[BelongIndex - TNumNodes].Coordinates();
+  
     // The corresponding part to the nodal coordinates
-    if (BelongIndex < TNumNodes) // SLAVE
-    {
-        array_1d<double, 3> aux_der(0.0);
-        aux_der[iDoF] = 1.0;
-        aux_delta_vertex += Coeff * aux_der * N1[BelongIndex]; 
-    }
-    else // MASTER
-    {
-        array_1d<double, 3> aux_der(0.0);
-        aux_der[iDoF] = 1.0;
-        aux_delta_vertex += Coeff * aux_der * N2[BelongIndex - TNumNodes]; 
-    }
+    array_1d<double, 3> aux_der(0.0);
+    aux_der[iDoF] = 1.0;
+    if (BelongIndex < TNumNodes) aux_delta_vertex += Coeff * aux_der * N1[BelongIndex]; // SLAVE
+    else aux_delta_vertex += Coeff * aux_der * N2[BelongIndex - TNumNodes]; // MASTER
     
     // The corresponding part to the normal
-    const double coordsxdeltanormal = inner_prod(coords_node - coords_center, column(DeltaNormal, iDoF));
+    const double coordsxdeltanormal = (ConsiderNormalVariation == true) ? inner_prod(coords_node - coords_center, column(DeltaNormal, iDoF)) : 0.0;
     
-    if (BelongIndex < TNumNodes) // SLAVE
-    {
-        const double factor_belong = - N1[BelongIndex]/static_cast<double>(TNumNodes) + N1[BelongIndex];   
-        const double deltacoordsxnormal =  factor_belong * Normal[iDoF];
-        aux_delta_vertex += - Coeff * Normal * (deltacoordsxnormal + coordsxdeltanormal);
-    }
-    else // MASTER
-    { 
-        const double deltacoordsxnormal = N2[BelongIndex - TNumNodes] * Normal[iDoF];
-        aux_delta_vertex += - Coeff * Normal * deltacoordsxnormal;
-    }
+    const double factor_belong = (BelongIndex < TNumNodes) ? N1[BelongIndex] * (1.0 - auxiliar_coeff) : N2[BelongIndex - TNumNodes]; 
+    const double deltacoordsxnormal =  factor_belong * Normal[iDoF];
+    aux_delta_vertex += - Coeff * Normal * (deltacoordsxnormal + coordsxdeltanormal);
     
     // The corresponding part to delta normal
     const double coordsxnormal = - inner_prod(coords_node - coords_center, Normal);
-    aux_delta_vertex += Coeff * coordsxnormal * trans(column(DeltaNormal, iDoF));
+    if (ConsiderNormalVariation == true) aux_delta_vertex += Coeff * coordsxnormal * trans(column(DeltaNormal, iDoF));
     
     return aux_delta_vertex;
 }
