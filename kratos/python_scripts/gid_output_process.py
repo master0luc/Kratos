@@ -336,7 +336,7 @@ class GiDOutputProcess(Process):
         try:
             value = dictionary[keystring]
         except KeyError:
-            msg = "{0} Error: Unknown value \"{1}\" read for parameter \"{2}\"".format(self.__class__.__name__,vaule,label)
+            msg = "{0} Error: Unknown value \"{1}\" read for parameter \"{2}\"".format(self.__class__.__name__,value,label)
             raise Exception(msg)
 
         return value
