@@ -620,7 +620,7 @@ protected:
     virtual bounded_matrix<double, MatrixSize, MatrixSize> CalculateLocalLHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         );
     
     /**
@@ -650,7 +650,7 @@ protected:
     virtual array_1d<double, MatrixSize> CalculateLocalRHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         );
     
     /********************************************************************************/
@@ -664,7 +664,7 @@ protected:
         GeneralVariables& rVariables,
         DerivativeDataType& rDerivativeData,
         const array_1d<BelongType, TDim>& TheseBelongs,
-        const bool& ConsiderNormalVariation,
+        const bool ConsiderNormalVariation,
         GeometryType& MasterGeometry
         );
     
@@ -672,7 +672,7 @@ protected:
      * This method computes the equivalent indexes to the auxiliar hash
      */
     void ConvertAuxHashIndex(
-        const unsigned int& AuxIndex,
+        const unsigned int AuxIndex,
         unsigned int& BelongIndexSlaveStart, 
         unsigned int& BelongIndexSlaveEnd, 
         unsigned int& BelongIndexMasterStart, 
@@ -687,9 +687,9 @@ protected:
         const bounded_matrix<double, TDim, TDim>& DeltaNormal,
         const VectorType& N1,
         const VectorType& N2,
-        const unsigned& iDoF,
-        const unsigned& BelongIndex,
-        const bool& ConsiderNormalVariation,
+        const unsigned int iDoF,
+        const unsigned int BelongIndex,
+        const bool ConsiderNormalVariation,
         const GeometryType& MasterGeometry,
         const double Coeff = 1.0
         );
@@ -703,10 +703,10 @@ protected:
         const bounded_matrix<double, TDim, TDim>& DeltaNormal,
         const VectorType& N1,
         const VectorType& N2,
-        const unsigned& iDoF,
-        const unsigned& iTriangle,
-        const unsigned& BelongIndex,
-        const bool& ConsiderNormalVariation,
+        const unsigned int iDoF,
+        const unsigned int iTriangle,
+        const unsigned int BelongIndex,
+        const bool ConsiderNormalVariation,
         const GeometryType& MasterGeometry,
         const double Coeff = 1.0
         );
@@ -855,8 +855,8 @@ protected:
     
     void CalculateDeltaPosition(
         VectorType& DeltaPosition,
-        GeometryType& MasterGeometry,
-        const unsigned int& IndexNode
+        const GeometryType& MasterGeometry,
+        const unsigned int IndexNode
         );
     
     /**
@@ -865,9 +865,9 @@ protected:
     
     void CalculateDeltaPosition(
         VectorType& DeltaPosition,
-        GeometryType& MasterGeometry,
-        const unsigned int& IndexNode,
-        const unsigned int& iDoF
+        const GeometryType& MasterGeometry,
+        const unsigned int IndexNode,
+        const unsigned int iDoF
         );
     
     /**
@@ -876,9 +876,9 @@ protected:
     
     void CalculateDeltaPosition(
         double& DeltaPosition,
-        GeometryType& MasterGeometry,
-        const unsigned int& IndexNode,
-        const unsigned int& iDoF
+        const GeometryType& MasterGeometry,
+        const unsigned int IndexNode,
+        const unsigned int iDoF
         );
     
     /**
@@ -890,7 +890,7 @@ protected:
     virtual double GetIntegrationWeight(
         GeneralVariables& rVariables,
         const GeometryType::IntegrationPointsArrayType& ThisIntegrationMethod,
-        const unsigned int& PointNumber
+        const unsigned int PointNumber
         );
     
     ///@}

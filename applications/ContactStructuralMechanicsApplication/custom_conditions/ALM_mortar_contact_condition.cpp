@@ -634,7 +634,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
     DerivativeDataType rDerivativeData;
     rDerivativeData.Initialize(slave_geometry, rCurrentProcessInfo);
     
-    const bool& consider_normal_variation = rCurrentProcessInfo[CONSIDER_NORMAL_VARIATION];
+    const bool consider_normal_variation = rCurrentProcessInfo[CONSIDER_NORMAL_VARIATION];
     
     // We compute the normal derivatives
     if (consider_normal_variation == true)
@@ -794,7 +794,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                             {
                                 /* Update the derivatives */
                                 // Update the derivative of the integration vertex (just in 3D)
-//                                 if (TDim == 3) this->CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, master_geometry);
+                                if (TDim == 3) this->CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, master_geometry);
                                 // Update the derivative of DetJ
                                 this->CalculateDeltaDetjSlave(rVariables, rDerivativeData);
                                 // Update the derivatives of the shape functions and the gap
@@ -912,7 +912,7 @@ bool AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     // Update slave element info
     rDerivativeData.UpdateMasterPair(mThisMasterElements[PairIndex]);
     
-    const bool& consider_normal_variation = rCurrentProcessInfo[CONSIDER_NORMAL_VARIATION];
+    const bool consider_normal_variation = rCurrentProcessInfo[CONSIDER_NORMAL_VARIATION];
     
     GeometryType& slave_geometry = GetGeometry();
     
@@ -1118,7 +1118,7 @@ template<>
 bounded_matrix<double, 10, 10> AugmentedLagrangianMethodMortarContactCondition<2,2, false>::CalculateLocalLHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         )
 {
     KRATOS_ERROR << "You are calling to the base class method CalculateLocalLHS, you are evil, and your seed must be eradicated from the face of the earth" << std::endl;
@@ -1133,7 +1133,7 @@ template<>
 bounded_matrix<double, 21, 21> AugmentedLagrangianMethodMortarContactCondition<3,3, false>::CalculateLocalLHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         )
 {
     KRATOS_ERROR << "You are calling to the base class method CalculateLocalLHS, you are evil, and your seed must be eradicated from the face of the earth" << std::endl;
@@ -1148,7 +1148,7 @@ template<>
 bounded_matrix<double, 28, 28> AugmentedLagrangianMethodMortarContactCondition<3,4, false>::CalculateLocalLHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         )
 {
     KRATOS_ERROR << "You are calling to the base class method CalculateLocalLHS, you are evil, and your seed must be eradicated from the face of the earth" << std::endl;
@@ -1163,7 +1163,7 @@ template<>
 bounded_matrix<double, 12, 12> AugmentedLagrangianMethodMortarContactCondition<2,2, true>::CalculateLocalLHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         )
 {
     KRATOS_ERROR << "You are calling to the base class method CalculateLocalLHS, you are evil, and your seed must be eradicated from the face of the earth" << std::endl;
@@ -1178,7 +1178,7 @@ template<>
 bounded_matrix<double, 27, 27> AugmentedLagrangianMethodMortarContactCondition<3, 3, true>::CalculateLocalLHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         )
 {
     KRATOS_ERROR << "You are calling to the base class method CalculateLocalLHS, you are evil, and your seed must be eradicated from the face of the earth" << std::endl;
@@ -1193,7 +1193,7 @@ template<>
 bounded_matrix<double, 36, 36> AugmentedLagrangianMethodMortarContactCondition<3, 4, true>::CalculateLocalLHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         )
 {
     KRATOS_ERROR << "You are calling to the base class method CalculateLocalLHS, you are evil, and your seed must be eradicated from the face of the earth" << std::endl;
@@ -1271,7 +1271,7 @@ template<>
 array_1d<double,10> AugmentedLagrangianMethodMortarContactCondition<2, 2, false>::CalculateLocalRHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         )
 {
     KRATOS_ERROR << "You are calling to the base class method CalculateLocalRHS, you are evil, and your seed must be eradicated from the face of the earth" << std::endl;
@@ -1286,7 +1286,7 @@ template<>
 array_1d<double,21> AugmentedLagrangianMethodMortarContactCondition<3, 3, false>::CalculateLocalRHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         )
 {
     KRATOS_ERROR << "You are calling to the base class method CalculateLocalRHS, you are evil, and your seed must be eradicated from the face of the earth" << std::endl;
@@ -1301,7 +1301,7 @@ template<>
 array_1d<double,28> AugmentedLagrangianMethodMortarContactCondition<3, 4, false>::CalculateLocalRHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         )
 {
     KRATOS_ERROR << "You are calling to the base class method CalculateLocalRHS, you are evil, and your seed must be eradicated from the face of the earth" << std::endl;
@@ -1316,7 +1316,7 @@ template<>
 array_1d<double,12> AugmentedLagrangianMethodMortarContactCondition<2, 2, true>::CalculateLocalRHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         )
 {
     KRATOS_ERROR << "You are calling to the base class method CalculateLocalRHS, you are evil, and your seed must be eradicated from the face of the earth" << std::endl;
@@ -1331,7 +1331,7 @@ template<>
 array_1d<double,27> AugmentedLagrangianMethodMortarContactCondition<3, 3, true>::CalculateLocalRHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         )
 {
     KRATOS_ERROR << "You are calling to the base class method CalculateLocalRHS, you are evil, and your seed must be eradicated from the face of the earth" << std::endl;
@@ -1346,7 +1346,7 @@ template<>
 array_1d<double,36> AugmentedLagrangianMethodMortarContactCondition<3, 4, true>::CalculateLocalRHS(
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
-        const unsigned int& rActiveInactive
+        const unsigned int rActiveInactive
         )
 {
     KRATOS_ERROR << "You are calling to the base class method CalculateLocalRHS, you are evil, and your seed must be eradicated from the face of the earth" << std::endl;
@@ -1362,7 +1362,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
    GeneralVariables& rVariables,
    DerivativeDataType& rDerivativeData,
    const array_1d<BelongType, TDim>& TheseBelongs,
-   const bool& ConsiderNormalVariation,
+   const bool ConsiderNormalVariation,
    GeometryType& MasterGeometry
    ) 
 {
@@ -1591,7 +1591,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
 
 template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional>
 void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>::ConvertAuxHashIndex(
-    const unsigned int& AuxIndex,
+    const unsigned int AuxIndex,
     unsigned int& BelongIndexSlaveStart, 
     unsigned int& BelongIndexSlaveEnd, 
     unsigned int& BelongIndexMasterStart, 
@@ -1614,15 +1614,15 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
 
 template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional>
 array_1d<double, 3> AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>::LocalDeltaVertex(
-   const array_1d<double, 3>& Normal,
-   const bounded_matrix<double, TDim, TDim>& DeltaNormal,
-   const VectorType& N1,
-   const VectorType& N2,
-   const unsigned& iDoF,
-   const unsigned& BelongIndex,
-   const bool& ConsiderNormalVariation,
-   const GeometryType& MasterGeometry,
-   const double Coeff 
+    const array_1d<double, 3>& Normal,
+    const bounded_matrix<double, TDim, TDim>& DeltaNormal,
+    const VectorType& N1,
+    const VectorType& N2,
+    const unsigned int iDoF,
+    const unsigned int BelongIndex,
+    const bool ConsiderNormalVariation,
+    const GeometryType& MasterGeometry,
+    const double Coeff
    ) 
 {
     // We create the auxiliar array
@@ -1653,7 +1653,10 @@ array_1d<double, 3> AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNod
     const double coordsxnormal = - inner_prod(coords_node - coords_center, Normal);
     if (ConsiderNormalVariation == true) aux_delta_vertex += Coeff * coordsxnormal * trans(column(DeltaNormal, iDoF));
     
-    return aux_delta_vertex;
+    double delta_position = 1.0;
+    CalculateDeltaPosition(delta_position, MasterGeometry, BelongIndex, iDoF);
+    
+    return delta_position * aux_delta_vertex;
 }
 
 /***********************************************************************************/
@@ -1661,17 +1664,17 @@ array_1d<double, 3> AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNod
 
 template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional>
 void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>::LocalDeltaVertex(
-   bounded_matrix<double, 3, 3>& DeltaVertexMatrix,
-   const array_1d<double, 3>& Normal,
-   const bounded_matrix<double, TDim, TDim>& DeltaNormal,
-   const VectorType& N1,
-   const VectorType& N2,
-   const unsigned& iDoF,
-   const unsigned& iTriangle,
-   const unsigned& BelongIndex,
-   const bool& ConsiderNormalVariation,
-   const GeometryType& MasterGeometry,
-   const double Coeff 
+    bounded_matrix<double, 3, 3>& DeltaVertexMatrix,
+    const array_1d<double, 3>& Normal,
+    const bounded_matrix<double, TDim, TDim>& DeltaNormal,
+    const VectorType& N1,
+    const VectorType& N2,
+    const unsigned int iDoF,
+    const unsigned int iTriangle,
+    const unsigned int BelongIndex,
+    const bool ConsiderNormalVariation,
+    const GeometryType& MasterGeometry,
+    const double Coeff
    ) 
 {
     row(DeltaVertexMatrix, iTriangle) += LocalDeltaVertex( Normal,  DeltaNormal, N1, N2, iDoF, BelongIndex, ConsiderNormalVariation, MasterGeometry, Coeff);
@@ -1760,15 +1763,7 @@ bounded_matrix<double, TDim, TDim> AugmentedLagrangianMethodMortarContactConditi
         DeltaNeAdj( 1, 0 ) =  1.0;
         DeltaNeAdj( 1, 1 ) =  0.0;
         
-        double DNDej = 0.0;
-        if( NodeIndex == 0 )
-        {
-            DNDej = - 0.5;
-        }
-        else if( NodeIndex == 1 )
-        {
-            DNDej =   0.5;
-        }
+        const double DNDej = (NodeIndex == 0) ? - 0.5 : 0.5;
         
         Ce = prod( I - NeoNe, DeltaNeAdj ) / NeNorm; // In 2D, DeltaNeAdj is node-independent => evaluated outside the nodes loop
         
@@ -1977,13 +1972,15 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     /* Shape functions */
     const VectorType& N1 = rVariables.NSlave;
     const VectorType& N2 = rVariables.NMaster;
+    
     /* Local gradients */
     const MatrixType& DNDe1 = rVariables.DNDeSlave;
     const MatrixType& DNDe2 = rVariables.DNDeMaster;
+    
     /* Jacobians */
     const MatrixType& LHS1 = rVariables.jSlave;
     const MatrixType& LHS2 = rVariables.jMaster; 
-
+    
     /* Shape function decomposition */
     VectorType N_decomp;
     DecompGeom.ShapeFunctionsValues( N_decomp, LocalPointDecomp.Coordinates() );
@@ -2008,28 +2005,31 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
                 VectorType aux_RHS2 = ZeroVector(3);
             
                 // Local contribution
+                double delta_position = 1.0;
+                CalculateDeltaPosition(delta_position, MasterGeometry, i_node, i_dof);
                 if (i_node < TNumNodes)
                 {
-                    aux_RHS1[i_dof] -= N1[i_node];
+                    aux_RHS1[i_dof] -= N1[i_node] * delta_position;
                 }
-                else
+                else 
                 {
-                    aux_RHS2[i_dof] -= N2[i_node - TNumNodes];
+                    aux_RHS2[i_dof] -= N2[i_node - TNumNodes] * delta_position;
                 }
             
                 // The vertex cell contribution
+                const auto& local_delta_cell = rDerivativeData.DeltaCellVertex[i_node * TDim + i_dof]; 
                 if (i_node < TNumNodes)
                 {
-                    for(unsigned int i_belong = 0; i_belong < 3; ++i_belong)
+                    for(std::size_t i_belong = 0; i_belong < 3; ++i_belong)
                     {
-                        aux_RHS1 += N1[i_node] * N_decomp[i_belong] * row(rDerivativeData.DeltaCellVertex[i_node * TDim + i_dof], i_belong);
+                        aux_RHS1 += N_decomp[i_belong] * row(local_delta_cell, i_belong);
                     }
                 }
                 else
                 {           
-                    for(unsigned int i_belong = 0; i_belong < 3; ++i_belong)
+                    for(std::size_t i_belong = 0; i_belong < 3; ++i_belong)
                     {
-                        aux_RHS2 += N2[i_node - TNumNodes] * N_decomp[i_belong] * row(rDerivativeData.DeltaCellVertex[i_node * TDim + i_dof], i_belong);
+                        aux_RHS2 += N_decomp[i_belong] * row(local_delta_cell, i_belong);
                     }
                 }
                 
@@ -2038,13 +2038,10 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
                 const VectorType& aux_delta_coords2 = prod(inv_LHS2, aux_RHS2);
                 
                 // Now we can compute the delta shape functions // FIXME: Not improving converence (check this)
-                double delta_position = 1.0; // TODO: Check the consistency of this!!!! (consider the delta or not)
-                CalculateDeltaPosition(delta_position, MasterGeometry, i_node, i_dof);
-                
                 const double tolerance = std::numeric_limits<double>::epsilon();
                 
-                if (std::abs(aux_det1) > tolerance) rDerivativeData.DeltaN1[i_node * TDim + i_dof] = delta_position * (aux_delta_coords1[0] * column(DNDe1, 0) + aux_delta_coords1[1] * column(DNDe1, 1));
-                if (std::abs(aux_det2) > tolerance) rDerivativeData.DeltaN2[i_node * TDim + i_dof] = delta_position * (aux_delta_coords2[0] * column(DNDe2, 0) + aux_delta_coords2[1] * column(DNDe2, 1));
+                if (std::abs(aux_det1) > tolerance) noalias(rDerivativeData.DeltaN1[i_node * TDim + i_dof]) = delta_position * (aux_delta_coords1[0] * column(DNDe1, 0) + aux_delta_coords1[1] * column(DNDe1, 1));
+                if (std::abs(aux_det2) > tolerance) noalias(rDerivativeData.DeltaN2[i_node * TDim + i_dof]) = delta_position * (aux_delta_coords2[0] * column(DNDe2, 0) + aux_delta_coords2[1] * column(DNDe2, 1));
             }
         }
     }
@@ -2255,19 +2252,21 @@ Matrix& AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFriction
 template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional>
 void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>::CalculateDeltaPosition(
         VectorType& DeltaPosition,
-        GeometryType& MasterGeometry,
-        const unsigned int& IndexNode
+        const GeometryType& MasterGeometry,
+        const unsigned int IndexNode
         )
 {
     KRATOS_TRY;
 
     if (IndexNode < TNumNodes)
     {
-        DeltaPosition = GetGeometry()[IndexNode].FastGetSolutionStepValue(DISPLACEMENT) - GetGeometry()[IndexNode].FastGetSolutionStepValue(DISPLACEMENT,1);
+        const GeometryType& slave_geometry = this->GetGeometry();
+        DeltaPosition = slave_geometry[IndexNode].FastGetSolutionStepValue(DISPLACEMENT) - slave_geometry[IndexNode].FastGetSolutionStepValue(DISPLACEMENT,1);
     }
     else
     {
-        DeltaPosition = MasterGeometry[IndexNode - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT) - MasterGeometry[IndexNode - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT,1);
+        const unsigned int index_master = IndexNode - TNumNodes;
+        DeltaPosition = MasterGeometry[index_master].FastGetSolutionStepValue(DISPLACEMENT) - MasterGeometry[index_master].FastGetSolutionStepValue(DISPLACEMENT,1);
     }
 
     KRATOS_CATCH( "" );
@@ -2279,9 +2278,9 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
 template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional>
 void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>::CalculateDeltaPosition(
         VectorType& DeltaPosition,
-        GeometryType& MasterGeometry,
-        const unsigned int& IndexNode,
-        const unsigned int& iDoF
+        const GeometryType& MasterGeometry,
+        const unsigned int IndexNode,
+        const unsigned int iDoF
         )
 {
     KRATOS_TRY;
@@ -2290,11 +2289,13 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     
     if (IndexNode < TNumNodes)
     {
-        DeltaPosition[iDoF] = (GetGeometry()[IndexNode].FastGetSolutionStepValue(DISPLACEMENT) - GetGeometry()[IndexNode].FastGetSolutionStepValue(DISPLACEMENT,1))[iDoF];
+        const GeometryType& slave_geometry = this->GetGeometry();
+        DeltaPosition[iDoF] = (slave_geometry[IndexNode].FastGetSolutionStepValue(DISPLACEMENT) - slave_geometry[IndexNode].FastGetSolutionStepValue(DISPLACEMENT,1))[iDoF];
     }
     else
     {
-        DeltaPosition[iDoF] = (MasterGeometry[IndexNode - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT) - MasterGeometry[IndexNode - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT,1))[iDoF];
+        const unsigned int index_master = IndexNode - TNumNodes;
+        DeltaPosition[iDoF] = (MasterGeometry[index_master].FastGetSolutionStepValue(DISPLACEMENT) - MasterGeometry[index_master].FastGetSolutionStepValue(DISPLACEMENT,1))[iDoF];
     }
 
     KRATOS_CATCH( "" );
@@ -2306,20 +2307,22 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
 template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional>
 void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>::CalculateDeltaPosition(
         double& DeltaPosition,
-        GeometryType& MasterGeometry,
-        const unsigned int& IndexNode,
-        const unsigned int& iDoF
+        const GeometryType& MasterGeometry,
+        const unsigned int IndexNode,
+        const unsigned int iDoF
         )
 {
     KRATOS_TRY;
     
     if (IndexNode < TNumNodes)
     {
-        DeltaPosition = (GetGeometry()[IndexNode].FastGetSolutionStepValue(DISPLACEMENT) - GetGeometry()[IndexNode].FastGetSolutionStepValue(DISPLACEMENT,1))[iDoF];
+        const GeometryType& slave_geometry = this->GetGeometry();
+        DeltaPosition = (slave_geometry[IndexNode].FastGetSolutionStepValue(DISPLACEMENT) - slave_geometry[IndexNode].FastGetSolutionStepValue(DISPLACEMENT,1))[iDoF];
     }
     else
     {
-        DeltaPosition = (MasterGeometry[IndexNode - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT) - MasterGeometry[IndexNode - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT,1))[iDoF];
+        const unsigned int index_master = IndexNode - TNumNodes;
+        DeltaPosition = (MasterGeometry[index_master].FastGetSolutionStepValue(DISPLACEMENT) - MasterGeometry[index_master].FastGetSolutionStepValue(DISPLACEMENT,1))[iDoF];
     }
 
     KRATOS_CATCH( "" );
@@ -2332,7 +2335,7 @@ template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional>
 double AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>::GetIntegrationWeight(
     GeneralVariables& rVariables,
     const GeometryType::IntegrationPointsArrayType& ThisIntegrationMethod,
-    const unsigned int& PointNumber
+    const unsigned int PointNumber
     )
 {
     return ThisIntegrationMethod[PointNumber].Weight();
