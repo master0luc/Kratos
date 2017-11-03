@@ -21,15 +21,11 @@
 
 // Project includes
 #include "includes/define.h"
-#include "includes/ublas_interface.h"
-#include "containers/data_value_container.h"
-#include "containers/flags.h"
 #include "includes/cfd_variables.h"
 #include "python/add_cfd_variables_to_python.h"
 
 namespace Kratos
 {
-//KRATOS_CREATE_FLAG(STRUCTURE,   63);
 
 namespace Python
 {
