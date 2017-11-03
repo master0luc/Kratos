@@ -30,6 +30,7 @@
 
 /* Utilities */
 #include "custom_utilities/contact_utilities.h"
+#include "custom_utilities/derivatives_utilities.h"
 #include "custom_utilities/logging_settings.hpp"
 
 /* Geometries */
@@ -46,7 +47,7 @@ namespace Kratos
 ///@name Type Definitions
 ///@{
     
-    typedef Point                                  PointType;
+    typedef Point                                     PointType;
     typedef Node<3>                                    NodeType;
     typedef Geometry<NodeType>                     GeometryType;
     typedef Geometry<PointType>               GeometryPointType;
@@ -119,6 +120,8 @@ public:
     typedef DualLagrangeMultiplierOperatorsWithDerivatives<TDim, TNumNodes, TFrictional>    AeData;
     
     typedef MortarOperatorWithDerivatives<TDim, TNumNodes, TFrictional>    MortarConditionMatrices;
+    
+    typedef DerivativesUtilities<TDim, TNumNodes, TFrictional> DerivativesUtilitiesType;
          
     ///@}
     ///@name Life Cycle
@@ -653,118 +656,6 @@ protected:
         const unsigned int rActiveInactive
         );
     
-    /********************************************************************************/
-    /*************** METHODS TO CALCULATE MORTAR CONDITION DERIVATIVES **************/
-    /********************************************************************************/
-    
-    /**
-     * This method is used to compute the directional derivatives of the cell vertex
-     */
-    void CalculateDeltaCellVertex(
-        GeneralVariables& rVariables,
-        DerivativeDataType& rDerivativeData,
-        const array_1d<BelongType, TDim>& TheseBelongs,
-        const bool ConsiderNormalVariation,
-        GeometryType& MasterGeometry
-        );
-    
-    /**
-     * This method computes the equivalent indexes to the auxiliar hash
-     */
-    void ConvertAuxHashIndex(
-        const unsigned int AuxIndex,
-        unsigned int& BelongIndexSlaveStart, 
-        unsigned int& BelongIndexSlaveEnd, 
-        unsigned int& BelongIndexMasterStart, 
-        unsigned int& BelongIndexMasterEnd
-        );
-    
-    /**
-     * This method is used to compute the directional derivatives of the cell vertex (locally)
-     */
-    array_1d<double, 3> LocalDeltaVertex(
-        const array_1d<double, 3>& Normal,
-        const bounded_matrix<double, TDim, TDim>& DeltaNormal,
-        const VectorType& N1,
-        const VectorType& N2,
-        const unsigned int iDoF,
-        const unsigned int BelongIndex,
-        const bool ConsiderNormalVariation,
-        const GeometryType& MasterGeometry,
-        const double Coeff = 1.0
-        );
-    
-    /**
-     * This method is used to compute the directional derivatives of the cell vertex (locally)
-     */
-    void LocalDeltaVertex(
-        bounded_matrix<double, 3, 3>& DeltaVertexMatrix,
-        const array_1d<double, 3>& Normal,
-        const bounded_matrix<double, TDim, TDim>& DeltaNormal,
-        const VectorType& N1,
-        const VectorType& N2,
-        const unsigned int iDoF,
-        const unsigned int iTriangle,
-        const unsigned int BelongIndex,
-        const bool ConsiderNormalVariation,
-        const GeometryType& MasterGeometry,
-        const double Coeff = 1.0
-        );
-    
-    /**
-     * This method is used to compute the directional derivatives of the jacobian determinant
-     */
-    void CalculateDeltaDetjSlave(
-        GeneralVariables& rVariables,
-        DerivativeDataType& rDerivativeData
-        );
-    
-    /**
-     * This method is used to compute the local increment of the normal
-     */
-    bounded_matrix<double, TDim, TDim> LocalDeltaNormal(
-        const GeometryType& CondGeometry,
-        const unsigned int NodeIndex
-        );
-
-    /**
-     * Calculates the increment of the normal in the slave condition
-     */
-    
-    void CalculateDeltaNormalSlave(DerivativeDataType& rDerivativeData);
-    
-    /**
-     * Calculates the increment of the normal and in the master condition
-     */
-    
-    void CalculateDeltaNormalMaster(
-        DerivativeDataType& rDerivativeData,
-        GeometryType& MasterGeometry
-        );
-    
-    /**
-     * Calculates the increment of the shape functions
-     */
-    
-    void CalculateDeltaN(
-        GeneralVariables& rVariables,
-        DerivativeDataType& rDerivativeData,
-        GeometryType& MasterGeometry,
-        const array_1d<double, 3> MasterNormal,
-        const DecompositionType& DecompGeom,
-        const PointType& LocalPointDecomp,
-        const PointType& LocalPointParent
-        );
-    
-    /**
-     * Calculates the increment of Phi (the dual shape function)
-     */
-    
-    void CalculateDeltaPhi(
-        GeneralVariables& rVariables,
-        DerivativeDataType& rDerivativeData
-        );
-    
     /***********************************************************************************/
     /**************** AUXILLIARY METHODS FOR CONDITION LHS CONTRIBUTION ****************/
     /***********************************************************************************/
@@ -826,60 +717,6 @@ protected:
             return GeometryData::GI_GAUSS_2;
         }
     }
-    
-    /**
-     * Returns a matrix with the increment of displacements, that can be used for compute the Jacobian reference (current) configuration
-     * @param DeltaPosition: The matrix with the increment of displacements 
-     * @param LocalCoordinates: The array containing the local coordinates of the exact integration segment
-     */
-    
-    Matrix& CalculateDeltaPosition(
-        Matrix& DeltaPosition,
-        const ConditionArrayType& LocalCoordinates
-        );
-    
-    /**
-     * Returns a matrix with the increment of displacements
-     * @param DeltaPosition: The matrix with the increment of displacements 
-     * @param ThisGeometry: The geometry considered 
-     */
-    
-    Matrix& CalculateDeltaPosition(
-        Matrix& DeltaPosition,
-        GeometryType& ThisGeometry
-        );
-    
-    /**
-     * Returns a vector with the increment of displacements
-     */
-    
-    void CalculateDeltaPosition(
-        VectorType& DeltaPosition,
-        const GeometryType& MasterGeometry,
-        const unsigned int IndexNode
-        );
-    
-    /**
-     * Returns a vector with the increment of displacements
-     */
-    
-    void CalculateDeltaPosition(
-        VectorType& DeltaPosition,
-        const GeometryType& MasterGeometry,
-        const unsigned int IndexNode,
-        const unsigned int iDoF
-        );
-    
-    /**
-     * Returns a vector with the increment of displacements
-     */
-    
-    void CalculateDeltaPosition(
-        double& DeltaPosition,
-        const GeometryType& MasterGeometry,
-        const unsigned int IndexNode,
-        const unsigned int iDoF
-        );
     
     /**
      * This functions computes the integration weight to consider
