@@ -2040,8 +2040,11 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
                 // Now we can compute the delta shape functions // FIXME: Not improving converence (check this)
                 const double tolerance = std::numeric_limits<double>::epsilon();
                 
-                if (std::abs(aux_det1) > tolerance) noalias(rDerivativeData.DeltaN1[i_node * TDim + i_dof]) = delta_position * (aux_delta_coords1[0] * column(DNDe1, 0) + aux_delta_coords1[1] * column(DNDe1, 1));
-                if (std::abs(aux_det2) > tolerance) noalias(rDerivativeData.DeltaN2[i_node * TDim + i_dof]) = delta_position * (aux_delta_coords2[0] * column(DNDe2, 0) + aux_delta_coords2[1] * column(DNDe2, 1));
+                auto& delta_n1 = rDerivativeData.DeltaN1[i_node * TDim + i_dof];
+                if (std::abs(aux_det1) > tolerance) noalias(delta_n1) = (aux_delta_coords1[0] * column(DNDe1, 0) + aux_delta_coords1[1] * column(DNDe1, 1));
+                
+                auto& delta_n2 = rDerivativeData.DeltaN2[i_node * TDim + i_dof];
+                if (std::abs(aux_det2) > tolerance) noalias(delta_n2) = (aux_delta_coords2[0] * column(DNDe2, 0) + aux_delta_coords2[1] * column(DNDe2, 1));
             }
         }
     }
