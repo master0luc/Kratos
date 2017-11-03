@@ -64,7 +64,6 @@ set( KRATOS_CORE_SOURCES
 set( KRATOS_PYTHON_SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/python/add_model_part_to_python.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/python/add_compressed_matrix_to_python.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/python/add_constant_matrix_to_python.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/python/add_points_to_python.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/python/add_deprecated_variables_to_python.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/python/add_c2c_variables_to_python.cpp
