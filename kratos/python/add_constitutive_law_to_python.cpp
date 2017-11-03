@@ -13,28 +13,14 @@
 
 
 
-// System includes
-#include <boost/python.hpp>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-#include "python/add_constitutive_law_to_python.h"
-
 // External includes
-#include "boost/smart_ptr.hpp"
-
+#include <boost/python.hpp>
 
 // Project includes
-#include "add_constitutive_law_to_python.h"
 #include "includes/define.h"
 #include "includes/constitutive_law.h"
-#include "includes/node.h"
-#include "includes/variables.h"
-#include "includes/mesh.h"
-#include "includes/element.h"
-#include "includes/condition.h"
-#include "includes/properties.h"
-//#include "python/add_mesh_to_python.h"
-//#include "python/pointer_vector_set_python_interface.h"
-//#include "python/variable_indexing_python.h"
+
+
 
 namespace Kratos
 {
@@ -43,7 +29,6 @@ namespace Python
 using namespace boost::python;
 
 typedef ConstitutiveLaw ConstitutiveLawBaseType;
-typedef Mesh<Node<3>, Properties, Element, Condition> MeshType;
 
 template<class TVariableType> bool ConstitutiveLawHas(ConstitutiveLaw& rThisConstitutiveLaw, TVariableType const& rThisVariable) { return rThisConstitutiveLaw.Has(rThisVariable); }
 
