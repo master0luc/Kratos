@@ -43,9 +43,6 @@ void  AddScalarMatrixToPython();
 void  AddTriangularMatrixToPython();
 void  AddSparseMatrixToPython();
 void  AddCompressedMatrixToPython();
-#if defined KRATOS_ADD_COORDINATE_MATRIX_INTERFACE
-void  AddCoordinateMatrixToPython();
-#endif
 
 }  // namespace Python.
 

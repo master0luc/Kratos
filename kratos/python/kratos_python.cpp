@@ -92,9 +92,7 @@ BOOST_PYTHON_MODULE(Kratos)
     AddScalarMatrixToPython();
     AddSparseMatrixToPython();
     AddCompressedMatrixToPython();
-#if defined KRATOS_ADD_COORDINATE_MATRIX_INTERFACE
-    AddCoordinateMatrixToPython();
-#endif
+
     AddPointsToPython();
     //  AddQuadraturesToPython();
     //  AddIntegrationPointsToPython();
