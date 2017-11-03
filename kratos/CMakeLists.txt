@@ -62,7 +62,6 @@ set( KRATOS_CORE_SOURCES
 
 ## Kratos python interface code
 set( KRATOS_PYTHON_SOURCES
-	${CMAKE_CURRENT_SOURCE_DIR}/python/add_banded_matrix_to_python.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/python/add_model_part_to_python.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/python/add_compressed_matrix_to_python.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/python/add_constant_matrix_to_python.cpp

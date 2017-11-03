@@ -33,7 +33,6 @@ namespace Python
 {
 
 void  AddMatrixToPython();
-void  AddBandedMatrixToPython();
 void  AddSymmetricMatrixToPython();
 #if defined KRATOS_ADD_HERMITIAN_MATRIX_INTERFACE
 void  AddHermitianMatrixToPython();
