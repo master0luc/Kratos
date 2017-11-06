@@ -69,13 +69,20 @@ namespace Kratos
             aux_point.Coordinates() = ZeroVector(3);
             
             // First we create the nodes 
-            NodeType::Pointer p_node_1 = model_part.CreateNewNode(1,-0.2,0.1,0.0);
-            NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.0,0.1,0.0);
-            NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 0.2,1.2,0.0);
+            NodeType::Pointer p_node_1 = model_part.CreateNewNode(1, 0.0,0.0,0.0);
+            NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.0,0.0,0.0);
+            NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 0.0,1.0,0.0);
             
-            NodeType::Pointer p_node_4 = model_part.CreateNewNode(4, 0.6,0.8,1.0e-3);
-            NodeType::Pointer p_node_6 = model_part.CreateNewNode(5, 1.0,0.1,1.0e-3);
-            NodeType::Pointer p_node_5 = model_part.CreateNewNode(6,-0.2,0.1,1.0e-3);
+            NodeType::Pointer p_node_4 = model_part.CreateNewNode(4, 0.0,1.0,1.0e-3);
+            NodeType::Pointer p_node_6 = model_part.CreateNewNode(5, 1.0,0.0,1.0e-3);
+            NodeType::Pointer p_node_5 = model_part.CreateNewNode(6, 0.0,0.0,1.0e-3);
+//             NodeType::Pointer p_node_1 = model_part.CreateNewNode(1,-0.2,0.1,0.0);
+//             NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.0,0.1,0.0);
+//             NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 0.2,1.2,0.0);
+//             
+//             NodeType::Pointer p_node_4 = model_part.CreateNewNode(4, 0.6,0.8,1.0e-3);
+//             NodeType::Pointer p_node_6 = model_part.CreateNewNode(5, 1.0,0.1,1.0e-3);
+//             NodeType::Pointer p_node_5 = model_part.CreateNewNode(6,-0.2,0.1,1.0e-3);
             
             NodeType::Pointer p_node0_1 = model_part.CreateNewNode(7, p_node_1->X(), p_node_1->Y(), p_node_1->Z());
             NodeType::Pointer p_node0_2 = model_part.CreateNewNode(8, p_node_2->X(), p_node_2->Y(), p_node_2->Z());
@@ -154,13 +161,15 @@ namespace Kratos
             {
                 // We add displacement to the node 4
                 array_1d<double, 3> aux_delta_disp = ZeroVector(3);
-                aux_delta_disp[1] = iter * 5.0e-4;
-                array_1d<double, 3>& current_disp = p_node_4->FastGetSolutionStepValue(DISPLACEMENT);
-                array_1d<double, 3>& previous_disp = p_node_4->FastGetSolutionStepValue(DISPLACEMENT, 1);
+                aux_delta_disp[1] = - static_cast<double>(iter) * 5.0e-2;
+//                 aux_delta_disp[1] = static_cast<double>(iter) * 5.0e-4;
+                Node<3>::Pointer node_to_move = p_node_4;
+                array_1d<double, 3>& current_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
+                array_1d<double, 3>& previous_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT, 1);
                 previous_disp = current_disp;
                 current_disp = aux_delta_disp;
                 // Finally we move the mesh
-                if (iter > 0) noalias(p_node_4->Coordinates())  = p_node_4->GetInitialPosition().Coordinates() + p_node_4->FastGetSolutionStepValue(DISPLACEMENT);
+                if (iter > 0) noalias(node_to_move->Coordinates())  = node_to_move->GetInitialPosition().Coordinates() + node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
                 
                 // Reading integration points
                 ConditionArrayListType conditions_points_slave0, conditions_points_slave;
@@ -180,6 +189,52 @@ namespace Kratos
                     
                     if (conditions_points_slave.size() == conditions_points_slave0.size()) // Just in case we have the "same configuration"
                     {
+//                         // Mathematica debug
+//                         std::cout << "\nGraphics3D[{EdgeForm[{Thick,Dashed,Red}],FaceForm[],Polygon[{{";
+//                 
+//                         for (unsigned int i = 0; i < 3; ++i)
+//                         {
+//                             std::cout << triangle_0[i].X() << "," << triangle_0[i].Y() << "," << triangle_0[i].Z();
+//                             
+//                             if (i < 3 - 1) std::cout << "},{";
+//                         }
+//                         std::cout << "}}],Text[Style["<< p_cond_0->Id() <<", Tiny],{"<< triangle_0.Center().X() << "," << triangle_0.Center().Y() << ","<< triangle_0.Center().Z() << "}]}],";// << std::endl;
+//                         
+//                         std::cout << "\nGraphics3D[{EdgeForm[{Thick,Dashed,Blue}],FaceForm[],Polygon[{{";
+//                 
+//                         for (unsigned int i = 0; i < 3; ++i)
+//                         {
+//                             std::cout << triangle_1[i].X() << "," << triangle_1[i].Y() << "," << triangle_1[i].Z();
+//                             
+//                             if (i < 3 - 1) std::cout << "},{";
+//                         }
+//                         
+//                         std::cout << "}}],Text[Style["<< p_cond_1->Id() <<", Tiny],{"<< triangle_1.Center().X() << "," << triangle_1.Center().Y() << ","<< triangle_1.Center().Z() << "}]}],";// << std::endl;
+//                         
+//                         for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
+//                         {
+//                             std::vector<PointType::Pointer> points_array (3); // The points are stored as local coordinates, we calculate the global coordinates of this points
+//                             for (unsigned int i_node = 0; i_node < 3; ++i_node)
+//                             {
+//                                 PointType global_point;
+//                                 triangle_0.GlobalCoordinates(global_point, conditions_points_slave[i_geom][i_node]);
+//                                 points_array[i_node] = boost::make_shared<PointType>(global_point);
+//                             }
+//                             
+//                             TriangleType decomp_geom( points_array );
+//                             
+//                             std::cout << "\nGraphics3D[{Opacity[.3],Triangle[{{"; 
+//                             for (unsigned int i = 0; i < 3; ++i)
+//                             {
+//                                 std::cout << std::setprecision(16) << decomp_geom[i].X() << "," << decomp_geom[i].Y() << "," << decomp_geom[i].Z();
+//                                 
+//                                 if (i < 2) std::cout << "},{";
+//                             }
+//                             std::cout << "}}]}],";// << std::endl;
+//                         }
+//                         
+//                         std::cout << std::endl;
+                        
                         for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
                         {
                             std::vector<PointType::Pointer> points_array (3); // The points are stored as local coordinates, we calculate the global coordinates of this points
@@ -280,11 +335,8 @@ namespace Kratos
                                         {
                                             const auto& delta_n1 = rDerivativeData.DeltaN1[i_node * 3 + i_dof];
                                             const auto& delta_n2 = rDerivativeData.DeltaN2[i_node * 3 + i_dof];
-                                            for (unsigned int j_node = 0; j_node < 3; ++j_node)
-                                            {
-                                                aux_N_dx_slave[j_node]  += delta_n1[j_node] * delta_disp[i_dof];
-                                                aux_N_dx_master[j_node] += delta_n2[j_node] * delta_disp[i_dof];
-                                            }
+                                            aux_N_dx_slave  += delta_n1 * delta_disp[i_dof];
+                                            aux_N_dx_master += delta_n2 * delta_disp[i_dof];
                                         }
                                     }
                                     
@@ -304,7 +356,7 @@ namespace Kratos
                     KRATOS_ERROR << "WRONG, YOU ARE SUPPOSED TO HAVE AN INTERSECTION" << std::endl;
                 }
             }
-
+            
 //             const double tolerance = 1.0e-3;
 //             for (unsigned int iter = 0; iter < number_of_iterations; ++iter)
 //             {
