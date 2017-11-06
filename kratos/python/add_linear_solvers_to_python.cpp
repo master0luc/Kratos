@@ -20,7 +20,6 @@
 
 // Project includes
 #include "includes/define.h"
-#include "python/add_equation_systems_to_python.h"
 #include "linear_solvers/cg_solver.h"
 #include "linear_solvers/deflated_cg_solver.h"
 #include "linear_solvers/bicgstab_solver.h"

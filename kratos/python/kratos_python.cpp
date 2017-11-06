@@ -62,11 +62,8 @@
 #include "add_testing_to_python.h"
 #include "add_logger_to_python.h"
 
-namespace Kratos
-{
-
-namespace Python
-{
+namespace Kratos {
+namespace Python {
 
 char const* greet()
 {
@@ -80,22 +77,18 @@ using namespace boost::python;
 BOOST_PYTHON_MODULE(Kratos)
 {
     AddVectorToPython();
-//    AddSparseVectorToPython();
     AddMatrixToPython();
-    AddTriangularMatrixToPython();
     AddSymmetricMatrixToPython();
+
 #if defined KRATOS_ADD_HERMITIAN_MATRIX_INTERFACE
     AddHermitianMatrixToPython();
 #endif
     AddIdentityMatrixToPython();
-    AddZeroMatrixToPython();
     AddScalarMatrixToPython();
     AddSparseMatrixToPython();
     AddCompressedMatrixToPython();
 
     AddPointsToPython();
-    //  AddQuadraturesToPython();
-    //  AddIntegrationPointsToPython();
     AddContainersToPython();
     AddProcessesToPython();
     AddIOToPython();
@@ -116,8 +109,6 @@ BOOST_PYTHON_MODULE(Kratos)
     AddSerializerToPython();
     AddTableToPython();
     AddGeometriesToPython();
-//     AddParallelStrategiesToPython(); 
-//     AddParallelLinearSolversToPython();
     AddMatrixMarketInterfaceToPython();
     AddKratosParametersToPython();
 
@@ -128,7 +119,5 @@ BOOST_PYTHON_MODULE(Kratos)
     def("Hello", greet);
 }
 
-
 }  // namespace Python.
-
 }  // namespace Kratos.
