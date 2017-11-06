@@ -72,13 +72,11 @@ BOOST_PYTHON_MODULE(Kratos)
 {
     AddVectorToPython();
     AddMatrixToPython();
-    AddSymmetricMatrixToPython();
-
+    
 #if defined KRATOS_ADD_HERMITIAN_MATRIX_INTERFACE
     AddHermitianMatrixToPython();
 #endif
     AddIdentityMatrixToPython();
-    AddScalarMatrixToPython();
     AddCompressedMatrixToPython();
 
     AddPointsToPython();
