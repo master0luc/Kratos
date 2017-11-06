@@ -24,11 +24,9 @@
 #include "includes/define.h"
 #include "includes/kratos_version.h"
 #include "add_vector_to_python.h"
-//#include "add_mapped_vector_to_python.h"
 #include "add_matrix_to_python.h"
 #include "add_points_to_python.h"
 #include "add_geometries_to_python.h"
-//#include "add_quadratures_to_python.h"
 #include "add_containers_to_python.h"
 #include "add_processes_to_python.h"
 #include "add_model_part_to_python.h"
@@ -45,15 +43,11 @@
 #include "add_constitutive_law_to_python.h"
 #include "add_serializer_to_python.h"
 #include "add_table_to_python.h"
-//#include "add_sparse_vector_to_python.h"
 #include "pointer_vector_set_python_interface.h"
 #include "solution_step_variable_indexing_python.h"
 
 #include "add_strategies_to_python.h"
 #include "add_utilities_to_python.h"
-
-// #include "add_parallel_strategies_to_python.h"
-// #include "add_parallel_linear_solvers_to_python.h"
 
 #include "add_matrix_market_interface_to_python.h"
 
@@ -85,7 +79,6 @@ BOOST_PYTHON_MODULE(Kratos)
 #endif
     AddIdentityMatrixToPython();
     AddScalarMatrixToPython();
-    AddSparseMatrixToPython();
     AddCompressedMatrixToPython();
 
     AddPointsToPython();
