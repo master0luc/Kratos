@@ -77,38 +77,69 @@ namespace Kratos
             NodeType::Pointer p_node_6 = model_part.CreateNewNode(5, 1.0,0.1,1.0e-3);
             NodeType::Pointer p_node_5 = model_part.CreateNewNode(6,-0.2,0.1,1.0e-3);
             
+            NodeType::Pointer p_node0_1 = model_part.CreateNewNode(7, p_node_1->X(), p_node_1->Y(), p_node_1->Z());
+            NodeType::Pointer p_node0_2 = model_part.CreateNewNode(8, p_node_2->X(), p_node_2->Y(), p_node_2->Z());
+            NodeType::Pointer p_node0_3 = model_part.CreateNewNode(9, p_node_3->X(), p_node_3->Y(), p_node_3->Z());
+            
+            NodeType::Pointer p_node0_4 = model_part.CreateNewNode(10, p_node_4->X(), p_node_4->Y(), p_node_4->Z());
+            NodeType::Pointer p_node0_5 = model_part.CreateNewNode(11, p_node_5->X(), p_node_5->Y(), p_node_5->Z());
+            NodeType::Pointer p_node0_6 = model_part.CreateNewNode(12, p_node_6->X(), p_node_6->Y(), p_node_6->Z());
+            
             // Now we create the "conditions"
             std::vector<NodeType::Pointer> condition_nodes_0 (3);
-            
             condition_nodes_0[0] = p_node_1;
             condition_nodes_0[1] = p_node_2;
             condition_nodes_0[2] = p_node_3;
-            
             Triangle3D3 <Node<3>> triangle_0( condition_nodes_0 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_0 (3);
+            condition_nodes0_0[0] = p_node0_1;
+            condition_nodes0_0[1] = p_node0_2;
+            condition_nodes0_0[2] = p_node0_3;
+            Triangle3D3 <Node<3>> triangle0_0( condition_nodes0_0 );
+            
             const array_1d<double, 3>& normal_0 = triangle_0.UnitNormal(aux_point);
             Condition::Pointer p_cond_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 1, triangle_0, p_cond_prop);
+            Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 3, triangle0_0, p_cond_prop);
             p_node_1->SetValue(NORMAL, normal_0);
             p_node_2->SetValue(NORMAL, normal_0);
             p_node_3->SetValue(NORMAL, normal_0);
             p_cond_0->SetValue(NORMAL, normal_0);
             
-            std::vector<NodeType::Pointer> condition_nodes_1 (3);
+            p_node0_1->SetValue(NORMAL, normal_0);
+            p_node0_2->SetValue(NORMAL, normal_0);
+            p_node0_3->SetValue(NORMAL, normal_0);
+            p_cond0_0->SetValue(NORMAL, normal_0);
             
+            std::vector<NodeType::Pointer> condition_nodes_1 (3);
             condition_nodes_1[0] = p_node_4;
             condition_nodes_1[1] = p_node_5;
             condition_nodes_1[2] = p_node_6;
-            
             Triangle3D3 <Node<3>> triangle_1( condition_nodes_1 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_1 (3);
+            condition_nodes0_1[0] = p_node0_4;
+            condition_nodes0_1[1] = p_node0_5;
+            condition_nodes0_1[2] = p_node0_6;
+            Triangle3D3 <Node<3>> triangle0_1( condition_nodes0_1 );
+            
             const array_1d<double, 3>& normal_1 = triangle_0.UnitNormal(aux_point);
             Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 2, triangle_1, p_cond_prop);
+            Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 4, triangle0_1, p_cond_prop);
             p_node_4->SetValue(NORMAL, normal_1);
             p_node_5->SetValue(NORMAL, normal_1);
             p_node_6->SetValue(NORMAL, normal_1);
             p_cond_1->SetValue(NORMAL, normal_1);
             
+            p_node0_4->SetValue(NORMAL, normal_1);
+            p_node0_5->SetValue(NORMAL, normal_1);
+            p_node0_6->SetValue(NORMAL, normal_1);
+            p_cond0_1->SetValue(NORMAL, normal_1);
+            
             // Create and initialize condition variables
-            MortarKinematicVariablesWithDerivatives<3, 3> rVariables;
-    
+            MortarKinematicVariablesWithDerivatives<3, 3> rVariables0; // These are the kinematic variables for the initial configuration
+            MortarKinematicVariablesWithDerivatives<3, 3> rVariables; // These are the kinematic variables for the current configuration
+            
             // Create the current contact data
             DerivativeData<3, 3> rDerivativeData;
             rDerivativeData.Initialize(triangle_0, model_part.GetProcessInfo());
@@ -116,95 +147,156 @@ namespace Kratos
             // We call the exact integration utility
             ExactMortarIntegrationUtility<3, 3, true>  integration_utility = ExactMortarIntegrationUtility<3, 3, true> (2);
             
-            unsigned int number_of_iterations = 3;
-            Vector error_vector(number_of_iterations, 0.0);
+            const unsigned int number_of_iterations = 6;
+            Vector error_vector_slave(number_of_iterations, 0.0);
+            Vector error_vector_master(number_of_iterations, 0.0);
             for (unsigned int iter = 0; iter < number_of_iterations; ++iter)
             {
                 // We add displacement to the node 4
                 array_1d<double, 3> aux_delta_disp = ZeroVector(3);
-                aux_delta_disp[1] = iter * 0.1;
+                aux_delta_disp[1] = iter * 5.0e-4;
                 array_1d<double, 3>& current_disp = p_node_4->FastGetSolutionStepValue(DISPLACEMENT);
                 array_1d<double, 3>& previous_disp = p_node_4->FastGetSolutionStepValue(DISPLACEMENT, 1);
                 previous_disp = current_disp;
                 current_disp = aux_delta_disp;
                 // Finally we move the mesh
-                noalias(p_node_4->Coordinates())  = p_node_4->GetInitialPosition().Coordinates();
-                noalias(p_node_4->Coordinates()) += p_node_4->FastGetSolutionStepValue(DISPLACEMENT);
+                if (iter > 0) noalias(p_node_4->Coordinates())  = p_node_4->GetInitialPosition().Coordinates() + p_node_4->FastGetSolutionStepValue(DISPLACEMENT);
                 
                 // Reading integration points
-                ConditionArrayListType conditions_points_slave;
+                ConditionArrayListType conditions_points_slave0, conditions_points_slave;
+                const bool is_inside0 = integration_utility.GetExactIntegration(triangle0_0, normal_0, triangle0_1, normal_1, conditions_points_slave0);
                 const bool is_inside = integration_utility.GetExactIntegration(triangle_0, normal_0, triangle_1, normal_1, conditions_points_slave);
                 
                 IntegrationMethod this_integration_method = GeometryData::GI_GAUSS_2;
                 
-                if (is_inside == true)
+                if (is_inside && is_inside0)
                 {
                     // Initialize general variables for the current master element
+                    rVariables0.Initialize();
                     rVariables.Initialize();
                     
                     // Update slave element info
                     rDerivativeData.UpdateMasterPair(p_cond_1);
                     
-                    for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
+                    if (conditions_points_slave.size() == conditions_points_slave0.size()) // Just in case we have the "same configuration"
                     {
-                        std::vector<PointType::Pointer> points_array (3); // The points are stored as local coordinates, we calculate the global coordinates of this points
-                        array_1d<PointBelongsTriangle3D3N, 3> belong_array;
-                        for (unsigned int i_node = 0; i_node < 3; ++i_node)
+                        for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
                         {
-                            PointType global_point;
-                            triangle_0.GlobalCoordinates(global_point, conditions_points_slave[i_geom][i_node]);
-                            points_array[i_node] = boost::make_shared<PointType>(global_point);
-                            belong_array[i_node] = conditions_points_slave[i_geom][i_node].GetBelong();
-                        }
-                        
-                        TriangleType decomp_geom( points_array );
-                        
-                        const bool bad_shape = MortarUtilities::HeronCheck(decomp_geom);
-                        
-                        if (bad_shape == false)
-                        {
-                            const GeometryType::IntegrationPointsArrayType& integration_points_slave = decomp_geom.IntegrationPoints( this_integration_method );
-                            
-                            // Integrating the mortar operators
-                            for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); ++point_number )
+                            std::vector<PointType::Pointer> points_array (3); // The points are stored as local coordinates, we calculate the global coordinates of this points
+                            std::vector<PointType::Pointer> points_array0 (3);
+                            array_1d<PointBelongsTriangle3D3N, 3> belong_array, belong_array0;
+                            for (unsigned int i_node = 0; i_node < 3; ++i_node)
                             {
-                                const PointType local_point_decomp = integration_points_slave[point_number].Coordinates();
-                                PointType local_point_parent;
-                                PointType gp_global;
-                                decomp_geom.GlobalCoordinates(gp_global, local_point_decomp);
-                                triangle_0.PointLocalCoordinates(local_point_parent, gp_global);
+                                PointType global_point;
+                                triangle_0.GlobalCoordinates(global_point, conditions_points_slave[i_geom][i_node]);
+                                points_array[i_node] = boost::make_shared<PointType>(global_point);
+                                belong_array[i_node] = conditions_points_slave[i_geom][i_node].GetBelong();
+                                triangle0_0.GlobalCoordinates(global_point, conditions_points_slave0[i_geom][i_node]);
+                                points_array0[i_node] = boost::make_shared<PointType>(global_point);
+                                belong_array0[i_node] = conditions_points_slave0[i_geom][i_node].GetBelong();
+                            }
+                            
+                            TriangleType decomp_geom( points_array );
+                            TriangleType decomp_geom0( points_array0 );
+                            
+                            if ((MortarUtilities::HeronCheck(decomp_geom) == false) && (MortarUtilities::HeronCheck(decomp_geom0) == false))
+                            {
+                                const GeometryType::IntegrationPointsArrayType& integration_points_slave = decomp_geom.IntegrationPoints( this_integration_method );
+//                                 const GeometryType::IntegrationPointsArrayType& integration_points_slave0 = decomp_geom0.IntegrationPoints( this_integration_method );
                                 
-                                // SLAVE KINEMATIC COMPUTATIONS
-                                triangle_0.ShapeFunctionsValues( rVariables.NSlave, local_point_parent.Coordinates() );
-                                triangle_0.ShapeFunctionsLocalGradients( rVariables.DNDeSlave, local_point_parent );
-                                
-                                rVariables.jSlave = decomp_geom.Jacobian( rVariables.jSlave, local_point_decomp.Coordinates());
-                                rVariables.DetjSlave = decomp_geom.DeterminantOfJacobian( local_point_decomp );
-        
-                                // MASTER KINEMATIC COMPUTATIONS
-                                PointType projected_gp_global;
-                                const array_1d<double,3> gp_normal = MortarUtilities::GaussPointUnitNormal(rVariables.NSlave, triangle_0);
-                                
-                                GeometryType::CoordinatesArrayType slave_gp_global;
-                                triangle_0.GlobalCoordinates( slave_gp_global, local_point_parent );
-                                MortarUtilities::FastProjectDirection( triangle_1, slave_gp_global, projected_gp_global, normal_1, -gp_normal ); // The opposite direction
-                                
-                                GeometryType::CoordinatesArrayType projected_gp_local;
-                                
-                                triangle_1.PointLocalCoordinates( projected_gp_local, projected_gp_global.Coordinates( ) ) ;
+                                // Integrating the mortar operators
+                                for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); ++point_number )
+                                {
+                                    const PointType local_point_decomp = integration_points_slave[point_number].Coordinates();
+                                    PointType local_point_parent;
+                                    PointType gp_global;
+                                    
+                                    // We compute the initial configuration
+                                    decomp_geom0.GlobalCoordinates(gp_global, local_point_decomp);
+                                    triangle0_0.PointLocalCoordinates(local_point_parent, gp_global);
+                                    
+                                    // SLAVE KINEMATIC COMPUTATIONS
+                                    triangle0_0.ShapeFunctionsValues( rVariables0.NSlave, local_point_parent.Coordinates() );
+                                    triangle0_0.ShapeFunctionsLocalGradients( rVariables0.DNDeSlave, local_point_parent );
+                                    
+                                    rVariables0.jSlave = decomp_geom.Jacobian( rVariables0.jSlave, local_point_decomp.Coordinates());
+                                    rVariables0.DetjSlave = decomp_geom.DeterminantOfJacobian( local_point_decomp );
+            
+                                    // MASTER KINEMATIC COMPUTATIONS
+                                    PointType projected_gp_global;
+                                    array_1d<double,3> gp_normal = MortarUtilities::GaussPointUnitNormal(rVariables0.NSlave, triangle0_0);
+                                    
+                                    GeometryType::CoordinatesArrayType slave_gp_global;
+                                    triangle0_0.GlobalCoordinates( slave_gp_global, local_point_parent );
+                                    MortarUtilities::FastProjectDirection( triangle0_1, slave_gp_global, projected_gp_global, normal_1, -gp_normal ); // The opposite direction
+                                    
+                                    GeometryType::CoordinatesArrayType projected_gp_local;
+                                    
+                                    triangle0_1.PointLocalCoordinates( projected_gp_local, projected_gp_global.Coordinates( ) ) ;
 
-                                triangle_1.ShapeFunctionsValues( rVariables.NMaster,    projected_gp_local );         
-                                triangle_1.ShapeFunctionsLocalGradients( rVariables.DNDeMaster, projected_gp_local );
-                                rVariables.jMaster = triangle_1.Jacobian( rVariables.jMaster, projected_gp_local);
-                        
-                                // Now we compute the derivatives
-                                const bool consider_normal_variation = false;
-                                DerivativesUtilitiesType::CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, triangle_0, triangle_1, normal_0);
-    
-                                // Update the derivatives of the shape functions and the gap
-                                DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, triangle_0, triangle_1, normal_0, normal_1, decomp_geom, local_point_decomp, local_point_parent);
+                                    triangle0_1.ShapeFunctionsValues( rVariables0.NMaster,    projected_gp_local );         
+                                    triangle0_1.ShapeFunctionsLocalGradients( rVariables0.DNDeMaster, projected_gp_local );
+                                    rVariables0.jMaster = triangle0_1.Jacobian( rVariables0.jMaster, projected_gp_local);
+
+                                    // We compute the current configuration
+                                    decomp_geom.GlobalCoordinates(gp_global, local_point_decomp);
+                                    triangle_0.PointLocalCoordinates(local_point_parent, gp_global);
+                                    
+                                    // SLAVE KINEMATIC COMPUTATIONS
+                                    triangle_0.ShapeFunctionsValues( rVariables.NSlave, local_point_parent.Coordinates() );
+                                    triangle_0.ShapeFunctionsLocalGradients( rVariables.DNDeSlave, local_point_parent );
+                                    
+                                    rVariables.jSlave = decomp_geom.Jacobian( rVariables.jSlave, local_point_decomp.Coordinates());
+                                    rVariables.DetjSlave = decomp_geom.DeterminantOfJacobian( local_point_decomp );
+            
+                                    // MASTER KINEMATIC COMPUTATIONS
+                                    gp_normal = MortarUtilities::GaussPointUnitNormal(rVariables.NSlave, triangle_0);
+                                    
+                                    triangle_0.GlobalCoordinates( slave_gp_global, local_point_parent );
+                                    MortarUtilities::FastProjectDirection( triangle_1, slave_gp_global, projected_gp_global, normal_1, -gp_normal ); // The opposite direction
+                                    
+                                    triangle_1.PointLocalCoordinates( projected_gp_local, projected_gp_global.Coordinates( ) ) ;
+
+                                    triangle_1.ShapeFunctionsValues( rVariables.NMaster,    projected_gp_local );         
+                                    triangle_1.ShapeFunctionsLocalGradients( rVariables.DNDeMaster, projected_gp_local );
+                                    rVariables.jMaster = triangle_1.Jacobian( rVariables.jMaster, projected_gp_local);
+                                    
+                                    // Now we compute the derivatives
+                                    const bool consider_normal_variation = false;
+                                    DerivativesUtilitiesType::CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, triangle_0, triangle_1, normal_0);
+        
+                                    // Update the derivatives of the shape functions and the gap
+                                    DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, triangle_0, triangle_1, normal_0, normal_1, decomp_geom, local_point_decomp, local_point_parent);
+                                
+                                    // Now we compute the error of the delta N
+                                    Vector aux_N_dx_slave  = rVariables0.NSlave;
+                                    Vector aux_N_dx_master = rVariables0.NMaster;
+                                    for (unsigned int i_node = 0; i_node < 2 * 3; ++i_node)
+                                    {
+                                        array_1d<double, 3> delta_disp;
+                                        if (i_node < 3) delta_disp = triangle_0[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                                        else delta_disp = triangle_1[i_node - 3].FastGetSolutionStepValue(DISPLACEMENT);
+                                        for (unsigned int i_dof = 0; i_dof < 3; ++i_dof)
+                                        {
+                                            const auto& delta_n1 = rDerivativeData.DeltaN1[i_node * 3 + i_dof];
+                                            const auto& delta_n2 = rDerivativeData.DeltaN2[i_node * 3 + i_dof];
+                                            for (unsigned int j_node = 0; j_node < 3; ++j_node)
+                                            {
+                                                aux_N_dx_slave[j_node]  += delta_n1[j_node] * delta_disp[i_dof];
+                                                aux_N_dx_master[j_node] += delta_n2[j_node] * delta_disp[i_dof];
+                                            }
+                                        }
+                                    }
+                                    
+                                    error_vector_slave[iter]  += norm_2(rVariables.NSlave  - aux_N_dx_slave); 
+                                    error_vector_master[iter] += norm_2(rVariables.NMaster - aux_N_dx_master); 
+                                }
                             }
                         }
+                    }
+                    else
+                    {
+                        KRATOS_ERROR << "YOUR INITIAL SPLITTING DOES NOT COINCIDE WITH THE CURRENT ONE" << std::endl;
                     }
                 }
                 else
@@ -212,13 +304,12 @@ namespace Kratos
                     KRATOS_ERROR << "WRONG, YOU ARE SUPPOSED TO HAVE AN INTERSECTION" << std::endl;
                 }
             }
-//             const double tolerance = 1.0e-6;
-//             for (unsigned int inode = 0; inode < 3; inode++)
+
+//             const double tolerance = 1.0e-3;
+//             for (unsigned int iter = 0; iter < number_of_iterations; ++iter)
 //             {
-//                 for (unsigned int jnode = 0; jnode < 3; jnode++)
-//                 {
-//                     KRATOS_CHECK_NEAR(mass_matrix_0(inode,jnode), mass_matrix_1(inode,jnode), tolerance);
-//                 }
+//                 KRATOS_CHECK_LESS_EQUAL(error_vector_slave[iter], tolerance);
+//                 KRATOS_CHECK_LESS_EQUAL(error_vector_master[iter], tolerance);
 //             }
         }
         
