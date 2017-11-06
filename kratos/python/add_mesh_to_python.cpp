@@ -19,15 +19,12 @@
 
 // Project includes
 #include "includes/define.h"
-#include "includes/model_part.h"
 #include "includes/mesh.h"
 #include "includes/properties.h"
 #include "includes/element.h"
 #include "includes/condition.h"
 #include "python/add_mesh_to_python.h"
 #include "python/pointer_vector_set_python_interface.h"
-//#include "python/variable_indexing_python.h"
-//#include "python/solution_step_variable_indexing_python.h"
 
 namespace Kratos
 {

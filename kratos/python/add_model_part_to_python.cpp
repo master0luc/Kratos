@@ -24,7 +24,6 @@
 #include "includes/model_part.h"
 #include "python/add_model_part_to_python.h"
 #include "includes/process_info.h"
-#include "utilities/quaternion.h"
 
 namespace Kratos
 {
