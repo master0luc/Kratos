@@ -20,7 +20,6 @@
 
 // Project includes
 #include "includes/define.h"
-#include "processes/process.h"
 #include "python/add_utilities_to_python.h"
 #include "utilities/variable_utils.h"
 #include "utilities/normal_calculation_utils.h"
