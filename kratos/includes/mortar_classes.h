@@ -570,7 +570,14 @@ public:
             PenaltyParameter[i] = SlaveGeometry[i].GetValue(INITIAL_PENALTY);
         }
         ScaleFactor = rCurrentProcessInfo[SCALE_FACTOR];
-        
+    }
+    
+    /**
+     * This method reset tos zero the derivatives
+     */
+    
+    virtual void ResetDerivatives()
+    {                
         // Derivatives 
         for (unsigned int i = 0; i < TNumNodes * TDim; ++i)
         {
@@ -582,7 +589,14 @@ public:
             DeltaNormalSlave[i] = ZeroMatrix(TNumNodes, TDim);
         }
     
-        if (TDim == 3)
+        if (TDim == 2) // Derivative of master's normal
+        {
+            for (unsigned int i = 0; i < TNumNodes * TDim; ++i)
+            {
+                DeltaNormalMaster[i] = ZeroMatrix(TNumNodes, TDim);
+            }
+        }
+        else // Derivative of the cell vertex
         {
             for (unsigned int i = 0; i < 2 * TNumNodes * TDim; ++i)
             {
@@ -622,15 +636,6 @@ public:
         u2 = MortarUtilities::GetVariableMatrix<TDim,TNumNodes>(MasterGeometry, DISPLACEMENT, 0)
            - MortarUtilities::GetVariableMatrix<TDim,TNumNodes>(MasterGeometry, DISPLACEMENT, 1);
         X2 = MortarUtilities::GetCoordinates<TDim,TNumNodes>(MasterGeometry, false, 1);
-
-        // Derivative of master's normal
-        if (TDim == 2)
-        {
-            for (unsigned int i = 0; i < TNumNodes * TDim; ++i)
-            {
-                DeltaNormalMaster[i] = ZeroMatrix(TNumNodes, TDim);
-            }
-        }
     }
     
     ///@}

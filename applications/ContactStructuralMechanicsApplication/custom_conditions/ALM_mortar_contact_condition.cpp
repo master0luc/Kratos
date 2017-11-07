@@ -530,6 +530,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
                         // Integrating the mortar operators
                         for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); ++point_number )
                         {
+                            // We compute the local coordinates 
                             const PointType local_point_decomp = integration_points_slave[point_number].Coordinates();
                             PointType local_point_parent;
                             PointType gp_global;
@@ -779,6 +780,10 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                         // Integrating the mortar operators
                         for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); ++point_number )
                         {
+                            // We reset the derivatives
+                            rDerivativeData.ResetDerivatives();
+                            
+                            // We compute the local coordinates 
                             const PointType local_point_decomp = integration_points_slave[point_number].Coordinates();
                             PointType local_point_parent;
                             PointType gp_global;
@@ -945,6 +950,10 @@ bool AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
             // Integrating the mortar operators
             for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); ++point_number )
             {
+                // We reset the derivatives
+                rDerivativeData.ResetDerivatives();
+                            
+                // We compute the local coordinates 
                 const PointType local_point_decomp = integration_points_slave[point_number].Coordinates();
                 PointType local_point_parent;
                 PointType gp_global;
