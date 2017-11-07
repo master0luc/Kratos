@@ -331,6 +331,20 @@ protected:
     }
     
     /**
+     * This method checks if the whole array is true
+     * @param AllInside: The nodes that are inside or not the geometry
+     * @return True if all the nodes are inside, false otherwise
+     */
+    
+    static inline bool CheckAllInside(const array_1d<bool, TNumNodes>& AllInside)
+    {        
+        for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+            if (!AllInside[i_node]) return false;
+        
+        return true;
+    }
+    
+    /**
      * This function intersects two lines in a 2D plane
      * @param PointOrig: The points from the origin geometry
      * @param PointDest: The points in the destination geometry
@@ -509,7 +523,7 @@ protected:
         array_1d<bool, TNumNodes>& AllInside,
         GeometryPointType& Geometry1,
         GeometryPointType& Geometry2,
-        const double& Tolerance
+        const double Tolerance
         );
     
     /**
