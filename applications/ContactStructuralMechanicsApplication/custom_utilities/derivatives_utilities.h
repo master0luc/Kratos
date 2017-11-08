@@ -364,6 +364,8 @@ public:
         
         const double aux_nodes_coeff = static_cast<double>(TNumNodes);
         
+        const Point& slave_center = SlaveGeometry.Center().Coordinates();
+        
 //     #ifdef KRATOS_DEBUG
 //         for (unsigned i_triangle = 0; i_triangle < 3; ++i_triangle) 
 //         {
@@ -379,10 +381,18 @@ public:
                 unsigned int belong_index_slave_start, belong_index_slave_end, belong_index_master_start, belong_index_master_end;
                 ConvertAuxHashIndex(static_cast<unsigned int>(TheseBelongs[i_triangle]), belong_index_slave_start, belong_index_slave_end, belong_index_master_start, belong_index_master_end);
                 
-                const array_1d<double, 3>& xs1 = SlaveGeometry[belong_index_slave_start].Coordinates(); // Start coordinates of the first segment
-                const array_1d<double, 3>& xe1 = SlaveGeometry[belong_index_slave_end].Coordinates(); // End coordinates of the first segment
-                const array_1d<double, 3>& xs2 = MasterGeometry[belong_index_master_start].Coordinates(); // Start coordinates of the second segment
-                const array_1d<double, 3>& xe2 = MasterGeometry[belong_index_master_end].Coordinates(); // End coordinates of the second segment
+                // The coordinates should be in the projected plane
+                const array_1d<double, 3>& xs1 = MortarUtilities::FastProject(slave_center, SlaveGeometry[belong_index_slave_start], Normal).Coordinates(); // Start coordinates of the first segment
+                const array_1d<double, 3>& xe1 = MortarUtilities::FastProject(slave_center, SlaveGeometry[belong_index_slave_end], Normal).Coordinates(); // End coordinates of the first segment
+                const array_1d<double, 3>& xs2 = MortarUtilities::FastProject(slave_center, MasterGeometry[belong_index_master_start], Normal).Coordinates(); // Start coordinates of the second segment
+                const array_1d<double, 3>& xe2 = MortarUtilities::FastProject(slave_center, MasterGeometry[belong_index_master_end], Normal).Coordinates(); // End coordinates of the second segment
+                
+//                 const array_1d<double, 3>& xs1 = SlaveGeometry[belong_index_slave_start].Coordinates();   // Start coordinates of the first segment
+//                 const array_1d<double, 3>& xe1 = SlaveGeometry[belong_index_slave_end].Coordinates();     // End coordinates of the first segment
+//                 const array_1d<double, 3>& xs2 = MasterGeometry[belong_index_master_start].Coordinates(); // Start coordinates of the second segment
+//                 const array_1d<double, 3>& xe2 = MasterGeometry[belong_index_master_end].Coordinates();   // End coordinates of the second segment
+                
+//                 std::cout << belong_index_slave_start << "\t" << belong_index_slave_end << "\t" << belong_index_master_start << "\t" << belong_index_master_end << std::endl;
                 
                 array_1d<double, 3> aux_num, aux_denom;
                 MathUtils<double>::CrossProduct(aux_num,   xs1 - xs2, xe2 - xs2);
@@ -412,8 +422,8 @@ public:
                 
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                 {
-                    bounded_matrix<double, 3, 3>& local_delta_vertexa =  rDerivativeData.DeltaCellVertex[belong_index_slave_start * TDim + i_dof];
-                    bounded_matrix<double, 3, 3>& local_delta_vertexb =  rDerivativeData.DeltaCellVertex[belong_index_slave_end * TDim + i_dof];
+                    bounded_matrix<double, 3, 3>& local_delta_vertexa = rDerivativeData.DeltaCellVertex[belong_index_slave_start * TDim + i_dof];
+                    bounded_matrix<double, 3, 3>& local_delta_vertexb = rDerivativeData.DeltaCellVertex[belong_index_slave_end * TDim + i_dof];
                     row(local_delta_vertexa, i_triangle) -= coeff1a/denom * aux_coords;
                     row(local_delta_vertexb, i_triangle) -= coeff1b/denom * aux_coords; 
                 }
@@ -427,7 +437,7 @@ public:
                 
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                 {
-                    aux_vertex_vector0 += LocalDeltaVertex(Normal, delta_normal, i_dof, belong_index_master_end, ConsiderNormalVariation, SlaveGeometry, MasterGeometry, 1.0);
+                    aux_vertex_vector0 += LocalDeltaVertex(Normal, delta_normal, i_dof, (belong_index_master_end + TNumNodes), ConsiderNormalVariation, SlaveGeometry, MasterGeometry, 1.0);
                 }
                 
                 if (ConsiderNormalVariation == true && belong_index_master_start < TNumNodes) delta_normal = LocalDeltaNormal(SlaveGeometry, belong_index_master_start) * (1.0/aux_nodes_coeff);
@@ -435,7 +445,7 @@ public:
                 
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                 {
-                    aux_vertex_vector1 += LocalDeltaVertex(Normal, delta_normal, i_dof, belong_index_master_start, ConsiderNormalVariation, SlaveGeometry, MasterGeometry, - 1.0);   
+                    aux_vertex_vector1 += LocalDeltaVertex(Normal, delta_normal, i_dof, (belong_index_master_start + TNumNodes), ConsiderNormalVariation, SlaveGeometry, MasterGeometry, - 1.0);   
                 }
 
                 MathUtils<double>::CrossProduct(aux_cross_product, xs1 - xs2, aux_vertex_vector0);
@@ -445,8 +455,8 @@ public:
                 
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                 {
-                    bounded_matrix<double, 3, 3>& local_delta_vertexa =  rDerivativeData.DeltaCellVertex[belong_index_master_end * TDim + i_dof];
-                    bounded_matrix<double, 3, 3>& local_delta_vertexb =  rDerivativeData.DeltaCellVertex[belong_index_master_start * TDim + i_dof];
+                    bounded_matrix<double, 3, 3>& local_delta_vertexa = rDerivativeData.DeltaCellVertex[(belong_index_master_end + TNumNodes) * TDim + i_dof];
+                    bounded_matrix<double, 3, 3>& local_delta_vertexb = rDerivativeData.DeltaCellVertex[(belong_index_master_start + TNumNodes) * TDim + i_dof];
                     row(local_delta_vertexa, i_triangle) -= coeff2a/denom * aux_coords;
                     row(local_delta_vertexb, i_triangle) -= coeff2b/denom * aux_coords; 
                 }
@@ -478,8 +488,8 @@ public:
                 
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                 {
-                    bounded_matrix<double, 3, 3>& local_delta_vertexa =  rDerivativeData.DeltaCellVertex[belong_index_slave_end * TDim + i_dof];
-                    bounded_matrix<double, 3, 3>& local_delta_vertexb =  rDerivativeData.DeltaCellVertex[belong_index_slave_start * TDim + i_dof];
+                    bounded_matrix<double, 3, 3>& local_delta_vertexa = rDerivativeData.DeltaCellVertex[belong_index_slave_end * TDim + i_dof];
+                    bounded_matrix<double, 3, 3>& local_delta_vertexb = rDerivativeData.DeltaCellVertex[belong_index_slave_start * TDim + i_dof];
                     row(local_delta_vertexa, i_triangle) -= num * coeff3a/std::pow(denom, 2) * aux_coords; 
                     row(local_delta_vertexb, i_triangle) -= num * coeff3b/std::pow(denom, 2) * aux_coords; 
                 }
@@ -493,7 +503,7 @@ public:
                 
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                 {
-                    aux_vertex_vector0 += LocalDeltaVertex(Normal, delta_normal, i_dof, belong_index_master_end, ConsiderNormalVariation, SlaveGeometry, MasterGeometry, - 1.0);
+                    aux_vertex_vector0 += LocalDeltaVertex(Normal, delta_normal, i_dof, (belong_index_master_end + TNumNodes), ConsiderNormalVariation, SlaveGeometry, MasterGeometry, - 1.0);
                 }
                     
                 if (ConsiderNormalVariation == true && belong_index_master_end < TNumNodes) delta_normal = LocalDeltaNormal(SlaveGeometry, belong_index_master_end) * (1.0/aux_nodes_coeff);
@@ -501,7 +511,7 @@ public:
                     
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                 {
-                    aux_vertex_vector0 += LocalDeltaVertex(Normal, delta_normal, i_dof, belong_index_master_start, ConsiderNormalVariation, SlaveGeometry, MasterGeometry, 1.0);   
+                    aux_vertex_vector0 += LocalDeltaVertex(Normal, delta_normal, i_dof, (belong_index_master_start + TNumNodes), ConsiderNormalVariation, SlaveGeometry, MasterGeometry, 1.0);   
                 }
 
                 MathUtils<double>::CrossProduct(aux_cross_product, xe1 - xs1, aux_vertex_vector0);
@@ -511,24 +521,28 @@ public:
                 
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                 {
-                    bounded_matrix<double, 3, 3>& local_delta_vertexa =  rDerivativeData.DeltaCellVertex[belong_index_master_end * TDim + i_dof];
-                    bounded_matrix<double, 3, 3>& local_delta_vertexb =  rDerivativeData.DeltaCellVertex[belong_index_master_start * TDim + i_dof];
+                    bounded_matrix<double, 3, 3>& local_delta_vertexa =  rDerivativeData.DeltaCellVertex[(belong_index_master_end + TNumNodes) * TDim + i_dof];
+                    bounded_matrix<double, 3, 3>& local_delta_vertexb =  rDerivativeData.DeltaCellVertex[(belong_index_master_start + TNumNodes) * TDim + i_dof];
                     row(local_delta_vertexa, i_triangle) -= num * coeff4a/std::pow(denom, 2) * aux_coords; 
                     row(local_delta_vertexb, i_triangle) -= num * coeff4b/std::pow(denom, 2) * aux_coords; 
                 }
                 
                 // Part corresponding to the delta Normal
-                for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave)
+                // We compute the first part
+                if (ConsiderNormalVariation == true)
                 {
-                    delta_normal = LocalDeltaNormal(SlaveGeometry, i_slave) * (1.0/aux_nodes_coeff);
-                    
-                    for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
+                    for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave)
                     {
-                        bounded_matrix<double, 3, 3>& local_delta_vertex =  rDerivativeData.DeltaCellVertex[i_slave * TDim + i_dof];
+                        delta_normal = LocalDeltaNormal(SlaveGeometry, i_slave) * (1.0/aux_nodes_coeff);
                         
-                        row(local_delta_vertex, i_triangle) += inner_prod(aux_num,   trans(column(delta_normal, i_dof)))/std::pow(denom, 2) * aux_coords; 
-                        
-                        row(local_delta_vertex, i_triangle) -= inner_prod(aux_denom, trans(column(delta_normal, i_dof)))/std::pow(denom, 2) * aux_coords; 
+                        for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
+                        {
+                            bounded_matrix<double, 3, 3>& local_delta_vertex =  rDerivativeData.DeltaCellVertex[i_slave * TDim + i_dof];
+                            
+                            row(local_delta_vertex, i_triangle) += inner_prod(aux_num,   trans(column(delta_normal, i_dof)))/std::pow(denom, 2) * aux_coords; 
+                            
+                            row(local_delta_vertex, i_triangle) -= inner_prod(aux_denom, trans(column(delta_normal, i_dof)))/std::pow(denom, 2) * aux_coords; 
+                        }
                     }
                 }
                 

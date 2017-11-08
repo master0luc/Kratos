@@ -50,6 +50,7 @@ namespace Kratos
             Condition::Pointer MasterCondition0,
             Condition::Pointer SlaveCondition1,
             Condition::Pointer MasterCondition1,
+            const unsigned int NumberIterations,
             const bool Check = true
             )
         {
@@ -57,9 +58,9 @@ namespace Kratos
             typedef PointBelong<TNumNodes> PointBelongType;
             typedef array_1d<PointBelongType, TDim> ConditionArrayType;
             typedef typename std::vector<ConditionArrayType> ConditionArrayListType;
-            typedef Line2D2<PointType> LineType;
+//             typedef Line2D2<PointType> LineType;
             typedef Triangle3D3<PointType> TriangleType;
-            typedef typename std::conditional<TDim == 2, LineType, TriangleType >::type DecompositionType;
+//             typedef typename std::conditional<TDim == 2, LineType, TriangleType >::type DecompositionType;
             typedef DerivativesUtilities<TDim, TNumNodes, false> DerivativesUtilitiesType;
             
             GeometryType& slave_geometry_0 = SlaveCondition0->GetGeometry();
@@ -81,10 +82,9 @@ namespace Kratos
             // We call the exact integration utility
             ExactMortarIntegrationUtility<TDim, TNumNodes, true>  integration_utility = ExactMortarIntegrationUtility<TDim, TNumNodes, true> (2);
             
-            const unsigned int number_of_iterations = 6;
-            Vector error_vector_slave(number_of_iterations, 0.0);
-            Vector error_vector_master(number_of_iterations, 0.0);
-            for (unsigned int iter = 0; iter < number_of_iterations; ++iter)
+            Vector error_vector_slave(NumberIterations, 0.0);
+            Vector error_vector_master(NumberIterations, 0.0);
+            for (unsigned int iter = 0; iter < NumberIterations; ++iter)
             {                
                 // We add displacement to the node 4
                 array_1d<double, 3> aux_delta_disp = ZeroVector(3);
@@ -177,6 +177,8 @@ namespace Kratos
                                 points_array0[i_node] = boost::make_shared<PointType>(global_point);
                                 belong_array0[i_node] = conditions_points_slave0[i_geom][i_node].GetBelong();
                             }
+                            
+                            if (Check == false) KRATOS_WATCH(belong_array);
                             
                             TriangleType decomp_geom( points_array );
                             TriangleType decomp_geom0( points_array0 );
@@ -291,7 +293,7 @@ namespace Kratos
             if (Check == true)
             {
                 const double tolerance = 1.0e-6;
-                for (unsigned int iter = 0; iter < number_of_iterations; ++iter)
+                for (unsigned int iter = 0; iter < NumberIterations; ++iter)
                 {
                     KRATOS_CHECK_LESS_EQUAL(error_vector_slave[iter], tolerance);
                     KRATOS_CHECK_LESS_EQUAL(error_vector_master[iter], tolerance);
@@ -328,8 +330,8 @@ namespace Kratos
             NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 0.0,1.0,0.0);
             
             NodeType::Pointer p_node_4 = model_part.CreateNewNode(4, 0.0,1.0,1.0e-3);
-            NodeType::Pointer p_node_6 = model_part.CreateNewNode(5, 1.0,0.0,1.0e-3);
-            NodeType::Pointer p_node_5 = model_part.CreateNewNode(6, 0.0,0.0,1.0e-3);
+            NodeType::Pointer p_node_5 = model_part.CreateNewNode(5, 0.0,0.0,1.0e-3);
+            NodeType::Pointer p_node_6 = model_part.CreateNewNode(6, 1.0,0.0,1.0e-3);
             
             NodeType::Pointer p_node0_1 = model_part.CreateNewNode(7, p_node_1->X(), p_node_1->Y(), p_node_1->Z());
             NodeType::Pointer p_node0_2 = model_part.CreateNewNode(8, p_node_2->X(), p_node_2->Y(), p_node_2->Z());
@@ -390,7 +392,7 @@ namespace Kratos
             p_node0_6->SetValue(NORMAL, normal_1);
             p_cond0_1->SetValue(NORMAL, normal_1);
             
-            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1);
+            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 6, true);
         }
         
         /** 
@@ -412,13 +414,20 @@ namespace Kratos
             aux_point.Coordinates() = ZeroVector(3);
             
             // First we create the nodes 
-            NodeType::Pointer p_node_1 = model_part.CreateNewNode(1,-0.2,0.1,0.0);
-            NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.0,0.1,0.0);
-            NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 0.2,1.2,0.0);
+            NodeType::Pointer p_node_1 = model_part.CreateNewNode(1, 0.0,0.0,0.0);
+            NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.0,0.0,0.0);
+            NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 0.0,1.0,0.0);
             
-            NodeType::Pointer p_node_4 = model_part.CreateNewNode(4, 0.6,0.8,1.0e-3);
-            NodeType::Pointer p_node_6 = model_part.CreateNewNode(5, 1.0,0.1,1.0e-3);
-            NodeType::Pointer p_node_5 = model_part.CreateNewNode(6,-0.2,0.1,1.0e-3);
+            NodeType::Pointer p_node_4 = model_part.CreateNewNode(4,-0.1,1.0,1.0e-3);
+            NodeType::Pointer p_node_5 = model_part.CreateNewNode(5, 0.0,0.0,1.0e-3);
+            NodeType::Pointer p_node_6 = model_part.CreateNewNode(6, 1.0,0.0,1.0e-3);
+//             NodeType::Pointer p_node_1 = model_part.CreateNewNode(1,-0.2,0.1,0.0);
+//             NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.0,0.1,0.0);
+//             NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 0.2,1.2,0.0);
+//             
+//             NodeType::Pointer p_node_4 = model_part.CreateNewNode(4, 0.6,0.8,1.0e-3);
+//             NodeType::Pointer p_node_6 = model_part.CreateNewNode(5, 1.0,0.1,1.0e-3);
+//             NodeType::Pointer p_node_5 = model_part.CreateNewNode(6,-0.2,0.1,1.0e-3);
             
             NodeType::Pointer p_node0_1 = model_part.CreateNewNode(7, p_node_1->X(), p_node_1->Y(), p_node_1->Z());
             NodeType::Pointer p_node0_2 = model_part.CreateNewNode(8, p_node_2->X(), p_node_2->Y(), p_node_2->Z());
@@ -479,7 +488,7 @@ namespace Kratos
             p_node0_6->SetValue(NORMAL, normal_1);
             p_cond0_1->SetValue(NORMAL, normal_1);
             
-            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, false);
+            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 1, false);
         }
         
     } // namespace Testing
