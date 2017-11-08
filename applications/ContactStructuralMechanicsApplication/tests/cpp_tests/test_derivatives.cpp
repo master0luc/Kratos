@@ -158,18 +158,18 @@ namespace Kratos
             Vector error_vector_slave(number_of_iterations, 0.0);
             Vector error_vector_master(number_of_iterations, 0.0);
             for (unsigned int iter = 0; iter < number_of_iterations; ++iter)
-            {
+            {                
                 // We add displacement to the node 4
                 array_1d<double, 3> aux_delta_disp = ZeroVector(3);
-                aux_delta_disp[1] = - static_cast<double>(iter) * 5.0e-2;
-//                 aux_delta_disp[1] = static_cast<double>(iter) * 5.0e-4;
+                aux_delta_disp[1] = - static_cast<double>(iter + 1) * 5.0e-2;
+//                 aux_delta_disp[1] = static_cast<double>(iter + 1) * 5.0e-4;
                 Node<3>::Pointer node_to_move = p_node_4;
                 array_1d<double, 3>& current_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
                 array_1d<double, 3>& previous_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT, 1);
                 previous_disp = current_disp;
                 current_disp = aux_delta_disp;
                 // Finally we move the mesh
-                if (iter > 0) noalias(node_to_move->Coordinates())  = node_to_move->GetInitialPosition().Coordinates() + node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
+                noalias(node_to_move->Coordinates())  = node_to_move->GetInitialPosition().Coordinates() + node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
                 
                 // Reading integration points
                 ConditionArrayListType conditions_points_slave0, conditions_points_slave;
@@ -262,6 +262,10 @@ namespace Kratos
                                 // Integrating the mortar operators
                                 for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); ++point_number )
                                 {
+                                    // We reset the derivatives
+                                    rDerivativeData.ResetDerivatives();
+                                    
+                                    // We compute the local coordinates 
                                     const PointType local_point_decomp = integration_points_slave[point_number].Coordinates();
                                     PointType local_point_parent;
                                     PointType gp_global;
@@ -321,8 +325,8 @@ namespace Kratos
                                     DerivativesUtilitiesType::CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, triangle_0, triangle_1, normal_0);
         
                                     // Update the derivatives of the shape functions and the gap
-                                    DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, triangle_0, triangle_1, normal_0, normal_1, decomp_geom, local_point_decomp, local_point_parent);
-                                
+                                    DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, triangle_0, triangle_1, normal_0, normal_1, decomp_geom, local_point_decomp, local_point_parent, consider_normal_variation);
+                                                                    
                                     // Now we compute the error of the delta N
                                     Vector aux_N_dx_slave  = rVariables0.NSlave;
                                     Vector aux_N_dx_master = rVariables0.NMaster;
@@ -357,12 +361,12 @@ namespace Kratos
                 }
             }
             
-//             const double tolerance = 1.0e-3;
-//             for (unsigned int iter = 0; iter < number_of_iterations; ++iter)
-//             {
-//                 KRATOS_CHECK_LESS_EQUAL(error_vector_slave[iter], tolerance);
-//                 KRATOS_CHECK_LESS_EQUAL(error_vector_master[iter], tolerance);
-//             }
+            const double tolerance = 1.0e-6;
+            for (unsigned int iter = 0; iter < number_of_iterations; ++iter)
+            {
+                KRATOS_CHECK_LESS_EQUAL(error_vector_slave[iter], tolerance);
+                KRATOS_CHECK_LESS_EQUAL(error_vector_master[iter], tolerance);
+            }
         }
         
     } // namespace Testing
