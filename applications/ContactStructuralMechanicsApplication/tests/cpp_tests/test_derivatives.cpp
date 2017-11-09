@@ -50,6 +50,9 @@ namespace Kratos
             Condition::Pointer MasterCondition0,
             Condition::Pointer SlaveCondition1,
             Condition::Pointer MasterCondition1,
+            unsigned int NodePerturbation,
+            unsigned int IndexPerturbation,
+            const double Coeff,
             const unsigned int NumberIterations,
             const bool Check = true
             )
@@ -88,15 +91,14 @@ namespace Kratos
             {                
                 // We add displacement to the node 4
                 array_1d<double, 3> aux_delta_disp = ZeroVector(3);
-                aux_delta_disp[1] = - static_cast<double>(iter + 1) * 5.0e-2;
-//                 aux_delta_disp[1] = static_cast<double>(iter + 1) * 5.0e-4;
-                auto& node_to_move = master_geometry_1[0];
-                array_1d<double, 3>& current_disp = node_to_move.FastGetSolutionStepValue(DISPLACEMENT);
-                array_1d<double, 3>& previous_disp = node_to_move.FastGetSolutionStepValue(DISPLACEMENT, 1);
+                aux_delta_disp[IndexPerturbation] = static_cast<double>(iter + 1) * Coeff;
+                Node<3>::Pointer node_to_move = ThisModelPart.pGetNode(NodePerturbation);
+                array_1d<double, 3>& current_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
+                array_1d<double, 3>& previous_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT, 1);
                 previous_disp = current_disp;
                 current_disp = aux_delta_disp;
                 // Finally we move the mesh
-                noalias(node_to_move.Coordinates())  = node_to_move.GetInitialPosition().Coordinates() + node_to_move.FastGetSolutionStepValue(DISPLACEMENT);
+                noalias(node_to_move->Coordinates()) = node_to_move->GetInitialPosition().Coordinates() + node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
                 
                 // Reading integration points
                 ConditionArrayListType conditions_points_slave0, conditions_points_slave;
@@ -262,8 +264,8 @@ namespace Kratos
                                     for (unsigned int i_node = 0; i_node < 2 * TNumNodes; ++i_node)
                                     {
                                         array_1d<double, 3> delta_disp;
-                                        if (i_node < 3) delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
-                                        else delta_disp = master_geometry_1[i_node - 3].FastGetSolutionStepValue(DISPLACEMENT);
+                                        if (i_node < TNumNodes) delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                                        else delta_disp = master_geometry_1[i_node - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT);
                                         for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
                                         {
                                             const auto& delta_n1 = rDerivativeData.DeltaN1[i_node * TNumNodes + i_dof];
@@ -274,7 +276,7 @@ namespace Kratos
                                     }
                                     
                                     error_vector_slave[iter]  += norm_2(rVariables.NSlave  - aux_N_dx_slave); 
-                                    error_vector_master[iter] += norm_2(rVariables.NMaster - aux_N_dx_master); 
+                                    error_vector_master[iter] += norm_2(rVariables.NMaster - aux_N_dx_master);
                                 }
                             }
                         }
@@ -392,7 +394,7 @@ namespace Kratos
             p_node0_6->SetValue(NORMAL, normal_1);
             p_cond0_1->SetValue(NORMAL, normal_1);
             
-            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 6, true);
+            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 1, -5.0e-2, 6, true);
         }
         
         /** 
@@ -421,13 +423,6 @@ namespace Kratos
             NodeType::Pointer p_node_4 = model_part.CreateNewNode(4,-0.1,1.0,1.0e-3);
             NodeType::Pointer p_node_5 = model_part.CreateNewNode(5, 0.0,0.0,1.0e-3);
             NodeType::Pointer p_node_6 = model_part.CreateNewNode(6, 1.0,0.0,1.0e-3);
-//             NodeType::Pointer p_node_1 = model_part.CreateNewNode(1,-0.2,0.1,0.0);
-//             NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.0,0.1,0.0);
-//             NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 0.2,1.2,0.0);
-//             
-//             NodeType::Pointer p_node_4 = model_part.CreateNewNode(4, 0.6,0.8,1.0e-3);
-//             NodeType::Pointer p_node_6 = model_part.CreateNewNode(5, 1.0,0.1,1.0e-3);
-//             NodeType::Pointer p_node_5 = model_part.CreateNewNode(6,-0.2,0.1,1.0e-3);
             
             NodeType::Pointer p_node0_1 = model_part.CreateNewNode(7, p_node_1->X(), p_node_1->Y(), p_node_1->Z());
             NodeType::Pointer p_node0_2 = model_part.CreateNewNode(8, p_node_2->X(), p_node_2->Y(), p_node_2->Z());
@@ -488,7 +483,99 @@ namespace Kratos
             p_node0_6->SetValue(NORMAL, normal_1);
             p_cond0_1->SetValue(NORMAL, normal_1);
             
-            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 6, true);
+            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 1, -5.0e-2, 6, true);
+        }
+        
+        /** 
+         * Checks if the derivatives of the shape functions work as expected
+         * Case 3 of the Triangle3D3
+         */
+    
+        KRATOS_TEST_CASE_IN_SUITE(TestDerivativesShapeFunctionTriangle3, ContactStructuralApplicationFastSuite)
+        {
+            ModelPart model_part("Main");
+            model_part.SetBufferSize(2);
+            
+            Properties::Pointer p_cond_prop = model_part.pGetProperties(0);
+            
+            // Variables addition
+            model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            
+            PointType aux_point;
+            aux_point.Coordinates() = ZeroVector(3);
+            
+            // First we create the nodes 
+            NodeType::Pointer p_node_1 = model_part.CreateNewNode(1, 0.0,0.0,0.0);
+            NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.0,0.0,0.0);
+            NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 0.0,1.0,0.0);
+            
+            NodeType::Pointer p_node_4 = model_part.CreateNewNode(4, 0.0,1.0,1.0e-3);
+//             NodeType::Pointer p_node_4 = model_part.CreateNewNode(4,-0.1,1.0,1.0e-3);
+            NodeType::Pointer p_node_5 = model_part.CreateNewNode(5, 0.0,0.0,1.0e-3);
+            NodeType::Pointer p_node_6 = model_part.CreateNewNode(6, 1.0,-0.1,1.0e-3);
+//             NodeType::Pointer p_node_6 = model_part.CreateNewNode(6, 1.0,0.0,1.0e-3);
+            
+            NodeType::Pointer p_node0_1 = model_part.CreateNewNode(7, p_node_1->X(), p_node_1->Y(), p_node_1->Z());
+            NodeType::Pointer p_node0_2 = model_part.CreateNewNode(8, p_node_2->X(), p_node_2->Y(), p_node_2->Z());
+            NodeType::Pointer p_node0_3 = model_part.CreateNewNode(9, p_node_3->X(), p_node_3->Y(), p_node_3->Z());
+            
+            NodeType::Pointer p_node0_4 = model_part.CreateNewNode(10, p_node_4->X(), p_node_4->Y(), p_node_4->Z());
+            NodeType::Pointer p_node0_5 = model_part.CreateNewNode(11, p_node_5->X(), p_node_5->Y(), p_node_5->Z());
+            NodeType::Pointer p_node0_6 = model_part.CreateNewNode(12, p_node_6->X(), p_node_6->Y(), p_node_6->Z());
+            
+            // Now we create the "conditions"
+            std::vector<NodeType::Pointer> condition_nodes_0 (3);
+            condition_nodes_0[0] = p_node_1;
+            condition_nodes_0[1] = p_node_2;
+            condition_nodes_0[2] = p_node_3;
+            Triangle3D3 <Node<3>> triangle_0( condition_nodes_0 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_0 (3);
+            condition_nodes0_0[0] = p_node0_1;
+            condition_nodes0_0[1] = p_node0_2;
+            condition_nodes0_0[2] = p_node0_3;
+            Triangle3D3 <Node<3>> triangle0_0( condition_nodes0_0 );
+            
+            const array_1d<double, 3>& normal_0 = triangle_0.UnitNormal(aux_point);
+            Condition::Pointer p_cond_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 1, triangle_0, p_cond_prop);
+            Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 3, triangle0_0, p_cond_prop);
+            p_node_1->SetValue(NORMAL, normal_0);
+            p_node_2->SetValue(NORMAL, normal_0);
+            p_node_3->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
+            
+            p_node0_1->SetValue(NORMAL, normal_0);
+            p_node0_2->SetValue(NORMAL, normal_0);
+            p_node0_3->SetValue(NORMAL, normal_0);
+            p_cond0_0->SetValue(NORMAL, normal_0);
+            
+            std::vector<NodeType::Pointer> condition_nodes_1 (3);
+            condition_nodes_1[0] = p_node_4;
+            condition_nodes_1[1] = p_node_5;
+            condition_nodes_1[2] = p_node_6;
+            Triangle3D3 <Node<3>> triangle_1( condition_nodes_1 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_1 (3);
+            condition_nodes0_1[0] = p_node0_4;
+            condition_nodes0_1[1] = p_node0_5;
+            condition_nodes0_1[2] = p_node0_6;
+            Triangle3D3 <Node<3>> triangle0_1( condition_nodes0_1 );
+            
+            const array_1d<double, 3>& normal_1 = triangle_0.UnitNormal(aux_point);
+            Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 2, triangle_1, p_cond_prop);
+            Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 4, triangle0_1, p_cond_prop);
+            p_node_4->SetValue(NORMAL, normal_1);
+            p_node_5->SetValue(NORMAL, normal_1);
+            p_node_6->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
+            
+            p_node0_4->SetValue(NORMAL, normal_1);
+            p_node0_5->SetValue(NORMAL, normal_1);
+            p_node0_6->SetValue(NORMAL, normal_1);
+            p_cond0_1->SetValue(NORMAL, normal_1);
+            
+            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 6, 0, -1.0e-2, 6, true);
+//             TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 0, -1.0e-2, 6, false);
         }
         
     } // namespace Testing

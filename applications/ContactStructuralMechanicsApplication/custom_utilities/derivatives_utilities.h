@@ -348,6 +348,20 @@ public:
      * @param SlaveGeometry: The slave geometry
      * @param MasterGeometry: The master geometry
      * @param Normal: The normal vector
+     * The  procedure will be the following in order to compute the derivative of the clipping 
+     * The expression of the clipping is the following:
+     *      xclipp = xs1 - num/denom * diff3
+     * Being:
+     *      diff1 = xs1 - xs2;
+     *      diff2 = xe2 - xs2;
+     *      diff3 = xe1 - xs1;
+     *      num = (diff1 x diff2) · n0
+     *      denom = (diff3 x diff2) · n0
+     * The derivative can be defined then as:
+     *     delta_xclipp = delta_xs1 - (delta_num * denom - num * delta_denom)/delta_denom**2 * diff3 - num/ denom * delta_diff3
+     * And here:
+     *     delta_num = num · delta_n0 + n0 · (delta_diff1 x diff2 + diff1 x delta_diff2)
+     *     delta_denom = denom · delta_n0 + n0 · (delta_diff3 x diff2 + diff3 x delta_diff2)
      */
     static inline void CalculateDeltaCellVertex(
         GeneralVariables& rVariables,
@@ -392,31 +406,12 @@ public:
 //                 const array_1d<double, 3>& xs2 = MasterGeometry[belong_index_master_start].Coordinates(); // Start coordinates of the second segment
 //                 const array_1d<double, 3>& xe2 = MasterGeometry[belong_index_master_end].Coordinates();   // End coordinates of the second segment
                 
-//                 std::cout << belong_index_slave_start << "\t" << belong_index_slave_end << "\t" << belong_index_master_start << "\t" << belong_index_master_end << std::endl;
-                
-                /** 
-                 * The  procedure will be the following in order to compute the derivative of the clipping 
-                 * The expression of the clipping is the following:
-                 *      xclipp = xs1 - num/denom * diff3
-                 * Being:
-                 *      diff1 = xs1 - xs2;
-                 *      diff2 = xe2 - xs2;
-                 *      diff3 = xe1 - xs1;
-                 *      num = (diff1 x diff2) · n0
-                 *      denom = (diff3 x diff2) · n0
-                 * The derivative can be defined then as:
-                 *     delta_xclipp = delta_xs1 - (delta_num * denom - num * delta_denom)/delta_denom**2 * diff3 - num/ denom * delta_diff3
-                 * And here:
-                 *     delta_num = num · delta_n0 + n0 · (delta_diff1 x diff2 + diff1 x delta_diff2)
-                 *     delta_denom = denom · delta_n0 + n0 · (delta_diff3 x diff2 + diff3 x delta_diff2)
-                 */
-                
                 // We define the array containing the indexes of the vertexes
                 array_1d<unsigned int, 4> belong_indexes;
                 belong_indexes[0] = belong_index_slave_start;
                 belong_indexes[1] = belong_index_slave_end;
                 belong_indexes[2] = belong_index_master_start + TNumNodes;
-                belong_indexes[3] = belong_index_master_end + TNumNodes;
+                belong_indexes[3] = belong_index_master_end   + TNumNodes;
                 
                 // We define the diffs between the extremes of segements
                 const array_1d<double, 3> diff1 = xs1 - xs2;
@@ -564,23 +559,21 @@ public:
                     const auto& local_delta_cell = rDerivativeData.DeltaCellVertex[i_node * TDim + i_dof]; 
                     for(std::size_t i_belong = 0; i_belong < 3; ++i_belong)
                     {
-                        aux_RHS1 += N_decomp[i_belong] * row(local_delta_cell, i_belong);
+                        noalias(aux_RHS1) += N_decomp[i_belong] * row(local_delta_cell, i_belong);
                     }
                     array_1d<double, 3> aux_RHS2 = aux_RHS1;
                     
                     // Local contribution
                     const array_1d<double, 3>& aux_delta_node = LocalDeltaVertex( SlaveNormal,  delta_normal, i_dof, i_node, ConsiderNormalVariation, SlaveGeometry, MasterGeometry );
-                    if (i_node < TNumNodes) aux_RHS1 -= N1[i_node] * aux_delta_node;
-                    else aux_RHS2 -= N2[i_node - TNumNodes] * aux_delta_node;
+                    if (i_node < TNumNodes) noalias(aux_RHS1) -= N1[i_node] * aux_delta_node;
+                    else noalias(aux_RHS2) -= N2[i_node - TNumNodes] * aux_delta_node;
                     
                     // We compute the delta coordinates 
-                    array_1d<double, 2> aux_delta_coords1;
-                    array_1d<double, 2> aux_delta_coords2;
-                    DeltaPointLocalCoordinates(aux_delta_coords1, aux_RHS1, rVariables.DNDeSlave, SlaveGeometry);
-                    DeltaPointLocalCoordinates(aux_delta_coords2, aux_RHS2, rVariables.DNDeMaster, MasterGeometry);
+                    array_1d<double, 2> aux_delta_coords1, aux_delta_coords2;
+                    DeltaPointLocalCoordinates(aux_delta_coords1, aux_RHS1, rVariables.DNDeSlave, SlaveGeometry, SlaveNormal);
+                    DeltaPointLocalCoordinates(aux_delta_coords2, aux_RHS2, rVariables.DNDeMaster, MasterGeometry, SlaveNormal);
                     
                     // Now we can compute the delta shape functions
-                    
                     auto& delta_n1 = rDerivativeData.DeltaN1[i_node * TDim + i_dof];
                     noalias(delta_n1) = (aux_delta_coords1[0] * column(DNDe1, 0) + aux_delta_coords1[1] * column(DNDe1, 1));
                     
@@ -903,7 +896,8 @@ private:
         array_1d<double, 2>& rResult,
         const array_1d<double, 3>& DeltaPoint,
         const MatrixType& rDNDe,
-        const GeometryType& ThisGeometry
+        const GeometryType& ThisGeometry,
+        const array_1d<double, 3>& ThisNormal
         )
     {
         bounded_matrix<double, 3, TNumNodes> X;
@@ -923,17 +917,13 @@ private:
         const array_1d<double, 2> res = prod(trans(DN), DeltaPoint);
         noalias(rResult) = prod(invJ, res);
 
-//         // NOTE: Testing, remove later
 //         bounded_matrix<double, 3, 3> L;
-//         L(0, 0) = DN(0, 0);
-//         L(0, 1) = DN(0, 1);
-//         L(1, 0) = DN(1, 0);
-//         L(1, 1) = DN(1, 1);
-//         L(2, 0) = DN(2, 0);
-//         L(2, 1) = DN(2, 1);
-//         L(0, 2) = 0.0; // NOTE: Use here the normal
-//         L(1, 2) = 0.0;
-//         L(2, 2) = 1.0;
+//         for(unsigned int i = 0; i < 3; ++i) 
+//         {
+//             for(unsigned int j = 0; j < 2; ++j) L(i, j) = DN(i, j);
+//             L(i, 2) = ThisNormal[i];
+//         }
+// 
 //         double det_L;
 //         const bounded_matrix<double, 3, 3> invL = MathUtils<double>::InvertMatrix<3>(L, det_L);
 //         array_1d<double, 3> aux = prod(invL, DeltaPoint);
