@@ -413,9 +413,9 @@ public:
                 
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                 {
-                    aux_vertex_vector0 += LocalDeltaVertex(Normal, delta_normal, i_dof, belong_index_slave_start, ConsiderNormalVariation, SlaveGeometry, MasterGeometry, 1.0);
+                    noalias(aux_vertex_vector0) += LocalDeltaVertex(Normal, delta_normal, i_dof, belong_index_slave_start, ConsiderNormalVariation, SlaveGeometry, MasterGeometry, 1.0);
                     
-                    aux_vertex_vector1 += LocalDeltaVertex(Normal, delta_normal, i_dof, belong_index_slave_end, ConsiderNormalVariation, SlaveGeometry, MasterGeometry, - 1.0);   
+                    noalias(aux_vertex_vector1) += LocalDeltaVertex(Normal, delta_normal, i_dof, belong_index_slave_end, ConsiderNormalVariation, SlaveGeometry, MasterGeometry, - 1.0);   
                 }
                 
                 MathUtils<double>::CrossProduct(aux_cross_product, aux_vertex_vector0, xe2 - xs2);
@@ -427,8 +427,8 @@ public:
                 {
                     bounded_matrix<double, 3, 3>& local_delta_vertexa = rDerivativeData.DeltaCellVertex[belong_index_slave_start * TDim + i_dof];
                     bounded_matrix<double, 3, 3>& local_delta_vertexb = rDerivativeData.DeltaCellVertex[belong_index_slave_end * TDim + i_dof];
-                    row(local_delta_vertexa, i_triangle) -= coeff1a/denom * aux_coords;
-                    row(local_delta_vertexb, i_triangle) -= coeff1b/denom * aux_coords; 
+                    noalias(row(local_delta_vertexa, i_triangle)) -= coeff1a/denom * aux_coords;
+                    noalias(row(local_delta_vertexb, i_triangle)) -= coeff1b/denom * aux_coords; 
                 }
                 
                 // Second term
@@ -439,9 +439,9 @@ public:
                 
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                 {
-                    aux_vertex_vector0 += LocalDeltaVertex(Normal, delta_normal, i_dof, (belong_index_master_end + TNumNodes), ConsiderNormalVariation, SlaveGeometry, MasterGeometry, 1.0);
+                    noalias(aux_vertex_vector0) += LocalDeltaVertex(Normal, delta_normal, i_dof, (belong_index_master_end + TNumNodes), ConsiderNormalVariation, SlaveGeometry, MasterGeometry, 1.0);
                     
-                    aux_vertex_vector1 += LocalDeltaVertex(Normal, delta_normal, i_dof, (belong_index_master_start + TNumNodes), ConsiderNormalVariation, SlaveGeometry, MasterGeometry, - 1.0);   
+                    noalias(aux_vertex_vector1) += LocalDeltaVertex(Normal, delta_normal, i_dof, (belong_index_master_start + TNumNodes), ConsiderNormalVariation, SlaveGeometry, MasterGeometry, - 1.0);   
                 }
 
                 MathUtils<double>::CrossProduct(aux_cross_product, xs1 - xs2, aux_vertex_vector0);
@@ -453,8 +453,8 @@ public:
                 {
                     bounded_matrix<double, 3, 3>& local_delta_vertexa = rDerivativeData.DeltaCellVertex[(belong_index_master_end + TNumNodes) * TDim + i_dof];
                     bounded_matrix<double, 3, 3>& local_delta_vertexb = rDerivativeData.DeltaCellVertex[(belong_index_master_start + TNumNodes) * TDim + i_dof];
-                    row(local_delta_vertexa, i_triangle) -= coeff2a/denom * aux_coords;
-                    row(local_delta_vertexb, i_triangle) -= coeff2b/denom * aux_coords; 
+                    noalias(row(local_delta_vertexa, i_triangle)) -= coeff2a/denom * aux_coords;
+                    noalias(row(local_delta_vertexb, i_triangle)) -= coeff2b/denom * aux_coords; 
                 }
                 
                 // Third term
@@ -486,8 +486,8 @@ public:
                 {
                     bounded_matrix<double, 3, 3>& local_delta_vertexa = rDerivativeData.DeltaCellVertex[belong_index_slave_end * TDim + i_dof];
                     bounded_matrix<double, 3, 3>& local_delta_vertexb = rDerivativeData.DeltaCellVertex[belong_index_slave_start * TDim + i_dof];
-                    row(local_delta_vertexa, i_triangle) -= num * coeff3a/std::pow(denom, 2) * aux_coords; 
-                    row(local_delta_vertexb, i_triangle) -= num * coeff3b/std::pow(denom, 2) * aux_coords; 
+                    noalias(row(local_delta_vertexa, i_triangle)) -= num * coeff3a/std::pow(denom, 2) * aux_coords; 
+                    noalias(row(local_delta_vertexb, i_triangle)) -= num * coeff3b/std::pow(denom, 2) * aux_coords; 
                 }
                 
                 // Fourth term
@@ -512,8 +512,8 @@ public:
                 {
                     bounded_matrix<double, 3, 3>& local_delta_vertexa =  rDerivativeData.DeltaCellVertex[(belong_index_master_end + TNumNodes) * TDim + i_dof];
                     bounded_matrix<double, 3, 3>& local_delta_vertexb =  rDerivativeData.DeltaCellVertex[(belong_index_master_start + TNumNodes) * TDim + i_dof];
-                    row(local_delta_vertexa, i_triangle) -= num * coeff4a/std::pow(denom, 2) * aux_coords; 
-                    row(local_delta_vertexb, i_triangle) -= num * coeff4b/std::pow(denom, 2) * aux_coords; 
+                    noalias(row(local_delta_vertexa, i_triangle)) -= num * coeff4a/std::pow(denom, 2) * aux_coords; 
+                    noalias(row(local_delta_vertexb, i_triangle)) -= num * coeff4b/std::pow(denom, 2) * aux_coords; 
                 }
                 
                 // Part corresponding to the delta Normal
@@ -528,9 +528,9 @@ public:
                         {
                             bounded_matrix<double, 3, 3>& local_delta_vertex =  rDerivativeData.DeltaCellVertex[i_slave * TDim + i_dof];
                             
-                            row(local_delta_vertex, i_triangle) += inner_prod(aux_num,   trans(column(delta_normal, i_dof)))/std::pow(denom, 2) * aux_coords; 
+                            noalias(row(local_delta_vertex, i_triangle)) += inner_prod(aux_num,   trans(column(delta_normal, i_dof)))/std::pow(denom, 2) * aux_coords; 
                             
-                            row(local_delta_vertex, i_triangle) -= inner_prod(aux_denom, trans(column(delta_normal, i_dof)))/std::pow(denom, 2) * aux_coords; 
+                            noalias(row(local_delta_vertex, i_triangle)) -= inner_prod(aux_denom, trans(column(delta_normal, i_dof)))/std::pow(denom, 2) * aux_coords; 
                         }
                     }
                 }
