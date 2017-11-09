@@ -488,7 +488,7 @@ namespace Kratos
             p_node0_6->SetValue(NORMAL, normal_1);
             p_cond0_1->SetValue(NORMAL, normal_1);
             
-            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 1, false);
+            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 6, true);
         }
         
     } // namespace Testing
