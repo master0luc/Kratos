@@ -758,6 +758,118 @@ public:
         KRATOS_CATCH( "" );
     }
     
+    /**
+     * Calculate Ae and DeltaAe matrices
+     */
+    static inline bool CalculateAeAndDeltaAe(
+        GeometryType& SlaveGeometry,
+        const array_1d<double, 3>& SlaveNormal,
+        Condition::Pointer pMasterCondition,
+        DerivativeData<TDim, TNumNodes>& rDerivativeData,
+        MortarKinematicVariablesWithDerivatives<TDim, TNumNodes>& rVariables,
+        const bool ConsiderNormalVariation,
+        std::vector<array_1d<PointBelong<TNumNodes>, 3>>& ConditionsPointsSlave,
+        IntegrationMethod ThisIntegrationMethod,
+        const double AxiSymCoeff = 1.0
+        )
+    {
+        // Type definitions
+        typedef PointBelong<TNumNodes> PointBelongType;
+        typedef Line2D2<PointType> LineType;
+        typedef Triangle3D3<PointType> TriangleType;
+        typedef typename std::conditional<TDim == 2, LineType, TriangleType >::type DecompositionType;
+        typedef typename std::conditional<TNumNodes == 2, PointBelongsLine2D2N, typename std::conditional<TNumNodes == 3, PointBelongsTriangle3D3N, PointBelongsQuadrilateral3D4N>::type>::type BelongType;
+        
+        // We initilize the Ae components
+        DualLagrangeMultiplierOperatorsWithDerivatives<TDim, TNumNodes, false> rAeData;
+        rAeData.Initialize();
+        
+        rDerivativeData.InitializeDeltaAeComponents();
+
+        // Initialize general variables for the current master element
+        rVariables.Initialize();
+        
+        // Master geometry
+        GeometryType& master_geometry = pMasterCondition->GetGeometry();
+        
+        for (unsigned int i_geom = 0; i_geom < ConditionsPointsSlave.size(); ++i_geom)
+        {
+            std::vector<PointType::Pointer> points_array (TDim); // The points are stored as local coordinates, we calculate the global coordinates of this points
+            array_1d<BelongType, TDim> belong_array;
+            for (unsigned int i_node = 0; i_node < TDim; ++i_node)
+            {
+                PointType global_point;
+                SlaveGeometry.GlobalCoordinates(global_point, ConditionsPointsSlave[i_geom][i_node]);
+                points_array[i_node] = boost::make_shared<PointType>(global_point);
+                belong_array[i_node] = ConditionsPointsSlave[i_geom][i_node].GetBelong();
+            }
+            
+            DecompositionType decomp_geom( points_array );
+            
+            const bool bad_shape = (TDim == 2) ? MortarUtilities::LengthCheck(decomp_geom, SlaveGeometry.Length() * 1.0e-6) : MortarUtilities::HeronCheck(decomp_geom);
+            
+            if (bad_shape == false)
+            {
+                const GeometryType::IntegrationPointsArrayType& integration_points_slave = decomp_geom.IntegrationPoints( ThisIntegrationMethod );
+                
+                // Integrating the mortar operators
+                for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); ++point_number )
+                {
+                    // We reset the derivatives
+                    rDerivativeData.ResetDerivatives();
+                                
+                    // We compute the local coordinates 
+                    const PointType local_point_decomp = integration_points_slave[point_number].Coordinates();
+                    PointType local_point_parent;
+                    PointType gp_global;
+                    decomp_geom.GlobalCoordinates(gp_global, local_point_decomp);
+                    SlaveGeometry.PointLocalCoordinates(local_point_parent, gp_global);
+                    
+                    // Calculate the kinematic variables
+                    // We compute the current configuration
+                    decomp_geom.GlobalCoordinates(gp_global, local_point_decomp);
+                    SlaveGeometry.PointLocalCoordinates(local_point_parent, gp_global);
+                    
+                    // SLAVE KINEMATIC COMPUTATIONS
+                    SlaveGeometry.ShapeFunctionsValues( rVariables.NSlave, local_point_parent.Coordinates() );
+                    SlaveGeometry.ShapeFunctionsLocalGradients( rVariables.DNDeSlave, local_point_parent );
+                    rVariables.PhiLagrangeMultipliers = rVariables.NSlave;
+                    
+                    rVariables.jSlave = decomp_geom.Jacobian( rVariables.jSlave, local_point_decomp.Coordinates());
+                    rVariables.DetjSlave = decomp_geom.DeterminantOfJacobian( local_point_decomp );
+
+                    // MASTER KINEMATIC COMPUTATIONS
+                    PointType projected_gp_global;
+                    array_1d<double,3> gp_normal = MortarUtilities::GaussPointUnitNormal(rVariables.NSlave, SlaveGeometry);
+                    
+                    GeometryType::CoordinatesArrayType slave_gp_global;
+                    SlaveGeometry.GlobalCoordinates( slave_gp_global, local_point_parent );
+                    MortarUtilities::FastProjectDirection( master_geometry, slave_gp_global, projected_gp_global, SlaveNormal, -gp_normal ); // The opposite direction
+                    
+                    GeometryType::CoordinatesArrayType projected_gp_local;
+                    master_geometry.PointLocalCoordinates( projected_gp_local, projected_gp_global.Coordinates( ) ) ;
+
+                    master_geometry.ShapeFunctionsValues( rVariables.NMaster,    projected_gp_local );         
+                    master_geometry.ShapeFunctionsLocalGradients( rVariables.DNDeMaster, projected_gp_local );
+                    rVariables.jMaster = master_geometry.Jacobian( rVariables.jMaster, projected_gp_local);
+                    
+                    // Update the derivative of the integration vertex (just in 3D)
+                    if (TDim == 3) CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, ConsiderNormalVariation, SlaveGeometry, master_geometry, SlaveNormal);
+                                    
+                    // Update the derivative of DetJ
+                    CalculateDeltaDetjSlave(rVariables, rDerivativeData); 
+                    
+                    // Integrate
+                    const double integration_weight = AxiSymCoeff * integration_points_slave[point_number].Weight();
+                    
+                    rAeData.CalculateDeltaAeComponents(rVariables, rDerivativeData, integration_weight);
+                }
+            }
+        }
+        
+        return rAeData.CalculateDeltaAe(rDerivativeData); 
+    }
+    
 private:
     ///@name Static Member Variables
     ///@{

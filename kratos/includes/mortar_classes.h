@@ -32,7 +32,7 @@ namespace Kratos
 ///@name Type Definitions
 ///@{
     
-    typedef Point                                             PointType;
+    typedef Point                                                PointType;
     typedef Node<3>                                               NodeType;
     typedef Geometry<NodeType>                                GeometryType;
     

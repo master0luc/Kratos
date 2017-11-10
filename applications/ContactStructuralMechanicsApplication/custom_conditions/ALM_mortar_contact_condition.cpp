@@ -26,7 +26,6 @@
 /* Utilities */
 #include "utilities/math_utils.h"
 #include "custom_utilities/search_utilities.h"
-#include "utilities/exact_mortar_segmentation_utility.h"
 
 namespace Kratos 
 {
@@ -473,7 +472,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     MortarConditionMatrices rThisMortarConditionMatrices;
     
     // We call the exact integration utility
-    ExactMortarIntegrationUtility<TDim, TNumNodes, true>  integration_utility = ExactMortarIntegrationUtility<TDim, TNumNodes, true> (mIntegrationOrder);
+    IntegrationUtility integration_utility = IntegrationUtility (mIntegrationOrder);
     
     // Iterate over the master segments
     for (unsigned int pair_index = 0; pair_index < mPairSize; ++pair_index)
@@ -505,6 +504,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
                 // Initialize the mortar operators
                 rThisMortarConditionMatrices.Initialize();
                 
+                // TODO: Replace with the one in the derivatives_utilities.h->Requires to move the axisymmetric coefficient
                 const bool dual_LM = this->CalculateAeAndDeltaAe(rDerivativeData, rVariables, rCurrentProcessInfo, pair_index, conditions_points_slave, this_integration_method, master_normal);
                 
                 for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
@@ -641,7 +641,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
     // We compute the normal derivatives
     if (consider_normal_variation == true)
     {
-        // Compute the normal derivatives of the master
+        // Compute the normal derivatives of the slave
         DerivativesUtilitiesType::CalculateDeltaNormalSlave(rDerivativeData, GetGeometry());
     }
     
@@ -649,7 +649,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
     MortarConditionMatrices rThisMortarConditionMatrices;
     
     // We call the exact integration utility
-    ExactMortarIntegrationUtility<TDim, TNumNodes, true>  integration_utility = ExactMortarIntegrationUtility<TDim, TNumNodes, true> (mIntegrationOrder);
+    IntegrationUtility  integration_utility = IntegrationUtility (mIntegrationOrder);
     
     // Iterate over the master segments
     for (unsigned int pair_index = 0; pair_index < mPairSize; ++pair_index)
@@ -687,69 +687,14 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                     DerivativesUtilitiesType::CalculateDeltaNormalMaster(rDerivativeData, master_geometry);
                 }
                 
+                // TODO: Replace with the one in the derivatives_utilities.h->Requires to move the axisymmetric coefficient
                 const bool dual_LM = this->CalculateAeAndDeltaAe(rDerivativeData, rVariables, rCurrentProcessInfo, pair_index, conditions_points_slave, this_integration_method, master_normal);
                 
             #ifdef KRATOS_DEBUG
                 if (dual_LM == false)
                 {
                     std::cout << "WARNING:: NOT USING DUAL LM. Integration area: " << integration_area << "\tOriginal area: " << slave_geometry.Area() << "\tRatio: " << integration_area/slave_geometry.Area() << std::endl;
-//                     std::cout << "Slave Condition ID: " << this->Id() << std::endl;
-//                     for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
-//                     {
-//                         std::cout << "NODE ID: " << slave_geometry[i_node].Id() << "\tX: " << slave_geometry[i_node].X() << "\tY: " << slave_geometry[i_node].Y() << "\tZ: " << slave_geometry[i_node].Z() << std::endl;
-//                     }
-//                     std::cout << "Master Condition ID: " << mThisMasterElements[pair_index]->Id() << std::endl;
-//                     for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
-//                     {
-//                         std::cout << "NODE ID: " << master_geometry[i_node].Id() << "\tX: " << master_geometry[i_node].X() << "\tY: " << master_geometry[i_node].Y() << "\tZ: " << master_geometry[i_node].Z() << std::endl;
-//                     }
-//                     std::cout << std::endl;
-                    
-// //                     // Mathematica debug
-// //                     auto& slave_geometry = GetGeometry();
-// //                     std::cout << "\nGraphics3D[{EdgeForm[{Thick,Dashed,Red}],FaceForm[],Polygon[{{";
-// //             
-// //                     for (unsigned int i = 0; i < TNumNodes; ++i)
-// //                     {
-// //                         std::cout << slave_geometry[i].X() << "," << slave_geometry[i].Y() << "," << slave_geometry[i].Z();
-// //                         
-// //                         if (i < TNumNodes - 1) std::cout << "},{";
-// //                     }
-// //                     std::cout << "}}],Text[Style["<< this->Id() <<", Tiny],{"<< slave_geometry.Center().X() << "," << slave_geometry.Center().Y() << ","<< slave_geometry.Center().Z() << "}]}],";// << std::endl;
-// //                     
-// //                     std::cout << "\nGraphics3D[{EdgeForm[{Thick,Dashed,Blue}],FaceForm[],Polygon[{{";
-// //             
-// //                     for (unsigned int i = 0; i < TNumNodes; ++i)
-// //                     {
-// //                         std::cout << master_geometry[i].X() << "," << master_geometry[i].Y() << "," << master_geometry[i].Z();
-// //                         
-// //                         if (i < TNumNodes - 1) std::cout << "},{";
-// //                     }
-// //                     std::cout << "}}],Text[Style["<< mThisMasterElements[pair_index]->Id() <<", Tiny],{"<< master_geometry.Center().X() << "," << master_geometry.Center().Y() << ","<< master_geometry.Center().Z() << "}]}],";// << std::endl;
-// //                     
-// //                     for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
-// //                     {
-// //                         std::vector<PointType::Pointer> points_array (TDim); // The points are stored as local coordinates, we calculate the global coordinates of this points
-// //                         for (unsigned int i_node = 0; i_node < TDim; ++i_node)
-// //                         {
-// //                             PointType global_point;
-// //                             slave_geometry.GlobalCoordinates(global_point, conditions_points_slave[i_geom][i_node]);
-// //                             points_array[i_node] = boost::make_shared<PointType>(global_point);
-// //                         }
-// //                         
-// //                         DecompositionType decomp_geom( points_array );
-// //                         
-// //                         std::cout << "\nGraphics3D[{Opacity[.3],Triangle[{{"; 
-// //                         for (unsigned int i = 0; i < 3; ++i)
-// //                         {
-// //                             std::cout << std::setprecision(16) << decomp_geom[i].X() << "," << decomp_geom[i].Y() << "," << decomp_geom[i].Z();
-// //                             
-// //                             if (i < 2) std::cout << "},{";
-// //                         }
-// //                         std::cout << "}}]}],";// << std::endl;
-// //                     }
-// //                     
-// //                     std::cout << std::endl;
+//                     IntegrationUtility::MathematicaDebug(this->Id(), slave_geometry, mThisMasterElements[pair_index]->Id(), master_geometry, conditions_points_slave);
                 }
             #endif
                 
@@ -816,29 +761,6 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                             }
                         }
                     }
-//                 #ifdef KRATOS_DEBUG
-//                     else
-//                     {
-//                         std::cout << "WARNING:: BAD SHAPE GEOMETRY" << std::endl;
-//                         std::cout << "Slave Condition ID: " << this->Id() << std::endl;
-//                         std::cout << "Master Condition ID: " << mThisMasterElements[pair_index]->Id() << std::endl;
-//                         for (unsigned int i_node = 0; i_node < TDim; ++i_node)
-//                         {
-//                             std::cout << "X: " << decomp_geom[i_node].X() << "\tY: " << decomp_geom[i_node].Y() << "\tZ: " << decomp_geom[i_node].Z() << std::endl;
-//                         }
-//                         std::cout << std::endl;
-//                         
-// //                         // Mathematica debug
-// //                         std::cout << "\nGraphics3D[{Opacity[.3],Triangle[{{"; 
-// //                         for (unsigned int i = 0; i < 3; ++i)
-// //                         {
-// //                             std::cout << std::setprecision(16) << decomp_geom[i_node].X() << "," << decomp_geom[i_node].Y() << "," << decomp_geom[i_node].Z();
-// //                             
-// //                             if (i < 2) std::cout << "},{";
-// //                         }
-// //                         std::cout << "}}]}],";// << std::endl;
-//                     }
-//                 #endif
                 }
                         
 //                 // Debug
@@ -999,14 +921,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     /// SLAVE CONDITION ///
     /* SHAPE FUNCTIONS */
     GetGeometry().ShapeFunctionsValues( rVariables.NSlave, LocalPointParent.Coordinates() );
-    if (DualLM == true)
-    {
-        rVariables.PhiLagrangeMultipliers = prod(rDerivativeData.Ae, rVariables.NSlave);
-    }
-    else
-    {
-        rVariables.PhiLagrangeMultipliers = rVariables.NSlave;
-    }
+    rVariables.PhiLagrangeMultipliers = (DualLM == true) ? prod(rDerivativeData.Ae, rVariables.NSlave) : rVariables.NSlave;
     
     /* SHAPE FUNCTION DERIVATIVES */
     GetGeometry().ShapeFunctionsLocalGradients( rVariables.DNDeSlave, LocalPointParent );
@@ -1018,7 +933,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     
     if (rVariables.DetjSlave < 0.0)
     {
-        KRATOS_ERROR << "WARNING:: ELEMENT ID: " << this->Id() << " INVERTED. DETJ0: " << rVariables.DetjSlave << std::endl;
+        KRATOS_ERROR << "WARNING:: CONDITION ID: " << this->Id() << " INVERTED. DETJ: " << rVariables.DetjSlave << std::endl;
     }
     
     /// MASTER CONDITION ///

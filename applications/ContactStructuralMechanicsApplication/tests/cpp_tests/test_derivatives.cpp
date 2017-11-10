@@ -30,7 +30,6 @@ namespace Kratos
 {
     namespace Testing 
     {
-
         typedef Point                                                    PointType;
         typedef Node<3>                                                   NodeType;
         typedef Geometry<NodeType>                                GeometryNodeType;
@@ -43,8 +42,24 @@ namespace Kratos
         typedef IntegrationPoint<2>                            IntegrationPointType;
         typedef GeometryNodeType::IntegrationPointsArrayType integration_pointsType;
 
+        enum CheckLevel {LEVEL_EXACT = 0, LEVEL_QUADRATIC_CONVERGENCE = 1, LEVEL_DEBUG = 2, LEVEL_FULL_DEBUG = 3};
+        enum DerivateToCheck {CHECK_SHAPE_FUNCTION = 0, CHECK_JACOBIAN = 1, CHECK_PHI = 1, CHECK_NORMAL = 3};
+        
+        /**
+         * This method is used to check the quadratic convergence of the derivatives
+         * @param ThisModelPart The model part considered
+         * @param SlaveCondition0 The slave condition in the reference configuration
+         * @param MasterCondition0 The master condition in the reference configuration
+         * @param SlaveCondition1 The slave condition in the current configuration
+         * @param MasterCondition1 The master condition in the current configuration
+         * @param NodePerturbation Index of the node to pertubate
+         * @param IndexPerturbation Index of the DoF to pertubate
+         * @param Coeff Coefficient of perturbation
+         * @param Derivative Derivative to check
+         * @param Check Check type to consider
+         */
         template<unsigned int TDim, unsigned int TNumNodes>
-        void TestDerivativesShapeFunction(
+        static inline void TestDerivatives(
             ModelPart& ThisModelPart,
             Condition::Pointer SlaveCondition0,
             Condition::Pointer MasterCondition0,
@@ -54,36 +69,53 @@ namespace Kratos
             unsigned int IndexPerturbation,
             const double Coeff,
             const unsigned int NumberIterations,
-            const bool Check = true
+            const DerivateToCheck Derivative = CHECK_SHAPE_FUNCTION,
+            const CheckLevel Check = LEVEL_QUADRATIC_CONVERGENCE
             )
         {
             // Type definitions
             typedef PointBelong<TNumNodes> PointBelongType;
             typedef array_1d<PointBelongType, TDim> ConditionArrayType;
             typedef typename std::vector<ConditionArrayType> ConditionArrayListType;
-//             typedef Line2D2<PointType> LineType;
+            typedef Line2D2<PointType> LineType;
             typedef Triangle3D3<PointType> TriangleType;
-//             typedef typename std::conditional<TDim == 2, LineType, TriangleType >::type DecompositionType;
+            typedef typename std::conditional<TDim == 2, LineType, TriangleType >::type DecompositionType;
             typedef DerivativesUtilities<TDim, TNumNodes, false> DerivativesUtilitiesType;
+            typedef ExactMortarIntegrationUtility<TDim, TNumNodes, true> IntegrationUtility;
+            
+            const bool consider_normal_variation = ThisModelPart.GetProcessInfo()[CONSIDER_NORMAL_VARIATION];
             
             GeometryType& slave_geometry_0 = SlaveCondition0->GetGeometry();
             GeometryType& master_geometry_0 = MasterCondition0->GetGeometry();
             GeometryType& slave_geometry_1 = SlaveCondition1->GetGeometry();
             GeometryType& master_geometry_1 = MasterCondition1->GetGeometry();
             
-            const array_1d<double, 3> normal_0 = SlaveCondition1->GetValue(NORMAL);
-            const array_1d<double, 3> normal_1 = MasterCondition1->GetValue(NORMAL);
+            const array_1d<double, 3> normal_slave_0 = SlaveCondition0->GetValue(NORMAL);
+            const array_1d<double, 3> normal_master_0 = MasterCondition0->GetValue(NORMAL);
+            const array_1d<double, 3> normal_slave_1 = SlaveCondition1->GetValue(NORMAL);
+            const array_1d<double, 3> normal_master_1 = MasterCondition1->GetValue(NORMAL);
             
             // Create and initialize condition variables
             MortarKinematicVariablesWithDerivatives<TDim, TNumNodes> rVariables0; // These are the kinematic variables for the initial configuration
             MortarKinematicVariablesWithDerivatives<TDim, TNumNodes> rVariables; // These are the kinematic variables for the current configuration
             
             // Create the current contact data
-            DerivativeData<3, 3> rDerivativeData;
+            DerivativeData<TDim, TNumNodes> rDerivativeData;
             rDerivativeData.Initialize(slave_geometry_1, ThisModelPart.GetProcessInfo());
+            DerivativeData<TDim, TNumNodes> rDerivativeData0;
+            rDerivativeData.Initialize(slave_geometry_0, ThisModelPart.GetProcessInfo());
+            
+            // We compute the normal derivatives
+            if (consider_normal_variation == true)
+            {
+                // Compute the normal derivatives of the slave
+                DerivativesUtilitiesType::CalculateDeltaNormalSlave(rDerivativeData, slave_geometry_1);
+                // Compute the normal derivatives of the master
+                DerivativesUtilitiesType::CalculateDeltaNormalMaster(rDerivativeData, master_geometry_1);
+            }
             
             // We call the exact integration utility
-            ExactMortarIntegrationUtility<TDim, TNumNodes, true>  integration_utility = ExactMortarIntegrationUtility<TDim, TNumNodes, true> (2);
+            IntegrationUtility integration_utility = IntegrationUtility (2);
             
             Vector error_vector_slave(NumberIterations, 0.0);
             Vector error_vector_master(NumberIterations, 0.0);
@@ -102,73 +134,33 @@ namespace Kratos
                 
                 // Reading integration points
                 ConditionArrayListType conditions_points_slave0, conditions_points_slave;
-                const bool is_inside0 = integration_utility.GetExactIntegration(slave_geometry_0, normal_0, master_geometry_0, normal_1, conditions_points_slave0);
-                const bool is_inside = integration_utility.GetExactIntegration(slave_geometry_1, normal_0, master_geometry_1, normal_1, conditions_points_slave);
+                const bool is_inside0 = integration_utility.GetExactIntegration(slave_geometry_0, normal_slave_0, master_geometry_0, normal_master_0, conditions_points_slave0);
+                const bool is_inside = integration_utility.GetExactIntegration(slave_geometry_1, normal_slave_1, master_geometry_1, normal_master_1, conditions_points_slave);
                 
                 IntegrationMethod this_integration_method = GeometryData::GI_GAUSS_2;
                 
                 if (is_inside && is_inside0)
                 {
+                    if (Check == LEVEL_FULL_DEBUG) IntegrationUtility::MathematicaDebug(SlaveCondition1->Id(), slave_geometry_1, MasterCondition1->Id(), master_geometry_1, conditions_points_slave);
+                    
                     // Initialize general variables for the current master element
                     rVariables0.Initialize();
                     rVariables.Initialize();
                     
                     // Update slave element info
                     rDerivativeData.UpdateMasterPair(MasterCondition1);
+                    rDerivativeData0.UpdateMasterPair(MasterCondition0);
                     
                     if (conditions_points_slave.size() == conditions_points_slave0.size()) // Just in case we have the "same configuration"
                     {
-//                         // Mathematica debug
-//                         std::cout << "\nGraphics3D[{EdgeForm[{Thick,Dashed,Red}],FaceForm[],Polygon[{{";
-//                 
-//                         for (unsigned int i = 0; i < TNumNodes; ++i)
-//                         {
-//                             std::cout << slave_geometry_1[i].X() << "," << slave_geometry_1[i].Y() << "," << slave_geometry_1[i].Z();
-//                             
-//                             if (i < TNumNodes - 1) std::cout << "},{";
-//                         }
-//                         std::cout << "}}],Text[Style["<< SlaveCondition1->Id() <<", Tiny],{"<< slave_geometry_1.Center().X() << "," << slave_geometry_1.Center().Y() << ","<< slave_geometry_1.Center().Z() << "}]}],";// << std::endl;
-//                         
-//                         std::cout << "\nGraphics3D[{EdgeForm[{Thick,Dashed,Blue}],FaceForm[],Polygon[{{";
-//                 
-//                         for (unsigned int i = 0; i < TNumNodes; ++i)
-//                         {
-//                             std::cout << master_geometry_1[i].X() << "," << master_geometry_1[i].Y() << "," << master_geometry_1[i].Z();
-//                             
-//                             if (i < TNumNodes - 1) std::cout << "},{";
-//                         }
-//                         
-//                         std::cout << "}}],Text[Style["<< MasterCondition1->Id() <<", Tiny],{"<< master_geometry_1.Center().X() << "," << master_geometry_1.Center().Y() << ","<< master_geometry_1.Center().Z() << "}]}],";// << std::endl;
-//                         
-//                         for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
-//                         {
-//                             std::vector<PointType::Pointer> points_array (3); // The points are stored as local coordinates, we calculate the global coordinates of this points
-//                             for (unsigned int i_node = 0; i_node < 3; ++i_node)
-//                             {
-//                                 PointType global_point;
-//                                 slave_geometry_1.GlobalCoordinates(global_point, conditions_points_slave[i_geom][i_node]);
-//                                 points_array[i_node] = boost::make_shared<PointType>(global_point);
-//                             }
-//                             
-//                             TriangleType decomp_geom( points_array );
-//                             
-//                             std::cout << "\nGraphics3D[{Opacity[.3],Triangle[{{"; 
-//                             for (unsigned int i = 0; i < 3; ++i)
-//                             {
-//                                 std::cout << std::setprecision(16) << decomp_geom[i].X() << "," << decomp_geom[i].Y() << "," << decomp_geom[i].Z();
-//                                 
-//                                 if (i < 2) std::cout << "},{";
-//                             }
-//                             std::cout << "}}]}],";// << std::endl;
-//                         }
-//                         
-//                         std::cout << std::endl;
+                        DerivativesUtilitiesType::CalculateAeAndDeltaAe(slave_geometry_1, normal_slave_1, MasterCondition1, rDerivativeData, rVariables, consider_normal_variation, conditions_points_slave, this_integration_method);
+                        DerivativesUtilitiesType::CalculateAeAndDeltaAe(slave_geometry_0, normal_slave_0, MasterCondition0, rDerivativeData0, rVariables0, consider_normal_variation, conditions_points_slave0, this_integration_method);
                         
                         for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
                         {
                             std::vector<PointType::Pointer> points_array (3); // The points are stored as local coordinates, we calculate the global coordinates of this points
                             std::vector<PointType::Pointer> points_array0 (3);
-                            array_1d<PointBelongsTriangle3D3N, 3> belong_array, belong_array0;
+                            array_1d<PointBelongsTriangle3D3N, 3> belong_array;
                             for (unsigned int i_node = 0; i_node < TDim; ++i_node)
                             {
                                 PointType global_point;
@@ -177,18 +169,16 @@ namespace Kratos
                                 belong_array[i_node] = conditions_points_slave[i_geom][i_node].GetBelong();
                                 slave_geometry_0.GlobalCoordinates(global_point, conditions_points_slave0[i_geom][i_node]);
                                 points_array0[i_node] = boost::make_shared<PointType>(global_point);
-                                belong_array0[i_node] = conditions_points_slave0[i_geom][i_node].GetBelong();
                             }
                             
-                            if (Check == false) KRATOS_WATCH(belong_array);
+                            if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(belong_array);
                             
-                            TriangleType decomp_geom( points_array );
-                            TriangleType decomp_geom0( points_array0 );
+                            DecompositionType decomp_geom( points_array );
+                            DecompositionType decomp_geom0( points_array0 );
                             
                             if ((MortarUtilities::HeronCheck(decomp_geom) == false) && (MortarUtilities::HeronCheck(decomp_geom0) == false))
                             {
                                 const GeometryType::IntegrationPointsArrayType& integration_points_slave = decomp_geom.IntegrationPoints( this_integration_method );
-//                                 const GeometryType::IntegrationPointsArrayType& integration_points_slave0 = decomp_geom0.IntegrationPoints( this_integration_method );
                                 
                                 // Integrating the mortar operators
                                 for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); ++point_number )
@@ -218,7 +208,7 @@ namespace Kratos
                                     
                                     GeometryType::CoordinatesArrayType slave_gp_global;
                                     slave_geometry_0.GlobalCoordinates( slave_gp_global, local_point_parent );
-                                    MortarUtilities::FastProjectDirection( master_geometry_0, slave_gp_global, projected_gp_global, normal_1, -gp_normal ); // The opposite direction
+                                    MortarUtilities::FastProjectDirection( master_geometry_0, slave_gp_global, projected_gp_global, normal_master_0, -gp_normal ); // The opposite direction
                                     
                                     GeometryType::CoordinatesArrayType projected_gp_local;
                                     
@@ -226,6 +216,7 @@ namespace Kratos
 
                                     master_geometry_0.ShapeFunctionsValues( rVariables0.NMaster,    projected_gp_local );         
                                     master_geometry_0.ShapeFunctionsLocalGradients( rVariables0.DNDeMaster, projected_gp_local );
+                                    rVariables0.PhiLagrangeMultipliers = prod(rDerivativeData0.Ae, rVariables0.NSlave);
                                     rVariables0.jMaster = master_geometry_0.Jacobian( rVariables0.jMaster, projected_gp_local);
 
                                     // We compute the current configuration
@@ -243,41 +234,104 @@ namespace Kratos
                                     gp_normal = MortarUtilities::GaussPointUnitNormal(rVariables.NSlave, slave_geometry_1);
                                     
                                     slave_geometry_1.GlobalCoordinates( slave_gp_global, local_point_parent );
-                                    MortarUtilities::FastProjectDirection( master_geometry_1, slave_gp_global, projected_gp_global, normal_1, -gp_normal ); // The opposite direction
+                                    MortarUtilities::FastProjectDirection( master_geometry_1, slave_gp_global, projected_gp_global, normal_master_1, -gp_normal ); // The opposite direction
                                     
                                     master_geometry_1.PointLocalCoordinates( projected_gp_local, projected_gp_global.Coordinates( ) ) ;
 
                                     master_geometry_1.ShapeFunctionsValues( rVariables.NMaster,    projected_gp_local );         
                                     master_geometry_1.ShapeFunctionsLocalGradients( rVariables.DNDeMaster, projected_gp_local );
-                                    rVariables.jMaster = master_geometry_1.Jacobian( rVariables.jMaster, projected_gp_local);
+                                    rVariables.PhiLagrangeMultipliers = prod(rDerivativeData.Ae, rVariables.NSlave);                                    rVariables.jMaster = master_geometry_1.Jacobian( rVariables.jMaster, projected_gp_local);
                                     
                                     // Now we compute the derivatives
-                                    const bool consider_normal_variation = false;
-                                    DerivativesUtilitiesType::CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, slave_geometry_1, master_geometry_1, normal_0);
+                                    if (TDim == 3) DerivativesUtilitiesType::CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, slave_geometry_1, master_geometry_1, normal_slave_1);
         
-                                    // Update the derivatives of the shape functions and the gap
-                                    DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, slave_geometry_1, master_geometry_1, normal_0, normal_1, decomp_geom, local_point_decomp, local_point_parent, consider_normal_variation);
-                                                                    
-                                    // Now we compute the error of the delta N
-                                    Vector aux_N_dx_slave  = rVariables0.NSlave;
-                                    Vector aux_N_dx_master = rVariables0.NMaster;
-                                    for (unsigned int i_node = 0; i_node < 2 * TNumNodes; ++i_node)
-                                    {
-                                        array_1d<double, 3> delta_disp;
-                                        if (i_node < TNumNodes) delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
-                                        else delta_disp = master_geometry_1[i_node - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT);
-                                        for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
-                                        {
-                                            const auto& delta_n1 = rDerivativeData.DeltaN1[i_node * TNumNodes + i_dof];
-                                            const auto& delta_n2 = rDerivativeData.DeltaN2[i_node * TNumNodes + i_dof];
-                                            aux_N_dx_slave  += delta_n1 * delta_disp[i_dof];
-                                            aux_N_dx_master += delta_n2 * delta_disp[i_dof];
-                                        }
-                                    }
+                                    // Update the derivative of DetJ
+                                    DerivativesUtilitiesType::CalculateDeltaDetjSlave(rVariables, rDerivativeData);
                                     
-                                    error_vector_slave[iter]  += norm_2(rVariables.NSlave  - aux_N_dx_slave); 
-                                    error_vector_master[iter] += norm_2(rVariables.NMaster - aux_N_dx_master);
+                                    // Update the derivatives of the shape functions and the gap
+                                    DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, slave_geometry_1, master_geometry_1, normal_slave_1, normal_master_1, decomp_geom, local_point_decomp, local_point_parent, consider_normal_variation);
+                                    
+                                    // The derivatives of the dual shape function 
+                                    DerivativesUtilitiesType::CalculateDeltaPhi(rVariables, rDerivativeData);
+                                                                    
+                                    if (Derivative == CHECK_SHAPE_FUNCTION)
+                                    {
+                                        // Now we compute the error of the delta N
+                                        Vector aux_N_dx_slave  = rVariables0.NSlave;
+                                        Vector aux_N_dx_master = rVariables0.NMaster;
+                                        for (unsigned int i_node = 0; i_node < 2 * TNumNodes; ++i_node)
+                                        {
+                                            array_1d<double, 3> delta_disp;
+                                            if (i_node < TNumNodes) delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                                            else delta_disp = master_geometry_1[i_node - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT);
+                                            for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
+                                            {
+                                                const auto& delta_n1 = rDerivativeData.DeltaN1[i_node * TNumNodes + i_dof];
+                                                const auto& delta_n2 = rDerivativeData.DeltaN2[i_node * TNumNodes + i_dof];
+                                                aux_N_dx_slave  += delta_n1 * delta_disp[i_dof];
+                                                aux_N_dx_master += delta_n2 * delta_disp[i_dof];
+                                            }
+                                        }
+                                        
+                                        error_vector_slave[iter] += norm_2(rVariables.NSlave  - aux_N_dx_slave); 
+                                        error_vector_master[iter] += norm_2(rVariables.NMaster - aux_N_dx_master);
+                                    }
+                                    else if (Derivative == CHECK_PHI)
+                                    {
+                                        // Now we compute the error of the delta Phi
+                                        Vector aux_Phi_dx_slave  = rVariables0.PhiLagrangeMultipliers;
+                                        for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+                                        {
+                                            array_1d<double, 3> delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                                            for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
+                                            {
+                                                const auto& delta_phi = rDerivativeData.DeltaPhi[i_node * TNumNodes + i_dof];
+                                                aux_Phi_dx_slave  += delta_phi * delta_disp[i_dof];
+                                            }
+                                        }
+                                        
+                                        error_vector_slave[iter]  += norm_2(rVariables.PhiLagrangeMultipliers  - aux_Phi_dx_slave);
+                                    }
+                                    else if (Derivative == CHECK_JACOBIAN)
+                                    {
+                                        // Now we compute the error of the delta Jacobian
+                                        double aux_Detj_dx_slave = rVariables0.DetjSlave;
+                                        for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+                                        {
+                                            array_1d<double, 3> delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                                            for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
+                                            {
+                                                const auto& delta_detj = rDerivativeData.DeltaDetjSlave[i_node * TNumNodes + i_dof];
+                                                aux_Detj_dx_slave  += delta_detj * delta_disp[i_dof];
+                                            }
+                                        }
+                                        
+                                        error_vector_slave[iter]  += std::abs(rVariables.DetjSlave  - aux_Detj_dx_slave);
+                                    }
+                                    else if (Derivative == CHECK_NORMAL)
+                                    {
+                                        // Now we compute the error of the delta Normal
+                                        auto aux_Normal_dx_slave = rDerivativeData0.NormalSlave;
+                                        auto aux_Normal_dx_master = rDerivativeData0.NormalMaster;
+                                        
+                                        for (unsigned int i_node = 0; i_node < 2 * TNumNodes; ++i_node)
+                                        {
+                                            const array_1d<double, 3>& delta_disp_slave = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                                            const array_1d<double, 3>& delta_disp_master = master_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                                            for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
+                                            {
+                                                const auto& delta_normal_slave = rDerivativeData.DeltaNormalSlave[i_node * TNumNodes + i_dof];
+                                                const auto& delta_normal_master = rDerivativeData.DeltaNormalMaster[i_node * TNumNodes + i_dof];
+                                                aux_Normal_dx_slave  += delta_normal_slave * delta_disp_slave[i_dof];
+                                                aux_Normal_dx_master += delta_normal_master * delta_disp_master[i_dof];
+                                            }
+                                        }
+                                        
+                                        error_vector_slave[iter] += norm_frobenius(rDerivativeData.NormalMaster  - aux_Normal_dx_slave); 
+                                        error_vector_master[iter] += norm_frobenius(rDerivativeData.NormalMaster - aux_Normal_dx_master);
+                                    }
                                 }
+
                             }
                         }
                     }
@@ -292,7 +346,7 @@ namespace Kratos
                 }
             }
             
-            if (Check == true)
+            if (Check == LEVEL_EXACT) // LEVEL_EXACT SOLUTION
             {
                 const double tolerance = 1.0e-6;
                 for (unsigned int iter = 0; iter < NumberIterations; ++iter)
@@ -301,7 +355,11 @@ namespace Kratos
                     KRATOS_CHECK_LESS_EQUAL(error_vector_master[iter], tolerance);
                 }
             }
-            else // DEBUG
+            else if (Check == LEVEL_QUADRATIC_CONVERGENCE)
+            {
+                // TODO
+            }
+            else // LEVEL_DEBUG
             {
                 KRATOS_WATCH(error_vector_slave)
                 KRATOS_WATCH(error_vector_master)
@@ -313,10 +371,11 @@ namespace Kratos
          * Case 1 of the Triangle3D3
          */
     
-        KRATOS_TEST_CASE_IN_SUITE(TestDerivativesShapeFunctionTriangle1, ContactStructuralApplicationFastSuite)
+        KRATOS_TEST_CASE_IN_SUITE(TestDerivativesTriangle1, ContactStructuralApplicationFastSuite)
         {
             ModelPart model_part("Main");
             model_part.SetBufferSize(2);
+            model_part.GetProcessInfo()[CONSIDER_NORMAL_VARIATION] = false;
             
             Properties::Pointer p_cond_prop = model_part.pGetProperties(0);
             
@@ -394,7 +453,7 @@ namespace Kratos
             p_node0_6->SetValue(NORMAL, normal_1);
             p_cond0_1->SetValue(NORMAL, normal_1);
             
-            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 1, -5.0e-2, 6, true);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 1, -5.0e-2, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
         }
         
         /** 
@@ -402,10 +461,11 @@ namespace Kratos
          * Case 2 of the Triangle3D3
          */
     
-        KRATOS_TEST_CASE_IN_SUITE(TestDerivativesShapeFunctionTriangle2, ContactStructuralApplicationFastSuite)
+        KRATOS_TEST_CASE_IN_SUITE(TestDerivativesTriangle2, ContactStructuralApplicationFastSuite)
         {
             ModelPart model_part("Main");
             model_part.SetBufferSize(2);
+            model_part.GetProcessInfo()[CONSIDER_NORMAL_VARIATION] = false;
             
             Properties::Pointer p_cond_prop = model_part.pGetProperties(0);
             
@@ -483,7 +543,7 @@ namespace Kratos
             p_node0_6->SetValue(NORMAL, normal_1);
             p_cond0_1->SetValue(NORMAL, normal_1);
             
-            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 1, -5.0e-2, 6, true);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 1, -5.0e-2, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
         }
         
         /** 
@@ -491,10 +551,11 @@ namespace Kratos
          * Case 3 of the Triangle3D3
          */
     
-        KRATOS_TEST_CASE_IN_SUITE(TestDerivativesShapeFunctionTriangle3, ContactStructuralApplicationFastSuite)
+        KRATOS_TEST_CASE_IN_SUITE(TestDerivativesTriangle3, ContactStructuralApplicationFastSuite)
         {
             ModelPart model_part("Main");
             model_part.SetBufferSize(2);
+            model_part.GetProcessInfo()[CONSIDER_NORMAL_VARIATION] = false;
             
             Properties::Pointer p_cond_prop = model_part.pGetProperties(0);
             
@@ -509,11 +570,9 @@ namespace Kratos
             NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.0,0.0,0.0);
             NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 0.0,1.0,0.0);
             
-            NodeType::Pointer p_node_4 = model_part.CreateNewNode(4, 0.0,1.0,1.0e-3);
-//             NodeType::Pointer p_node_4 = model_part.CreateNewNode(4,-0.1,1.0,1.0e-3);
+            NodeType::Pointer p_node_4 = model_part.CreateNewNode(4,-0.1,1.0,1.0e-3);
             NodeType::Pointer p_node_5 = model_part.CreateNewNode(5, 0.0,0.0,1.0e-3);
-            NodeType::Pointer p_node_6 = model_part.CreateNewNode(6, 1.0,-0.1,1.0e-3);
-//             NodeType::Pointer p_node_6 = model_part.CreateNewNode(6, 1.0,0.0,1.0e-3);
+            NodeType::Pointer p_node_6 = model_part.CreateNewNode(6, 1.0,0.0,1.0e-3);
             
             NodeType::Pointer p_node0_1 = model_part.CreateNewNode(7, p_node_1->X(), p_node_1->Y(), p_node_1->Z());
             NodeType::Pointer p_node0_2 = model_part.CreateNewNode(8, p_node_2->X(), p_node_2->Y(), p_node_2->Z());
@@ -574,8 +633,7 @@ namespace Kratos
             p_node0_6->SetValue(NORMAL, normal_1);
             p_cond0_1->SetValue(NORMAL, normal_1);
             
-            TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 6, 0, -1.0e-2, 6, true);
-//             TestDerivativesShapeFunction<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 0, -1.0e-2, 6, false);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 0, -1.0e-2, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
     } // namespace Testing

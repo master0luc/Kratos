@@ -411,7 +411,7 @@ public:
 
         return idx;
     }
-    
+
     /**
      * It calculates the matrix of coordinates of a geometry
      * @param nodes: The geometry to calculate
