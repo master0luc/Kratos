@@ -55,3 +55,8 @@ kratos/includes/kratos_version.h
 *.mesh
 *.o.sol
 *.o.mesh
+
+settings.json
+.vscode/settings.json
+
+applications/ALEapplication/tests/gid_output.post.bin
