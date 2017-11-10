@@ -56,7 +56,21 @@ kratos/includes/kratos_version.h
 *.o.sol
 *.o.mesh
 
+<<<<<<< HEAD
 settings.json
 .vscode/settings.json
 
 applications/ALEapplication/tests/gid_output.post.bin
+=======
+*.bak
+
+*.h~
+
+applications/FluidDynamicsApplication/test_examples/fs_cavity/ProjectParameters\.py
+
+applications/FluidDynamicsApplication/test_examples/fs_cavity/run_test\.py
+
+*.cpp~
+
+applications/python_scripts/beam_profiles\.csv
+>>>>>>> master
