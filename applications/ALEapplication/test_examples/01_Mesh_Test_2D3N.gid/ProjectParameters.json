@@ -40,7 +40,7 @@
             "input_filename" : "01_Mesh_Test_2D3N"
         },
         "ale_linear_solver_settings"        : {
-        "solver_type" : "AMGCL"
+        "solver_type" : "SkylineLUFactorizationSolver"
         },
         "volume_model_part_name"       : "Parts_Fluid"
 },
