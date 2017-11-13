@@ -80,6 +80,7 @@ namespace Kratos
             typedef Line2D2<PointType> LineType;
             typedef Triangle3D3<PointType> TriangleType;
             typedef typename std::conditional<TDim == 2, LineType, TriangleType >::type DecompositionType;
+            typedef typename std::conditional<TNumNodes == 2, PointBelongsLine2D2N, typename std::conditional<TNumNodes == 3, PointBelongsTriangle3D3N, PointBelongsQuadrilateral3D4N>::type>::type BelongType;
             typedef DerivativesUtilities<TDim, TNumNodes, false> DerivativesUtilitiesType;
             typedef ExactMortarIntegrationUtility<TDim, TNumNodes, true> IntegrationUtility;
             
@@ -90,10 +91,10 @@ namespace Kratos
             GeometryType& slave_geometry_1 = SlaveCondition1->GetGeometry();
             GeometryType& master_geometry_1 = MasterCondition1->GetGeometry();
             
-            const array_1d<double, 3> normal_slave_0 = SlaveCondition0->GetValue(NORMAL);
-            const array_1d<double, 3> normal_master_0 = MasterCondition0->GetValue(NORMAL);
-            const array_1d<double, 3> normal_slave_1 = SlaveCondition1->GetValue(NORMAL);
-            const array_1d<double, 3> normal_master_1 = MasterCondition1->GetValue(NORMAL);
+            const array_1d<double, 3>& normal_slave_0 = SlaveCondition0->GetValue(NORMAL);
+            const array_1d<double, 3>& normal_master_0 = MasterCondition0->GetValue(NORMAL);
+            const array_1d<double, 3>& normal_slave_1 = SlaveCondition1->GetValue(NORMAL);
+            const array_1d<double, 3>& normal_master_1 = MasterCondition1->GetValue(NORMAL);
             
             // Create and initialize condition variables
             MortarKinematicVariablesWithDerivatives<TDim, TNumNodes> rVariables0; // These are the kinematic variables for the initial configuration
@@ -160,7 +161,7 @@ namespace Kratos
                         {
                             std::vector<PointType::Pointer> points_array (3); // The points are stored as local coordinates, we calculate the global coordinates of this points
                             std::vector<PointType::Pointer> points_array0 (3);
-                            array_1d<PointBelongsTriangle3D3N, 3> belong_array;
+                            array_1d<BelongType, 3> belong_array;
                             for (unsigned int i_node = 0; i_node < TDim; ++i_node)
                             {
                                 PointType global_point;
@@ -253,7 +254,7 @@ namespace Kratos
                                     
                                     // The derivatives of the dual shape function 
                                     DerivativesUtilitiesType::CalculateDeltaPhi(rVariables, rDerivativeData);
-                                                                    
+                                    
                                     if (Derivative == CHECK_SHAPE_FUNCTION)
                                     {
                                         // Now we compute the error of the delta N
@@ -265,9 +266,9 @@ namespace Kratos
                                             if (i_node < TNumNodes) delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
                                             else delta_disp = master_geometry_1[i_node - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT);
                                             for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
-                                            {
-                                                const auto& delta_n1 = rDerivativeData.DeltaN1[i_node * TNumNodes + i_dof];
-                                                const auto& delta_n2 = rDerivativeData.DeltaN2[i_node * TNumNodes + i_dof];
+                                            {                                                
+                                                const auto& delta_n1 = rDerivativeData.DeltaN1[i_node * TDim + i_dof];
+                                                const auto& delta_n2 = rDerivativeData.DeltaN2[i_node * TDim + i_dof];
                                                 aux_N_dx_slave  += delta_n1 * delta_disp[i_dof];
                                                 aux_N_dx_master += delta_n2 * delta_disp[i_dof];
                                             }
@@ -285,7 +286,7 @@ namespace Kratos
                                             array_1d<double, 3> delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
                                             for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
                                             {
-                                                const auto& delta_phi = rDerivativeData.DeltaPhi[i_node * TNumNodes + i_dof];
+                                                const auto& delta_phi = rDerivativeData.DeltaPhi[i_node * TDim + i_dof];
                                                 aux_Phi_dx_slave  += delta_phi * delta_disp[i_dof];
                                             }
                                         }
@@ -301,7 +302,7 @@ namespace Kratos
                                             array_1d<double, 3> delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
                                             for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
                                             {
-                                                const auto& delta_detj = rDerivativeData.DeltaDetjSlave[i_node * TNumNodes + i_dof];
+                                                const auto& delta_detj = rDerivativeData.DeltaDetjSlave[i_node * TDim + i_dof];
                                                 aux_Detj_dx_slave  += delta_detj * delta_disp[i_dof];
                                             }
                                         }
@@ -320,8 +321,8 @@ namespace Kratos
                                             const array_1d<double, 3>& delta_disp_master = master_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
                                             for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
                                             {
-                                                const auto& delta_normal_slave = rDerivativeData.DeltaNormalSlave[i_node * TNumNodes + i_dof];
-                                                const auto& delta_normal_master = rDerivativeData.DeltaNormalMaster[i_node * TNumNodes + i_dof];
+                                                const auto& delta_normal_slave = rDerivativeData.DeltaNormalSlave[i_node * TDim + i_dof];
+                                                const auto& delta_normal_master = rDerivativeData.DeltaNormalMaster[i_node * TDim + i_dof];
                                                 aux_Normal_dx_slave  += delta_normal_slave * delta_disp_slave[i_dof];
                                                 aux_Normal_dx_master += delta_normal_master * delta_disp_master[i_dof];
                                             }
@@ -346,9 +347,9 @@ namespace Kratos
                 }
             }
             
+            const double tolerance = 1.0e-6;
             if (Check == LEVEL_EXACT) // LEVEL_EXACT SOLUTION
             {
-                const double tolerance = 1.0e-6;
                 for (unsigned int iter = 0; iter < NumberIterations; ++iter)
                 {
                     KRATOS_CHECK_LESS_EQUAL(error_vector_slave[iter], tolerance);
@@ -360,11 +361,28 @@ namespace Kratos
                  for (unsigned int iter = 0; iter < NumberIterations - 1; ++iter)
                  {
                      const double log_coeff = std::log((static_cast<double>(iter) + 2.0)/(static_cast<double>(iter) + 1.0));
-                     const double slope_slave = std::log(error_vector_slave[iter + 1]/error_vector_slave[iter])/log_coeff;
-                     const double slope_master = std::log(error_vector_master[iter + 1]/error_vector_master[iter])/log_coeff;
                      
-                     KRATOS_CHECK_GREATER_EQUAL(slope_slave, 1.9);
-                     KRATOS_CHECK_GREATER_EQUAL(slope_master, 1.9);
+                     // First "exact" check
+                     if (error_vector_slave[iter+1] < tolerance)
+                     {
+                         KRATOS_CHECK_LESS_EQUAL(error_vector_slave[iter+1], tolerance);
+                     }
+                     else
+                     {
+                         const double slope_slave = std::log(error_vector_slave[iter + 1]/error_vector_slave[iter])/log_coeff;
+                         KRATOS_CHECK_GREATER_EQUAL(slope_slave, 1.9);
+                     }
+                     
+                     // First "exact" check
+                     if (error_vector_master[iter+1] < tolerance)
+                     {
+                         KRATOS_CHECK_LESS_EQUAL(error_vector_master[iter+1], tolerance);
+                     }
+                     else
+                     {
+                         const double slope_master = std::log(error_vector_master[iter + 1]/error_vector_master[iter])/log_coeff;
+                         KRATOS_CHECK_GREATER_EQUAL(slope_master, 1.9);
+                     }
                  }
             }
             else // LEVEL_DEBUG
@@ -379,7 +397,7 @@ namespace Kratos
          * Case 1 of the Triangle3D3
          */
     
-        KRATOS_TEST_CASE_IN_SUITE(TestDerivativesTriangle1, ContactStructuralApplicationFastSuite)
+        KRATOS_TEST_CASE_IN_SUITE(TestShapeFunctionDerivativesTriangle1, ContactStructuralApplicationFastSuite)
         {
             ModelPart model_part("Main");
             model_part.SetBufferSize(2);
@@ -469,7 +487,7 @@ namespace Kratos
          * Case 2 of the Triangle3D3
          */
     
-        KRATOS_TEST_CASE_IN_SUITE(TestDerivativesTriangle2, ContactStructuralApplicationFastSuite)
+        KRATOS_TEST_CASE_IN_SUITE(TestShapeFunctionDerivativesTriangle2, ContactStructuralApplicationFastSuite)
         {
             ModelPart model_part("Main");
             model_part.SetBufferSize(2);
@@ -559,7 +577,7 @@ namespace Kratos
          * Case 3 of the Triangle3D3
          */
     
-        KRATOS_TEST_CASE_IN_SUITE(TestDerivativesTriangle3, ContactStructuralApplicationFastSuite)
+        KRATOS_TEST_CASE_IN_SUITE(TestShapeFunctionDerivativesTriangle3, ContactStructuralApplicationFastSuite)
         {
             ModelPart model_part("Main");
             model_part.SetBufferSize(2);
@@ -642,6 +660,108 @@ namespace Kratos
             p_cond0_1->SetValue(NORMAL, normal_1);
             
             TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 0, -1.0e-2, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
+        }
+        
+        /** 
+         * Checks if the derivatives of the shape functions work as expected
+         * Case 1 of the Quadrilateral3D4
+         */
+    
+        KRATOS_TEST_CASE_IN_SUITE(TestShapeFunctionDerivativesQuadrilateral1, ContactStructuralApplicationFastSuite)
+        {
+            ModelPart model_part("Main");
+            model_part.SetBufferSize(2);
+            model_part.GetProcessInfo()[CONSIDER_NORMAL_VARIATION] = false;
+            
+            Properties::Pointer p_cond_prop = model_part.pGetProperties(0);
+            
+            // Variables addition
+            model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            
+            PointType aux_point;
+            aux_point.Coordinates() = ZeroVector(3);
+            
+            // First we create the nodes 
+            NodeType::Pointer p_node_1 = model_part.CreateNewNode(1, 0.0,0.0,0.0);
+            NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.0,0.0,0.0);
+            NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 1.0,1.0,0.0);
+            NodeType::Pointer p_node_4 = model_part.CreateNewNode(4, 0.0,1.0,0.0);
+            
+            NodeType::Pointer p_node_5 = model_part.CreateNewNode(5, 0.0,1.0,1.0e-3);
+            NodeType::Pointer p_node_6 = model_part.CreateNewNode(6, 1.0,1.0,1.0e-3);
+            NodeType::Pointer p_node_7 = model_part.CreateNewNode(7, 1.0,0.0,1.0e-3);
+            NodeType::Pointer p_node_8 = model_part.CreateNewNode(8, 0.0,0.0,1.0e-3);
+            
+            NodeType::Pointer p_node0_1 = model_part.CreateNewNode(9, p_node_1->X(), p_node_1->Y(), p_node_1->Z());
+            NodeType::Pointer p_node0_2 = model_part.CreateNewNode(10, p_node_2->X(), p_node_2->Y(), p_node_2->Z());
+            NodeType::Pointer p_node0_3 = model_part.CreateNewNode(11, p_node_3->X(), p_node_3->Y(), p_node_3->Z());
+            NodeType::Pointer p_node0_4 = model_part.CreateNewNode(12, p_node_4->X(), p_node_4->Y(), p_node_4->Z());
+            
+            NodeType::Pointer p_node0_5 = model_part.CreateNewNode(13, p_node_5->X(), p_node_5->Y(), p_node_5->Z());
+            NodeType::Pointer p_node0_6 = model_part.CreateNewNode(14, p_node_6->X(), p_node_6->Y(), p_node_6->Z());
+            NodeType::Pointer p_node0_7 = model_part.CreateNewNode(15, p_node_7->X(), p_node_7->Y(), p_node_7->Z());
+            NodeType::Pointer p_node0_8 = model_part.CreateNewNode(16, p_node_8->X(), p_node_8->Y(), p_node_8->Z());
+            
+            // Now we create the "conditions"
+            std::vector<NodeType::Pointer> condition_nodes_0 (4);
+            condition_nodes_0[0] = p_node_1;
+            condition_nodes_0[1] = p_node_2;
+            condition_nodes_0[2] = p_node_3;
+            condition_nodes_0[3] = p_node_4;
+            Quadrilateral3D4 <Node<3>> quadrilateral_0( condition_nodes_0 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_0 (4);
+            condition_nodes0_0[0] = p_node0_1;
+            condition_nodes0_0[1] = p_node0_2;
+            condition_nodes0_0[2] = p_node0_3;
+            condition_nodes0_0[3] = p_node0_4;
+            Quadrilateral3D4 <Node<3>> quadrilateral0_0( condition_nodes0_0 );
+            
+            const array_1d<double, 3>& normal_0 = quadrilateral_0.UnitNormal(aux_point);
+            Condition::Pointer p_cond_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 1, quadrilateral_0, p_cond_prop);
+            Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 3, quadrilateral0_0, p_cond_prop);
+            p_node_1->SetValue(NORMAL, normal_0);
+            p_node_2->SetValue(NORMAL, normal_0);
+            p_node_3->SetValue(NORMAL, normal_0);
+            p_node_4->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
+            
+            p_node0_1->SetValue(NORMAL, normal_0);
+            p_node0_2->SetValue(NORMAL, normal_0);
+            p_node0_3->SetValue(NORMAL, normal_0);
+            p_node0_4->SetValue(NORMAL, normal_0);
+            p_cond0_0->SetValue(NORMAL, normal_0);
+            
+            std::vector<NodeType::Pointer> condition_nodes_1 (4);
+            condition_nodes_1[0] = p_node_5;
+            condition_nodes_1[1] = p_node_6;
+            condition_nodes_1[2] = p_node_7;
+            condition_nodes_1[3] = p_node_8;
+            Quadrilateral3D4 <Node<3>> quadrilateral_1( condition_nodes_1 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_1 (4);
+            condition_nodes0_1[0] = p_node0_5;
+            condition_nodes0_1[1] = p_node0_6;
+            condition_nodes0_1[2] = p_node0_7;
+            condition_nodes0_1[3] = p_node0_8;
+            Quadrilateral3D4 <Node<3>> quadrilateral0_1( condition_nodes0_1 );
+            
+            const array_1d<double, 3>& normal_1 = quadrilateral_0.UnitNormal(aux_point);
+            Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 2, quadrilateral_1, p_cond_prop);
+            Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 4, quadrilateral0_1, p_cond_prop);
+            p_node_5->SetValue(NORMAL, normal_1);
+            p_node_6->SetValue(NORMAL, normal_1);
+            p_node_7->SetValue(NORMAL, normal_1);
+            p_node_8->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
+            
+            p_node0_5->SetValue(NORMAL, normal_1);
+            p_node0_6->SetValue(NORMAL, normal_1);
+            p_node0_7->SetValue(NORMAL, normal_1);
+            p_node0_8->SetValue(NORMAL, normal_1);
+            p_cond0_1->SetValue(NORMAL, normal_1);
+            
+            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 5, 1, -5.0e-3, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
     } // namespace Testing
