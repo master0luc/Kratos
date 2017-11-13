@@ -527,7 +527,7 @@ public:
     
     // Derivatives    
     array_1d<double, size_3> DeltaDetjSlave;
-    array_1d<type_1, size_1> DeltaPhi;
+    array_1d<type_1, size_3> DeltaPhi;
     array_1d<type_1, size_2> DeltaN1, DeltaN2;
     array_1d<type_2, size_1> DeltaNormalSlave, DeltaNormalMaster;
     array_1d<type_4, size_2> DeltaCellVertex;
@@ -536,7 +536,7 @@ public:
     type_3 Ae;
     
     // Derivatives Ae
-    array_1d<type_3, size_1> DeltaAe;
+    array_1d<type_3, size_3> DeltaAe;
     
     ///@}
     ///@name Operators
@@ -599,9 +599,11 @@ public:
         }
         else // Derivative of the cell vertex
         {
-            for (unsigned int i = 0; i < 2 * TNumNodes * TDim; ++i)
+            for (unsigned int i = 0; i < TNumNodes * TDim; ++i)
             {
+                DeltaPhi[i + TNumNodes * TDim] = ZeroVector(TNumNodes);
                 DeltaCellVertex[i] = ZeroMatrix(3, 3);
+                DeltaCellVertex[i + TNumNodes * TDim] = ZeroMatrix(3, 3);
             }
         }
     }
@@ -616,7 +618,7 @@ public:
         Ae = ZeroMatrix(TNumNodes, TNumNodes);
         
         // Derivatives Ae
-        for (unsigned int i = 0; i < TNumNodes * TDim; ++i)
+        for (unsigned int i = 0; i < 2 * TNumNodes * TDim; ++i)
         {
             DeltaAe[i] = ZeroMatrix(TNumNodes, TNumNodes);
         }
@@ -1143,7 +1145,7 @@ public:
         constexpr unsigned int size_3 = (TDim == 2) ? size_1 : size_2;
 
         const array_1d<double, size_3>& delta_det_j_slave = rDerivativeData.DeltaDetjSlave;
-        const array_1d<array_1d<double, TNumNodes >, size_1>& delta_phi = rDerivativeData.DeltaPhi;
+        const array_1d<array_1d<double, TNumNodes >, size_3>& delta_phi = rDerivativeData.DeltaPhi;
         const array_1d<array_1d<double, TNumNodes >, size_2>& delta_n1  = rDerivativeData.DeltaN1;
         const array_1d<array_1d<double, TNumNodes >, size_2>& delta_n2  = rDerivativeData.DeltaN2;
         
@@ -1180,10 +1182,10 @@ public:
                     for (unsigned int i = TDim * TNumNodes; i < 2 * TDim * TNumNodes; ++i)
                     {
                         DeltaDOperator[i](i_node, j_node) += delta_det_j_slave[i] * rIntegrationWeight * phi * n1;
-//                         DeltaDOperator[i](i_node, j_node) += det_j_slave * rIntegrationWeight * delta_phi[i][i_node] * n1;
+                        DeltaDOperator[i](i_node, j_node) += det_j_slave * rIntegrationWeight * delta_phi[i][i_node] * n1;
                                                                                     
                         DeltaMOperator[i](i_node, j_node) += delta_det_j_slave[i] * rIntegrationWeight * phi * n2;
-//                         DeltaMOperator[i](i_node, j_node) += det_j_slave * rIntegrationWeight * delta_phi[i][i_node] * n2;
+                        DeltaMOperator[i](i_node, j_node) += det_j_slave * rIntegrationWeight * delta_phi[i][i_node] * n2;
                     }
                 }
             }
@@ -1534,11 +1536,13 @@ public:
     ~DualLagrangeMultiplierOperatorsWithDerivatives() override{}
     
     // Auxiliar sizes
-    static const unsigned int size_1 = (TNumNodes * TDim);
+    static const unsigned int size_1 =     (TNumNodes * TDim);
+    static const unsigned int size_2 = 2 * (TNumNodes * TDim);
+    static const unsigned int size_3 = (TDim == 2) ? size_1 : size_2;
     
     // Derivatives matrices
-    array_1d<bounded_matrix<double, TNumNodes, TNumNodes>, size_1> DeltaMe;
-    array_1d<bounded_matrix<double, TNumNodes, TNumNodes>, size_1> DeltaDe;
+    array_1d<bounded_matrix<double, TNumNodes, TNumNodes>, size_3> DeltaMe;
+    array_1d<bounded_matrix<double, TNumNodes, TNumNodes>, size_3> DeltaDe;
         
     ///@}
     ///@name Operators
@@ -1557,7 +1561,7 @@ public:
         BaseClassType::Initialize();
         
         // Derivatives matrices
-        for (unsigned int i = 0; i < TNumNodes * TDim; ++i)
+        for (unsigned int i = 0; i < 2 * TNumNodes * TDim; ++i)
         {
             DeltaMe[i] = ZeroMatrix(TNumNodes, TNumNodes);
             DeltaDe[i] = ZeroMatrix(TNumNodes, TNumNodes);
@@ -1580,7 +1584,11 @@ public:
         
         BaseClassType::CalculateAeComponents(rKinematicVariables, rIntegrationWeight);
         
-        for (unsigned int i = 0; i < TDim * TNumNodes; ++i)
+        static const unsigned int size_1 = (TNumNodes * TDim);
+        static const unsigned int size_2 = 2 * (TNumNodes * TDim);
+        static const unsigned int size_3 = (TDim == 2) ? size_1 : size_2;
+        
+        for (unsigned int i = 0; i < size_3; ++i)
         {
             const double& delta_det_j = rDerivativeData.DeltaDetjSlave[i];
             
@@ -1618,9 +1626,11 @@ public:
         noalias(rDerivativeData.Ae) = prod(BaseClassType::De, inv_Me);
         
         static const unsigned int size_1 = (TNumNodes * TDim);
-        array_1d<boost::numeric::ublas::bounded_matrix<double, TNumNodes, TNumNodes> , size_1>& delta_Ae = rDerivativeData.DeltaAe;
+        static const unsigned int size_2 = 2 * (TNumNodes * TDim);
+        static const unsigned int size_3 = (TDim == 2) ? size_1 : size_2;
+        array_1d<boost::numeric::ublas::bounded_matrix<double, TNumNodes, TNumNodes> , size_3>& delta_Ae = rDerivativeData.DeltaAe;
         
-        for (unsigned int i = 0; i < TDim * TNumNodes; ++i)
+        for (unsigned int i = 0; i < size_3; ++i)
         {
             const boost::numeric::ublas::bounded_matrix<double, TNumNodes, TNumNodes> aux_matrix = DeltaDe[i] - prod(rDerivativeData.Ae, DeltaMe[i]);
             noalias(delta_Ae[i]) = prod(aux_matrix, inv_Me);

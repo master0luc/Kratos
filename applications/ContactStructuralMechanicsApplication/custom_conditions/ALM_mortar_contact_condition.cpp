@@ -460,6 +460,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
 
     // The slave geometry
     GeometryType& slave_geometry = GetGeometry();
+    const array_1d<double, 3>& normal_slave = this->GetValue(NORMAL);
     
     // Create and initialize condition variables
     GeneralVariables rVariables;
@@ -474,6 +475,9 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     // We call the exact integration utility
     IntegrationUtility integration_utility = IntegrationUtility (mIntegrationOrder);
     
+    // If we consider the normal variation
+//     const bool consider_normal_variation = rCurrentProcessInfo[CONSIDER_NORMAL_VARIATION];
+    
     // Iterate over the master segments
     for (unsigned int pair_index = 0; pair_index < mPairSize; ++pair_index)
     {   
@@ -486,7 +490,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
             
             // Reading integration points
             ConditionArrayListType conditions_points_slave;
-            const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, this->GetValue(NORMAL), master_geometry, master_normal, conditions_points_slave);
+            const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, master_normal, conditions_points_slave);
             
             double integration_area;
             integration_utility.GetTotalArea(slave_geometry, conditions_points_slave, integration_area);
@@ -506,6 +510,8 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
                 
                 // TODO: Replace with the one in the derivatives_utilities.h->Requires to move the axisymmetric coefficient
                 const bool dual_LM = this->CalculateAeAndDeltaAe(rDerivativeData, rVariables, rCurrentProcessInfo, pair_index, conditions_points_slave, this_integration_method, master_normal);
+                
+//                 const bool dual_LM =  DerivativesUtilitiesType::CalculateAeAndDeltaAe(slave_geometry, normal_slave, mThisMasterElements[pair_index], rDerivativeData, rVariables, consider_normal_variation, conditions_points_slave, this_integration_method);
                 
                 for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
                 {
@@ -749,9 +755,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                                 // Update the derivative of DetJ
                                 DerivativesUtilitiesType::CalculateDeltaDetjSlave(decomp_geom, rVariables, rDerivativeData);
                                 // Update the derivatives of the shape functions and the gap
-                                DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, slave_geometry, master_geometry, slave_normal, master_normal, decomp_geom, local_point_decomp, local_point_parent);
-                                // The derivatives of the dual shape function 
-                                DerivativesUtilitiesType::CalculateDeltaPhi(rVariables, rDerivativeData);
+                                DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, slave_geometry, master_geometry, slave_normal, master_normal, decomp_geom, local_point_decomp, local_point_parent, consider_normal_variation, dual_LM);
                                 
                                 rThisMortarConditionMatrices.CalculateDeltaMortarOperators(rVariables, rDerivativeData, integration_weight);    
                             }

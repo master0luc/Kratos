@@ -555,7 +555,8 @@ public:
         const DecompositionType& DecompGeom,
         const PointType& LocalPointDecomp,
         const PointType& LocalPointParent,
-        const bool ConsiderNormalVariation = false
+        const bool ConsiderNormalVariation = false,
+        const bool DualLM = false
         )
     {
         /* Shape functions */
@@ -609,32 +610,19 @@ public:
                     
                     auto& delta_n2 = rDerivativeData.DeltaN2[i_node * TDim + i_dof];
                     noalias(delta_n2) = (aux_delta_coords2[0] * column(DNDe2, 0) + aux_delta_coords2[1] * column(DNDe2, 1));
+                    
+                    // The derivatives of the dual shape function 
+                    auto& delta_phi = rDerivativeData.DeltaPhi[i_node * TDim + i_dof];
+                    noalias(delta_phi) = prod(rDerivativeData.DeltaAe[i_dof], N1);
+                    if (DualLM == true)
+                    {
+                        noalias(delta_phi) += (aux_delta_coords1[0] * prod(rDerivativeData.Ae, column(DNDe1, 0)) + aux_delta_coords1[1] * prod(rDerivativeData.Ae, column(DNDe1, 1)));
+                    }
+                    else
+                    {
+                        noalias(delta_phi) += (aux_delta_coords1[0] *  column(DNDe1, 0) + aux_delta_coords1[1] * column(DNDe1, 1));
+                    }
                 }
-            }
-        }
-    }
-    
-    /**
-     * Calculates the increment of Phi (the dual shape function)
-     * @param rVariables: The kinematic variables
-     * @param rDerivativeData: The derivatives container
-     */
-    
-    static inline void CalculateDeltaPhi(
-        const GeneralVariables& rVariables,
-        DerivativeDataType& rDerivativeData
-        )
-    {
-        // Shape functions
-        const VectorType& N1 = rVariables.NSlave;
-        
-        for (unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave)
-        {
-            for (unsigned int i_dim = 0; i_dim < TDim; ++i_dim)
-            {
-                const unsigned int i_dof = i_slave * TDim + i_dim;
-                
-                noalias(rDerivativeData.DeltaPhi[i_dof]) = prod(rDerivativeData.DeltaAe[i_dof], N1);;
             }
         }
     }
@@ -798,7 +786,7 @@ public:
         DerivativeData<TDim, TNumNodes>& rDerivativeData,
         MortarKinematicVariablesWithDerivatives<TDim, TNumNodes>& rVariables,
         const bool ConsiderNormalVariation,
-        std::vector<array_1d<PointBelong<TNumNodes>, 3>>& ConditionsPointsSlave,
+        std::vector<array_1d<PointBelong<TNumNodes>, TDim>>& ConditionsPointsSlave,
         IntegrationMethod ThisIntegrationMethod,
         const double AxiSymCoeff = 1.0
         )
