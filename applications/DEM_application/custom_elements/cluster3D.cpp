@@ -1,16 +1,9 @@
-//
-//   Project Name:        Kratos
-//   Last Modified by:    $Author: Salva $
-//   Date:                $Date: 2006-11-27 16:07:33 $
-//   Revision:            $Revision: 1.1.1.1 $
-//
+// Last Modified by: Salva $
 
 // System includes
 #include <string>
 #include <iostream>
 #include <stdlib.h>
-
-// External includes
 
 // Project includes
 #include "cluster3D.h"
@@ -23,20 +16,20 @@
 
 namespace Kratos {
 
-    Cluster3D::Cluster3D() : Element() {}
+    Cluster3D::Cluster3D() : RigidBodyElement3D() {}
             
     Cluster3D::Cluster3D(IndexType NewId, GeometryType::Pointer pGeometry)
-    : Element(NewId, pGeometry) {
+    : RigidBodyElement3D(NewId, pGeometry) {
         mpIntegrationScheme = NULL;
     }
       
     Cluster3D::Cluster3D(IndexType NewId, GeometryType::Pointer pGeometry, PropertiesType::Pointer pProperties)
-    : Element(NewId, pGeometry, pProperties) {
+    : RigidBodyElement3D(NewId, pGeometry, pProperties) {
         mpIntegrationScheme = NULL;
     }
       
     Cluster3D::Cluster3D(IndexType NewId, NodesArrayType const& ThisNodes)
-    : Element(NewId, ThisNodes) {
+    : RigidBodyElement3D(NewId, ThisNodes) {
         mpIntegrationScheme = NULL;
     }
     
@@ -66,13 +59,12 @@ namespace Kratos {
         mListOfCoordinates.clear();  
         mListOfRadii.clear();  
         
-        if (mpIntegrationScheme!=NULL) {
+        if (mpIntegrationScheme != NULL) {
             delete mpIntegrationScheme;
         }        
 
     }
 
-      
     void Cluster3D::Initialize(ProcessInfo& r_process_info) {
         
         if (GetGeometry()[0].GetDof(VELOCITY_X).IsFixed())          GetGeometry()[0].Set(DEMFlags::FIXED_VEL_X, true);
@@ -93,13 +85,7 @@ namespace Kratos {
         DEMIntegrationScheme::Pointer& integration_scheme = GetProperties()[DEM_INTEGRATION_SCHEME_POINTER];
         SetIntegrationScheme(integration_scheme);
     }
-    
-    
-    void Cluster3D::SetIntegrationScheme(DEMIntegrationScheme::Pointer& integration_scheme){
-    
-        mpIntegrationScheme = integration_scheme->CloneRaw();
-    }
-    
+
     void Cluster3D::CustomInitialize(ProcessInfo& r_process_info) {
         
         const double cl = GetGeometry()[0].FastGetSolutionStepValue(CHARACTERISTIC_LENGTH);
@@ -119,7 +105,7 @@ namespace Kratos {
         
         const double scaling_factor = cl / reference_size;
         
-        for(int i=0; i<(int)number_of_spheres; i++){
+        for (int i = 0; i < (int)number_of_spheres; i++) {
             mListOfRadii[i] = scaling_factor * reference_list_of_radii[i];
             mListOfCoordinates[i][0] = scaling_factor * reference_list_of_coordinates[i][0];
             mListOfCoordinates[i][1] = scaling_factor * reference_list_of_coordinates[i][1];
@@ -142,6 +128,7 @@ namespace Kratos {
         array_1d<double, 3> base_principal_moments_of_inertia = GetGeometry()[0].FastGetSolutionStepValue(PRINCIPAL_MOMENTS_OF_INERTIA);  
         
         Quaternion<double>& Orientation = GetGeometry()[0].FastGetSolutionStepValue(ORIENTATION);
+                        
         Orientation.normalize();
 
         array_1d<double, 3> angular_velocity = GetGeometry()[0].FastGetSolutionStepValue(ANGULAR_VELOCITY);
@@ -158,26 +145,24 @@ namespace Kratos {
         GeometryFunctions::QuaternionVectorGlobal2Local(Orientation, angular_velocity, local_angular_velocity);
         noalias(this->GetGeometry()[0].FastGetSolutionStepValue(LOCAL_ANGULAR_VELOCITY)) = local_angular_velocity;
     }
-    
-    
-    void Cluster3D::SetOrientation(const Quaternion<double> Orientation) {
-        this->GetGeometry()[0].FastGetSolutionStepValue(ORIENTATION) = Orientation;
-    }
 
-    void Cluster3D::CreateParticles(ParticleCreatorDestructor* p_creator_destructor, ModelPart& dem_model_part, PropertiesProxy* p_fast_properties, const bool continuum_strategy){        
+    void Cluster3D::CreateParticles(ParticleCreatorDestructor* p_creator_destructor, ModelPart& dem_model_part, PropertiesProxy* p_fast_properties, const bool continuum_strategy) {        
+        
         KRATOS_TRY 
         
         int cluster_id = (int)this->Id();
-        
+               
         unsigned int max_Id = 0;        
         unsigned int* p_max_Id = p_creator_destructor->pGetCurrentMaxNodeId();  //must have been found
           
         std::string ElementNameString;
         bool breakable = false;
-        if(GetProperties()[BREAKABLE_CLUSTER]) breakable = true;
+        if (GetProperties()[BREAKABLE_CLUSTER]) breakable = true;
         
-        if(continuum_strategy) ElementNameString= "SphericContinuumParticle3D";
+        if (continuum_strategy) ElementNameString= "SphericContinuumParticle3D";
         else ElementNameString= "SphericParticle3D";
+        
+        if (!continuum_strategy && breakable) KRATOS_THROW_ERROR(std::runtime_error,"Breakable cluster elements are being used inside a non-deformable strategy. The program will now stop.","")
 
         //We now create a spheric particle and keep it as a reference to an Element
         const Element& r_reference_element = KratosComponents<Element>::Get(ElementNameString);
@@ -234,194 +219,13 @@ namespace Kratos {
         KRATOS_CATCH("")
     }
     
-    void Cluster3D::CreateContinuumConstitutiveLaws(){        
+    void Cluster3D::CreateContinuumConstitutiveLaws() {        
         for (unsigned int i=0; i<mListOfCoordinates.size(); i++) {  
             SphericContinuumParticle* p_continuum_spheric_particle = dynamic_cast<SphericContinuumParticle*> (mListOfSphericParticles[i]);            
             p_continuum_spheric_particle->CreateContinuumConstitutiveLaws();
         }         
     }
-    
-    void Cluster3D::Calculate(const Variable<double>& rVariable, double& Output, const ProcessInfo& r_process_info)
-    {
-        KRATOS_TRY
-        
-        if (rVariable == PARTICLE_TRANSLATIONAL_KINEMATIC_ENERGY) {
-            
-            const array_1d<double, 3>& vel = this->GetGeometry()[0].FastGetSolutionStepValue(VELOCITY);
-            double square_of_celerity      = vel[0] * vel[0] + vel[1] * vel[1] + vel[2] * vel[2];
-            double particle_mass           = this->GetGeometry()[0].FastGetSolutionStepValue(NODAL_MASS);
-            
-            Output = 0.5 * (particle_mass * square_of_celerity);
-            
-            return;
-        }
-            
-        if (rVariable == PARTICLE_ROTATIONAL_KINEMATIC_ENERGY) {
-                
-            const array_1d<double, 3> moments_of_inertia = this->GetGeometry()[0].FastGetSolutionStepValue(PRINCIPAL_MOMENTS_OF_INERTIA);
-            const array_1d<double, 3> local_ang_vel      = this->GetGeometry()[0].FastGetSolutionStepValue(LOCAL_ANGULAR_VELOCITY);
-            
-            Output = 0.5 * (moments_of_inertia[0] * local_ang_vel[0] * local_ang_vel[0] + moments_of_inertia[1] * local_ang_vel[1] * local_ang_vel[1] + moments_of_inertia[2] * local_ang_vel[2] * local_ang_vel[2]);
-           
-            return;
-        }
-        
-        if (rVariable == PARTICLE_ELASTIC_ENERGY) {
-            
-            double particle_elastic_energy = 0.0;
-            
-            for (unsigned int i=0; i<mListOfSphericParticles.size(); i++) {
-                particle_elastic_energy += mListOfSphericParticles[i]->GetElasticEnergy();
-            }
-            
-            Output = particle_elastic_energy;
-                      
-            return;
-        }
 
-        if (rVariable == PARTICLE_INELASTIC_FRICTIONAL_ENERGY) {
-            
-            double particle_frictional_energy = 0.0;
-            
-            for (unsigned int i=0; i<mListOfSphericParticles.size(); i++) {
-                particle_frictional_energy += mListOfSphericParticles[i]->GetInelasticFrictionalEnergy();
-            }
-            
-            Output = particle_frictional_energy;
-                      
-            return;
-        }
-        
-        if (rVariable == PARTICLE_INELASTIC_VISCODAMPING_ENERGY) {
-            
-            double particle_viscodamping_energy = 0.0;
-            
-            for (unsigned int i=0; i<mListOfSphericParticles.size(); i++) {
-                particle_viscodamping_energy += mListOfSphericParticles[i]->GetInelasticViscodampingEnergy();
-            }
-            
-            Output = particle_viscodamping_energy;
-                      
-            return;
-        }
-
-        KRATOS_CATCH("")
-
-    } //Calculate
-
-    void Cluster3D::UpdateLinearDisplacementAndVelocityOfSpheres() {
-        Node<3>& central_node = GetGeometry()[0]; //CENTRAL NODE OF THE CLUSTER
-        array_1d<double, 3>& cluster_velocity = central_node.FastGetSolutionStepValue(VELOCITY);
-        array_1d<double, 3> global_relative_coordinates;
-        Quaternion<double>& Orientation = central_node.FastGetSolutionStepValue(ORIENTATION);
-
-        for (unsigned int i = 0; i < mListOfCoordinates.size(); i++) {
-            
-            GeometryFunctions::QuaternionVectorLocal2Global(Orientation, mListOfCoordinates[i], global_relative_coordinates);
-            Node<3>& sphere_node = mListOfSphericParticles[i]->GetGeometry()[0]; 
-            array_1d<double, 3>& sphere_position = sphere_node.Coordinates();
-            array_1d<double, 3>& delta_displacement = sphere_node.FastGetSolutionStepValue(DELTA_DISPLACEMENT);
-            array_1d<double, 3> previous_position; 
-            noalias(previous_position) = sphere_position;
-            noalias(sphere_position)= central_node.Coordinates() + global_relative_coordinates;
-            noalias(delta_displacement) = sphere_position - previous_position;
-            noalias(sphere_node.FastGetSolutionStepValue(VELOCITY)) = cluster_velocity;
-        }        
-    }
-    
-    
-    void Cluster3D::UpdatePositionOfSpheres() {
-        
-        Node<3>& central_node = GetGeometry()[0]; //CENTRAL NODE OF THE CLUSTER
-        array_1d<double, 3> global_relative_coordinates;      
-        array_1d<double, 3> linear_vel_due_to_rotation;
-        array_1d<double, 3>& cluster_velocity = central_node.FastGetSolutionStepValue(VELOCITY);
-        array_1d<double, 3>& cluster_angular_velocity = central_node.FastGetSolutionStepValue(ANGULAR_VELOCITY);
-        array_1d<double, 3>& cluster_delta_rotation = central_node.FastGetSolutionStepValue(DELTA_ROTATION);
-        Quaternion<double>& Orientation = central_node.FastGetSolutionStepValue(ORIENTATION);
-
-        array_1d<double, 3> previous_position;
-        
-        for (unsigned int i = 0; i < mListOfCoordinates.size(); i++) {
-            
-            GeometryFunctions::QuaternionVectorLocal2Global(Orientation, mListOfCoordinates[i], global_relative_coordinates);
-            Node<3>& sphere_node = mListOfSphericParticles[i]->GetGeometry()[0]; 
-            array_1d<double, 3>& sphere_position = sphere_node.Coordinates();
-            array_1d<double, 3>& delta_displacement = sphere_node.FastGetSolutionStepValue(DELTA_DISPLACEMENT);
-            noalias(previous_position) = sphere_position;
-            noalias(sphere_position)= central_node.Coordinates() + global_relative_coordinates;
-            noalias(delta_displacement) = sphere_position - previous_position;
-            
-            GeometryFunctions::CrossProduct( cluster_angular_velocity, global_relative_coordinates, linear_vel_due_to_rotation );
-            
-            array_1d<double, 3>& velocity = sphere_node.FastGetSolutionStepValue(VELOCITY);
-            
-            noalias(velocity) = cluster_velocity + linear_vel_due_to_rotation;                                    
-            noalias(sphere_node.FastGetSolutionStepValue(ANGULAR_VELOCITY)) = cluster_angular_velocity;
-            noalias(sphere_node.FastGetSolutionStepValue(DELTA_ROTATION)) = cluster_delta_rotation;
-        }                        
-    }
-    
-    
-    void Cluster3D::CollectForcesAndTorquesFromSpheres() {
-        
-        Node<3>& central_node = GetGeometry()[0]; //CENTRAL NODE OF THE CLUSTER
-        array_1d<double, 3>& center_forces       = central_node.FastGetSolutionStepValue(TOTAL_FORCES);       
-        array_1d<double, 3>& center_torque       = central_node.FastGetSolutionStepValue(PARTICLE_MOMENT);
-        array_1d<double, 3>& center_rigid_forces = central_node.FastGetSolutionStepValue(RIGID_ELEMENT_FORCE);
-        center_forces[0] = center_forces[1]= center_forces[2]= center_torque[0]= center_torque[1]= center_torque[2]= center_rigid_forces[0]= center_rigid_forces[1]= center_rigid_forces[2]= 0.0;
-
-        array_1d<double, 3> center_to_sphere_vector;
-        array_1d<double, 3> additional_torque;
-        
-        for (unsigned int i=0; i<mListOfSphericParticles.size(); i++) {
-            
-            if (mListOfSphericParticles[i]->mNeighbourElements.size()==0 && mListOfSphericParticles[i]->mNeighbourRigidFaces.size()==0) continue; //Assuming the sphere only adds contact forces to the cluster
-            
-            Node<3>& sphere_node = mListOfSphericParticles[i]->GetGeometry()[0]; 
-            array_1d<double, 3>& particle_forces       = sphere_node.FastGetSolutionStepValue(TOTAL_FORCES);
-            array_1d<double, 3>& rigid_particle_forces = sphere_node.FastGetSolutionStepValue(RIGID_ELEMENT_FORCE);
-            center_forces[0] += particle_forces[0];
-            center_forces[1] += particle_forces[1];
-            center_forces[2] += particle_forces[2];
-            center_rigid_forces[0] += rigid_particle_forces[0];
-            center_rigid_forces[1] += rigid_particle_forces[1];
-            center_rigid_forces[2] += rigid_particle_forces[2];
-            
-            array_1d<double, 3>& particle_torque = sphere_node.FastGetSolutionStepValue(PARTICLE_MOMENT); 
-            center_torque[0] += particle_torque[0];
-            center_torque[1] += particle_torque[1];
-            center_torque[2] += particle_torque[2];
-                        
-            //Now adding the torque due to the eccentric forces (spheres are not on the center of the cluster)
-            array_1d<double, 3>& sphere_position = sphere_node.Coordinates();
-            center_to_sphere_vector[0] = sphere_position[0] - central_node.Coordinates()[0];
-            center_to_sphere_vector[1] = sphere_position[1] - central_node.Coordinates()[1];
-            center_to_sphere_vector[2] = sphere_position[2] - central_node.Coordinates()[2];
-            GeometryFunctions::CrossProduct( center_to_sphere_vector, particle_forces, additional_torque );
-            center_torque[0] += additional_torque[0];
-            center_torque[1] += additional_torque[1];
-            center_torque[2] += additional_torque[2];
-        }    
-    }
-    
-    
-    void Cluster3D::GetClustersForce(const array_1d<double,3>& gravity) {
-        
-        CollectForcesAndTorquesFromSpheres();
-        ComputeAdditionalForces(gravity);
-    }
-    
-    void Cluster3D::ComputeAdditionalForces(const array_1d<double,3>& gravity) {
-
-        const double mass = GetGeometry()[0].FastGetSolutionStepValue(NODAL_MASS);
-        noalias(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)) += mass * gravity;                        
-        const array_1d<double, 3> external_applied_force  = GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_FORCE);
-        const array_1d<double, 3> external_applied_torque = GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_MOMENT);
-        noalias(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)) += external_applied_force;
-        noalias(GetGeometry()[0].FastGetSolutionStepValue(PARTICLE_MOMENT)) += external_applied_torque;
-    }   
-    
     void Cluster3D::SetContinuumGroupToBreakableClusterSpheres(const int Id) {
         for (unsigned int i=0; i<mListOfSphericParticles.size(); i++) {
             SphericContinuumParticle* p_cont_part = dynamic_cast<SphericContinuumParticle*> (mListOfSphericParticles[i]);
@@ -435,27 +239,25 @@ namespace Kratos {
         } 
     }
     
-    double Cluster3D::GetMass() { return GetGeometry()[0].FastGetSolutionStepValue(NODAL_MASS); }
-    
     double Cluster3D::SlowGetDensity() { return GetProperties()[PARTICLE_DENSITY];}
     
     int Cluster3D::SlowGetParticleMaterial() { return GetProperties()[PARTICLE_MATERIAL];}
     
     void Cluster3D::SetInitialNeighbours(const double search_increment) {
-        if(!mListOfSphericParticles.size() ) return;
+        if (!mListOfSphericParticles.size()) return;
         /*for (unsigned int i=0; i<mListOfSphericParticles.size(); i++) {
             SphericContinuumParticle* p_continuum_particle_i = dynamic_cast<SphericContinuumParticle*> (mListOfSphericParticles[i]);
             //p_continuum_particle_i->mContinuumInitialNeighborsSize = 0;
             //p_continuum_particle_i->mInitialNeighborsSize = 0;
         }*/
         
-        for (unsigned int i=0; i<mListOfSphericParticles.size()-1; i++) {
+        for (unsigned int i = 0; i < mListOfSphericParticles.size() - 1; i++) {
             SphericContinuumParticle* p_continuum_particle_i = dynamic_cast<SphericContinuumParticle*> (mListOfSphericParticles[i]);            
             
-            if(mListOfSphericParticles.size()<=1 ) break;
-            array_1d<double, 3 > zero_vector(3, 0.0);
+            if (mListOfSphericParticles.size() <= 1) break;
+            array_1d<double, 3> zero_vector(3, 0.0);
             
-            for (unsigned int j=i+1; j<mListOfSphericParticles.size(); j++) {
+            for (unsigned int j = i + 1; j < mListOfSphericParticles.size(); j++) {
                 SphericContinuumParticle* p_continuum_particle_j = dynamic_cast<SphericContinuumParticle*> (mListOfSphericParticles[j]);
                 
                 array_1d<double, 3> other_to_me_vect;
@@ -490,9 +292,7 @@ namespace Kratos {
     }
     
     void Cluster3D::Move(const double delta_t, const bool rotation_option, const double force_reduction_factor, const int StepFlag ) {
-        GetIntegrationScheme().MoveCluster(this, GetGeometry()[0], delta_t, rotation_option, force_reduction_factor, StepFlag);            
+        GetIntegrationScheme().MoveRigidBodyElement(this, GetGeometry()[0], delta_t, rotation_option, force_reduction_factor, StepFlag);            
     }
     
-    
-    
-}  // namespace Kratos.
+}  // namespace Kratos
