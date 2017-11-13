@@ -114,8 +114,12 @@ public:
     
     /**
      * This method is used to compute the directional derivatives of the jacobian determinant
+     * @param DecompGeom: The triangle used to decompose the geometry
+     * @param rVariables: The kinematic variables
+     * @param rDerivativeData: The derivatives container
      */
     static inline void CalculateDeltaDetjSlave(
+        const DecompositionType& DecompGeom,
         GeneralVariables& rVariables,
         DerivativeDataType& rDerivativeData
         )
@@ -131,32 +135,58 @@ public:
         }
         else
         {
-            const array_1d<double,TNumNodes>& DNDxi  = column( rVariables.DNDeSlave, 0 );
-            const array_1d<double,TNumNodes>& DNDeta = column( rVariables.DNDeSlave, 1 );
+            const array_1d<double, 3>& x1cell = DecompGeom[0].Coordinates();
+            const array_1d<double, 3>& x2cell = DecompGeom[1].Coordinates();
+            const array_1d<double, 3>& x3cell = DecompGeom[2].Coordinates();
             
-            const array_1d<double,TDim>& Jxi  = column( rVariables.jSlave, 0 );
-            const array_1d<double,TDim>& Jeta = column( rVariables.jSlave, 1 );
+            const array_1d<double, 3>& x21cell = x2cell - x1cell;
+            const array_1d<double, 3>& x31cell = x3cell - x1cell;
             
-            const array_1d<double,TDim>& normal = prod(trans(rDerivativeData.NormalMaster), rVariables.NSlave);
+            array_1d<double, 3> aux_cross_product;
+            MathUtils<double>::CrossProduct(aux_cross_product, x21cell, x31cell);
+            aux_cross_product /= norm_2(aux_cross_product);
             
-            bounded_matrix<double, TDim, TDim> DeltaJxixJeta;
-            
-            for ( unsigned int i_slave = 0, i = 0; i_slave < TNumNodes; ++i_slave, i += TDim )
+            for ( unsigned int i_node = 0; i_node < 2 * TNumNodes; ++i_node ) // TODO: Consider the master too
             {
-                DeltaJxixJeta(0,0) = 0.0;
-                DeltaJxixJeta(0,1) =  Jeta(2) * DNDxi(i_slave) - Jxi(2) * DNDeta(i_slave); 
-                DeltaJxixJeta(0,2) = -Jeta(1) * DNDxi(i_slave) + Jxi(1) * DNDeta(i_slave); 
-                DeltaJxixJeta(1,0) = -Jeta(2) * DNDxi(i_slave) + Jxi(2) * DNDeta(i_slave); 
-                DeltaJxixJeta(1,1) = 0.0;
-                DeltaJxixJeta(1,2) =  Jeta(0) * DNDxi(i_slave) - Jxi(0) * DNDeta(i_slave);
-                DeltaJxixJeta(2,0) =  Jeta(1) * DNDxi(i_slave) - Jxi(1) * DNDeta(i_slave); 
-                DeltaJxixJeta(2,1) = -Jeta(0) * DNDxi(i_slave) + Jxi(0) * DNDeta(i_slave); 
-                DeltaJxixJeta(2,2) = 0.0;
-                
-                rDerivativeData.DeltaDetjSlave[i    ] = inner_prod( normal, column( DeltaJxixJeta, 0 ) );
-                rDerivativeData.DeltaDetjSlave[i + 1] = inner_prod( normal, column( DeltaJxixJeta, 1 ) );
-                rDerivativeData.DeltaDetjSlave[i + 2] = inner_prod( normal, column( DeltaJxixJeta, 2 ) );
+                for (unsigned i_dof = 0; i_dof < TDim; ++i_dof) 
+                {
+                    const bounded_matrix<double, 3, 3>& local_delta_vertex = rDerivativeData.DeltaCellVertex[i_node * TDim + i_dof];
+                    array_1d<double, 3> aux_delta_cross_product1, aux_delta_cross_product2;
+                    
+                    MathUtils<double>::CrossProduct(aux_delta_cross_product1, row(local_delta_vertex, 1) - row(local_delta_vertex, 0), x31cell);
+                    MathUtils<double>::CrossProduct(aux_delta_cross_product2, x21cell, row(local_delta_vertex, 2) - row(local_delta_vertex, 0));
+                    
+                    rDerivativeData.DeltaDetjSlave[i_node * TDim + i_dof] = inner_prod(aux_cross_product, aux_delta_cross_product1) + inner_prod(aux_cross_product, aux_delta_cross_product2);
+                }
             }
+        
+            // NOTE: Legacy way (just linear convergence)
+//             const array_1d<double,TNumNodes>& DNDxi  = column( rVariables.DNDeSlave, 0 );
+//             const array_1d<double,TNumNodes>& DNDeta = column( rVariables.DNDeSlave, 1 );
+//             
+//             const array_1d<double,TDim>& Jxi  = column( rVariables.jSlave, 0 );
+//             const array_1d<double,TDim>& Jeta = column( rVariables.jSlave, 1 );
+//             
+//             const array_1d<double,TDim>& normal = prod(trans(rDerivativeData.NormalMaster), rVariables.NSlave);
+//             
+//             bounded_matrix<double, TDim, TDim> DeltaJxixJeta;
+//             
+//             for ( unsigned int i_slave = 0, i = 0; i_slave < TNumNodes; ++i_slave, i += TDim )
+//             {
+//                 DeltaJxixJeta(0,0) = 0.0;
+//                 DeltaJxixJeta(0,1) =  Jeta(2) * DNDxi(i_slave) - Jxi(2) * DNDeta(i_slave); 
+//                 DeltaJxixJeta(0,2) = -Jeta(1) * DNDxi(i_slave) + Jxi(1) * DNDeta(i_slave); 
+//                 DeltaJxixJeta(1,0) = -Jeta(2) * DNDxi(i_slave) + Jxi(2) * DNDeta(i_slave); 
+//                 DeltaJxixJeta(1,1) = 0.0;
+//                 DeltaJxixJeta(1,2) =  Jeta(0) * DNDxi(i_slave) - Jxi(0) * DNDeta(i_slave);
+//                 DeltaJxixJeta(2,0) =  Jeta(1) * DNDxi(i_slave) - Jxi(1) * DNDeta(i_slave); 
+//                 DeltaJxixJeta(2,1) = -Jeta(0) * DNDxi(i_slave) + Jxi(0) * DNDeta(i_slave); 
+//                 DeltaJxixJeta(2,2) = 0.0;
+//                 
+//                 rDerivativeData.DeltaDetjSlave[i    ] = inner_prod( normal, column( DeltaJxixJeta, 0 ) );
+//                 rDerivativeData.DeltaDetjSlave[i + 1] = inner_prod( normal, column( DeltaJxixJeta, 1 ) );
+//                 rDerivativeData.DeltaDetjSlave[i + 2] = inner_prod( normal, column( DeltaJxixJeta, 2 ) );
+//             }
         }
     }
     
@@ -856,7 +886,7 @@ public:
                     if (TDim == 3) CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, ConsiderNormalVariation, SlaveGeometry, master_geometry, SlaveNormal);
                                     
                     // Update the derivative of DetJ
-                    CalculateDeltaDetjSlave(rVariables, rDerivativeData); 
+                    CalculateDeltaDetjSlave(decomp_geom, rVariables, rDerivativeData); 
                     
                     // Integrate
                     const double integration_weight = AxiSymCoeff * integration_points_slave[point_number].Weight();

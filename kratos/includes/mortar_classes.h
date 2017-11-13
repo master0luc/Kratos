@@ -497,7 +497,7 @@ public:
     ///@{
     
     // Auxiliar types
-    typedef array_1d<double, TNumNodes>                  type_1;
+    typedef array_1d<double, TNumNodes>                                         type_1;
     typedef boost::numeric::ublas::bounded_matrix<double, TNumNodes, TDim>      type_2;
     typedef boost::numeric::ublas::bounded_matrix<double, TNumNodes, TNumNodes> type_3;
     typedef boost::numeric::ublas::bounded_matrix<double, 3, 3>                 type_4;
@@ -505,6 +505,7 @@ public:
     // Auxiliar sizes
     static const unsigned int size_1 =     (TNumNodes * TDim);
     static const unsigned int size_2 = 2 * (TNumNodes * TDim);
+    static const unsigned int size_3 = (TDim == 2) ? size_1 : size_2;
     
     ///@}
     ///@name Life Cycle
@@ -525,7 +526,7 @@ public:
     type_2 X1, X2, u1, u2;
     
     // Derivatives    
-    array_1d<double, size_1> DeltaDetjSlave;
+    array_1d<double, size_3> DeltaDetjSlave;
     array_1d<type_1, size_1> DeltaPhi;
     array_1d<type_1, size_2> DeltaN1, DeltaN2;
     array_1d<type_2, size_1> DeltaNormalSlave, DeltaNormalMaster;
@@ -1139,39 +1140,51 @@ public:
         // Derivatives
         constexpr unsigned int size_1 =     (TNumNodes * TDim);
         constexpr unsigned int size_2 = 2 * (TNumNodes * TDim);
+        constexpr unsigned int size_3 = (TDim == 2) ? size_1 : size_2;
 
-        const array_1d<double, size_1>& delta_j_slave  = rDerivativeData.DeltaDetjSlave;
+        const array_1d<double, size_3>& delta_det_j_slave = rDerivativeData.DeltaDetjSlave;
         const array_1d<array_1d<double, TNumNodes >, size_1>& delta_phi = rDerivativeData.DeltaPhi;
         const array_1d<array_1d<double, TNumNodes >, size_2>& delta_n1  = rDerivativeData.DeltaN1;
         const array_1d<array_1d<double, TNumNodes >, size_2>& delta_n2  = rDerivativeData.DeltaN2;
         
-        for (unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave)
+        for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
         {
-            const double& phi = vector_phi[i_slave];
+            const double& phi = vector_phi[i_node];
             
-            for (unsigned int j_slave = 0; j_slave < TNumNodes; ++j_slave)
+            for (unsigned int j_node = 0; j_node < TNumNodes; ++j_node)
             {
-                const double& n1 = vector_n1[j_slave];
-                const double& n2 = vector_n2[j_slave];
+                const double n1 = vector_n1[j_node];
+                const double n2 = vector_n2[j_node];
                 
-                BaseClassType::DOperator(i_slave, j_slave) += det_j_slave * rIntegrationWeight * phi * n1;
-                BaseClassType::MOperator(i_slave, j_slave) += det_j_slave * rIntegrationWeight * phi * n2;
+                BaseClassType::DOperator(i_node, j_node) += det_j_slave * rIntegrationWeight * phi * n1;
+                BaseClassType::MOperator(i_node, j_node) += det_j_slave * rIntegrationWeight * phi * n2;
                 
                 for (unsigned int i = 0; i < TDim * TNumNodes; ++i)
                 {
-                    DeltaDOperator[i](i_slave, j_slave) += delta_j_slave[i] * rIntegrationWeight * phi* n1        
-                                                    + det_j_slave * rIntegrationWeight * delta_phi[i][i_slave] * n1
-                                                    + det_j_slave * rIntegrationWeight * phi* delta_n1[i][j_slave];
+                    DeltaDOperator[i](i_node, j_node) += delta_det_j_slave[i] * rIntegrationWeight * phi* n1        
+                                                       + det_j_slave * rIntegrationWeight * delta_phi[i][i_node] * n1
+                                                       + det_j_slave * rIntegrationWeight * phi* delta_n1[i][j_node];
                                                                                 
-                    DeltaMOperator[i](i_slave, j_slave) += delta_j_slave[i] * rIntegrationWeight * phi* n2        
-                                                    + det_j_slave * rIntegrationWeight * delta_phi[i][i_slave] * n2
-                                                    + det_j_slave * rIntegrationWeight * phi* delta_n2[i][j_slave];
+                    DeltaMOperator[i](i_node, j_node) += delta_det_j_slave[i] * rIntegrationWeight * phi* n2        
+                                                       + det_j_slave * rIntegrationWeight * delta_phi[i][i_node] * n2
+                                                       + det_j_slave * rIntegrationWeight * phi* delta_n2[i][j_node];
                 }
                 for (unsigned int i = TDim * TNumNodes; i < 2 * TDim * TNumNodes; ++i)
                 {
-                    DeltaDOperator[i](i_slave, j_slave) += det_j_slave * rIntegrationWeight * phi * delta_n1[i][j_slave];
+                    DeltaDOperator[i](i_node, j_node) += det_j_slave * rIntegrationWeight * phi * delta_n1[i][j_node];
                                                                                 
-                    DeltaMOperator[i](i_slave, j_slave) += det_j_slave * rIntegrationWeight * phi * delta_n2[i][j_slave];
+                    DeltaMOperator[i](i_node, j_node) += det_j_slave * rIntegrationWeight * phi * delta_n2[i][j_node];
+                }
+                if (TDim == 3)
+                {
+                    for (unsigned int i = TDim * TNumNodes; i < 2 * TDim * TNumNodes; ++i)
+                    {
+                        DeltaDOperator[i](i_node, j_node) += delta_det_j_slave[i] * rIntegrationWeight * phi * n1;
+//                         DeltaDOperator[i](i_node, j_node) += det_j_slave * rIntegrationWeight * delta_phi[i][i_node] * n1;
+                                                                                    
+                        DeltaMOperator[i](i_node, j_node) += delta_det_j_slave[i] * rIntegrationWeight * phi * n2;
+//                         DeltaMOperator[i](i_node, j_node) += det_j_slave * rIntegrationWeight * delta_phi[i][i_node] * n2;
+                    }
                 }
             }
         }

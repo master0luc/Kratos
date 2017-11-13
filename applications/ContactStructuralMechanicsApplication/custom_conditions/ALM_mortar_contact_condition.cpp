@@ -747,9 +747,9 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                                 // Update the derivative of the integration vertex (just in 3D)
                                 if (TDim == 3) DerivativesUtilitiesType::CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, slave_geometry, master_geometry, slave_normal);
                                 // Update the derivative of DetJ
-                                DerivativesUtilitiesType::CalculateDeltaDetjSlave(rVariables, rDerivativeData);
+                                DerivativesUtilitiesType::CalculateDeltaDetjSlave(decomp_geom, rVariables, rDerivativeData);
                                 // Update the derivatives of the shape functions and the gap
-//                                 DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, slave_geometry, master_geometry, slave_normal, master_normal, decomp_geom, local_point_decomp, local_point_parent);
+                                DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, slave_geometry, master_geometry, slave_normal, master_normal, decomp_geom, local_point_decomp, local_point_parent);
                                 // The derivatives of the dual shape function 
                                 DerivativesUtilitiesType::CalculateDeltaPhi(rVariables, rDerivativeData);
                                 
@@ -889,7 +889,7 @@ bool AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
                 if (TDim == 3) DerivativesUtilitiesType::CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, slave_geometry, mThisMasterElements[PairIndex]->GetGeometry(), slave_normal);
                                 
                 // Update the derivative of DetJ
-                DerivativesUtilitiesType::CalculateDeltaDetjSlave(rVariables, rDerivativeData); 
+                DerivativesUtilitiesType::CalculateDeltaDetjSlave(decomp_geom, rVariables, rDerivativeData); 
                 
                 // Integrate
                 const double integration_weight = GetIntegrationWeight(rVariables, integration_points_slave, point_number);

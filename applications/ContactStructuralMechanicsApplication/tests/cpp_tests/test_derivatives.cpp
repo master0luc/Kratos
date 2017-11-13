@@ -247,7 +247,7 @@ namespace Kratos
                                     if (TDim == 3) DerivativesUtilitiesType::CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, slave_geometry_1, master_geometry_1, normal_slave_1);
         
                                     // Update the derivative of DetJ
-                                    DerivativesUtilitiesType::CalculateDeltaDetjSlave(rVariables, rDerivativeData);
+                                    DerivativesUtilitiesType::CalculateDeltaDetjSlave(decomp_geom, rVariables, rDerivativeData);
                                     
                                     // Update the derivatives of the shape functions and the gap
                                     DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, slave_geometry_1, master_geometry_1, normal_slave_1, normal_master_1, decomp_geom, local_point_decomp, local_point_parent, consider_normal_variation);
@@ -297,7 +297,7 @@ namespace Kratos
                                     {
                                         // Now we compute the error of the delta Jacobian
                                         double aux_Detj_dx_slave = rVariables0.DetjSlave;
-                                        for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+                                        for (unsigned int i_node = 0; i_node < 2 * TNumNodes; ++i_node)
                                         {
                                             array_1d<double, 3> delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
                                             for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
@@ -375,7 +375,7 @@ namespace Kratos
                          {
                              KRATOS_CHECK_GREATER_EQUAL(slope_slave, quadratic_threshold);
                          }
-                         else 
+                         else if ((slope_slave - 1.0) > tolerance) 
                          {
                              KRATOS_WATCH(slope_slave);
                          }
@@ -393,7 +393,7 @@ namespace Kratos
                          {
                              KRATOS_CHECK_GREATER_EQUAL(slope_master, quadratic_threshold);
                          }
-                         else 
+                         else if ((slope_master - 1.0) > tolerance)  
                          {
                              KRATOS_WATCH(slope_master);
                          }
@@ -405,6 +405,96 @@ namespace Kratos
                 KRATOS_WATCH(error_vector_slave)
                 KRATOS_WATCH(error_vector_master)
             }
+        }
+        
+        /** 
+         * Checks if the derivatives of the jacobian work as expected
+         * Case 1 of the Triangle3D3
+         */
+    
+        KRATOS_TEST_CASE_IN_SUITE(TestJacobianDerivativesTriangle1, ContactStructuralApplicationFastSuite)
+        {
+            ModelPart model_part("Main");
+            model_part.SetBufferSize(2);
+            model_part.GetProcessInfo()[CONSIDER_NORMAL_VARIATION] = false;
+            
+            Properties::Pointer p_cond_prop = model_part.pGetProperties(0);
+            
+            // Variables addition
+            model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            
+            PointType aux_point;
+            aux_point.Coordinates() = ZeroVector(3);
+            
+            // First we create the nodes 
+            NodeType::Pointer p_node_1 = model_part.CreateNewNode(1, 0.0,0.0,0.0);
+            NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.0,0.0,0.0);
+            NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 0.0,1.0,0.0);
+            
+            NodeType::Pointer p_node_4 = model_part.CreateNewNode(4, 0.0,1.0,1.0e-3);
+            NodeType::Pointer p_node_5 = model_part.CreateNewNode(5, 0.0,0.0,1.0e-3);
+            NodeType::Pointer p_node_6 = model_part.CreateNewNode(6, 1.0,0.0,1.0e-3);
+            
+            NodeType::Pointer p_node0_1 = model_part.CreateNewNode(7, p_node_1->X(), p_node_1->Y(), p_node_1->Z());
+            NodeType::Pointer p_node0_2 = model_part.CreateNewNode(8, p_node_2->X(), p_node_2->Y(), p_node_2->Z());
+            NodeType::Pointer p_node0_3 = model_part.CreateNewNode(9, p_node_3->X(), p_node_3->Y(), p_node_3->Z());
+            
+            NodeType::Pointer p_node0_4 = model_part.CreateNewNode(10, p_node_4->X(), p_node_4->Y(), p_node_4->Z());
+            NodeType::Pointer p_node0_5 = model_part.CreateNewNode(11, p_node_5->X(), p_node_5->Y(), p_node_5->Z());
+            NodeType::Pointer p_node0_6 = model_part.CreateNewNode(12, p_node_6->X(), p_node_6->Y(), p_node_6->Z());
+            
+            // Now we create the "conditions"
+            std::vector<NodeType::Pointer> condition_nodes_0 (3);
+            condition_nodes_0[0] = p_node_1;
+            condition_nodes_0[1] = p_node_2;
+            condition_nodes_0[2] = p_node_3;
+            Triangle3D3 <Node<3>> triangle_0( condition_nodes_0 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_0 (3);
+            condition_nodes0_0[0] = p_node0_1;
+            condition_nodes0_0[1] = p_node0_2;
+            condition_nodes0_0[2] = p_node0_3;
+            Triangle3D3 <Node<3>> triangle0_0( condition_nodes0_0 );
+            
+            const array_1d<double, 3>& normal_0 = triangle_0.UnitNormal(aux_point);
+            Condition::Pointer p_cond_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 1, triangle_0, p_cond_prop);
+            Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 3, triangle0_0, p_cond_prop);
+            p_node_1->SetValue(NORMAL, normal_0);
+            p_node_2->SetValue(NORMAL, normal_0);
+            p_node_3->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
+            
+            p_node0_1->SetValue(NORMAL, normal_0);
+            p_node0_2->SetValue(NORMAL, normal_0);
+            p_node0_3->SetValue(NORMAL, normal_0);
+            p_cond0_0->SetValue(NORMAL, normal_0);
+            
+            std::vector<NodeType::Pointer> condition_nodes_1 (3);
+            condition_nodes_1[0] = p_node_4;
+            condition_nodes_1[1] = p_node_5;
+            condition_nodes_1[2] = p_node_6;
+            Triangle3D3 <Node<3>> triangle_1( condition_nodes_1 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_1 (3);
+            condition_nodes0_1[0] = p_node0_4;
+            condition_nodes0_1[1] = p_node0_5;
+            condition_nodes0_1[2] = p_node0_6;
+            Triangle3D3 <Node<3>> triangle0_1( condition_nodes0_1 );
+            
+            const array_1d<double, 3>& normal_1 = triangle_0.UnitNormal(aux_point);
+            Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 2, triangle_1, p_cond_prop);
+            Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 4, triangle0_1, p_cond_prop);
+            p_node_4->SetValue(NORMAL, normal_1);
+            p_node_5->SetValue(NORMAL, normal_1);
+            p_node_6->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
+            
+            p_node0_4->SetValue(NORMAL, normal_1);
+            p_node0_5->SetValue(NORMAL, normal_1);
+            p_node0_6->SetValue(NORMAL, normal_1);
+            p_cond0_1->SetValue(NORMAL, normal_1);
+            
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 1, -5.0e-2, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
