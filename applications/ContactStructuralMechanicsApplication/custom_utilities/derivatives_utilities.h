@@ -774,7 +774,6 @@ public:
         )
     {
         // Type definitions
-        typedef PointBelong<TNumNodes> PointBelongType;
         typedef Line2D2<PointType> LineType;
         typedef Triangle3D3<PointType> TriangleType;
         typedef typename std::conditional<TDim == 2, LineType, TriangleType >::type DecompositionType;
