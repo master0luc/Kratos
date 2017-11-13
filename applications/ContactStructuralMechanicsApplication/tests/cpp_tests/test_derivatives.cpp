@@ -357,7 +357,15 @@ namespace Kratos
             }
             else if (Check == LEVEL_QUADRATIC_CONVERGENCE)
             {
-                // TODO
+                 for (unsigned int iter = 0; iter < NumberIterations - 1; ++iter)
+                 {
+                     const double log_coeff = std::log((static_cast<double>(iter) + 2.0)/(static_cast<double>(iter) + 1.0));
+                     const double slope_slave = std::log(error_vector_slave[iter + 1]/error_vector_slave[iter])/log_coeff;
+                     const double slope_master = std::log(error_vector_master[iter + 1]/error_vector_master[iter])/log_coeff;
+                     
+                     KRATOS_CHECK_GREATER_EQUAL(slope_slave, 1.9);
+                     KRATOS_CHECK_GREATER_EQUAL(slope_master, 1.9);
+                 }
             }
             else // LEVEL_DEBUG
             {
