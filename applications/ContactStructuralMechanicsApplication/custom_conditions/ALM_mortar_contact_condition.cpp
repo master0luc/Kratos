@@ -476,7 +476,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
     IntegrationUtility integration_utility = IntegrationUtility (mIntegrationOrder);
     
     // If we consider the normal variation
-//     const bool consider_normal_variation = rCurrentProcessInfo[CONSIDER_NORMAL_VARIATION];
+    const bool consider_normal_variation = rCurrentProcessInfo[CONSIDER_NORMAL_VARIATION];
     
     // Iterate over the master segments
     for (unsigned int pair_index = 0; pair_index < mPairSize; ++pair_index)
@@ -508,10 +508,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
                 // Initialize the mortar operators
                 rThisMortarConditionMatrices.Initialize();
                 
-                // TODO: Replace with the one in the derivatives_utilities.h->Requires to move the axisymmetric coefficient
-                const bool dual_LM = this->CalculateAeAndDeltaAe(rDerivativeData, rVariables, rCurrentProcessInfo, pair_index, conditions_points_slave, this_integration_method, master_normal);
-                
-//                 const bool dual_LM =  DerivativesUtilitiesType::CalculateAeAndDeltaAe(slave_geometry, normal_slave, mThisMasterElements[pair_index], rDerivativeData, rVariables, consider_normal_variation, conditions_points_slave, this_integration_method);
+                const bool dual_LM = DerivativesUtilitiesType::CalculateAeAndDeltaAe(slave_geometry, normal_slave, mThisMasterElements[pair_index], rDerivativeData, rVariables, consider_normal_variation, conditions_points_slave, this_integration_method, GetAxisymmetricCoefficient(rVariables));
                 
                 for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
                 {
@@ -546,7 +543,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
                             // Calculate the kinematic variables
                             this->CalculateKinematics( rVariables, rDerivativeData, master_normal, pair_index, local_point_decomp, local_point_parent, decomp_geom, dual_LM);//, delta_position_slave);
                             
-                            const double integration_weight = GetIntegrationWeight(rVariables, integration_points_slave, point_number);
+                            const double integration_weight = integration_points_slave[point_number].Weight() * GetAxisymmetricCoefficient(rVariables);
                             
                             rThisMortarConditionMatrices.CalculateMortarOperators(rVariables, integration_weight);   
                         }
@@ -633,7 +630,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
         
     // The slave geometry
     GeometryType& slave_geometry = this->GetGeometry();
-    const array_1d<double, 3>& slave_normal = this->GetValue(NORMAL);
+    const array_1d<double, 3>& normal_slave = this->GetValue(NORMAL);
     
     // Create and initialize condition variables
     GeneralVariables rVariables;
@@ -669,7 +666,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
             
             // Reading integration points
             ConditionArrayListType conditions_points_slave;
-            const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, this->GetValue(NORMAL), master_geometry, master_normal, conditions_points_slave);
+            const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, master_normal, conditions_points_slave);
             
             double integration_area;
             integration_utility.GetTotalArea(slave_geometry, conditions_points_slave, integration_area);
@@ -693,8 +690,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                     DerivativesUtilitiesType::CalculateDeltaNormalMaster(rDerivativeData, master_geometry);
                 }
                 
-                // TODO: Replace with the one in the derivatives_utilities.h->Requires to move the axisymmetric coefficient
-                const bool dual_LM = this->CalculateAeAndDeltaAe(rDerivativeData, rVariables, rCurrentProcessInfo, pair_index, conditions_points_slave, this_integration_method, master_normal);
+                const bool dual_LM =  DerivativesUtilitiesType::CalculateAeAndDeltaAe(slave_geometry, normal_slave, mThisMasterElements[pair_index], rDerivativeData, rVariables, consider_normal_variation, conditions_points_slave, this_integration_method, GetAxisymmetricCoefficient(rVariables));
                 
             #ifdef KRATOS_DEBUG
                 if (dual_LM == false)
@@ -744,18 +740,18 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                             // Calculate the kinematic variables
                             this->CalculateKinematics( rVariables, rDerivativeData, master_normal, pair_index, local_point_decomp, local_point_parent, decomp_geom, dual_LM);//, delta_position_slave);
                             
-                            const double integration_weight = GetIntegrationWeight(rVariables, integration_points_slave, point_number);
+                            const double integration_weight = integration_points_slave[point_number].Weight() * GetAxisymmetricCoefficient(rVariables);
                             
                             if ( rLocalSystem.CalculationFlags.Is( AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>::COMPUTE_LHS_MATRIX ) ||
                                     rLocalSystem.CalculationFlags.Is( AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>::COMPUTE_LHS_MATRIX_WITH_COMPONENTS ) )
                             {
                                 /* Update the derivatives */
                                 // Update the derivative of the integration vertex (just in 3D)
-                                if (TDim == 3) DerivativesUtilitiesType::CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, slave_geometry, master_geometry, slave_normal);
+                                if (TDim == 3) DerivativesUtilitiesType::CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, slave_geometry, master_geometry, normal_slave);
                                 // Update the derivative of DetJ
                                 DerivativesUtilitiesType::CalculateDeltaDetjSlave(decomp_geom, rVariables, rDerivativeData);
                                 // Update the derivatives of the shape functions and the gap
-                                DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, slave_geometry, master_geometry, slave_normal, master_normal, decomp_geom, local_point_decomp, local_point_parent, consider_normal_variation, dual_LM);
+                                DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, slave_geometry, master_geometry, normal_slave, master_normal, decomp_geom, local_point_decomp, local_point_parent, consider_normal_variation, dual_LM);
                                 
                                 rThisMortarConditionMatrices.CalculateDeltaMortarOperators(rVariables, rDerivativeData, integration_weight);    
                             }
@@ -816,94 +812,6 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
     }
     
     KRATOS_CATCH( "" );
-}
-
-/***********************************************************************************/
-/***********************************************************************************/
-
-template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional>
-bool AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>::CalculateAeAndDeltaAe(
-    DerivativeDataType& rDerivativeData,
-    GeneralVariables& rVariables,
-    const ProcessInfo& rCurrentProcessInfo,
-    const unsigned int PairIndex,
-    ConditionArrayListType& ConditionsPointsSlave,
-    IntegrationMethod ThisIntegrationMethod,
-    const array_1d<double, 3>& MasterNormal
-    )
-{
-    // We initilize the Ae components
-    AeData rAeData;
-    rAeData.Initialize();
-    
-    rDerivativeData.InitializeDeltaAeComponents();
-
-    // Initialize general variables for the current master element
-    rVariables.Initialize();
-    
-    // Update slave element info
-    rDerivativeData.UpdateMasterPair(mThisMasterElements[PairIndex]);
-    
-    const bool consider_normal_variation = rCurrentProcessInfo[CONSIDER_NORMAL_VARIATION];
-    
-    GeometryType& slave_geometry = this->GetGeometry();
-    const array_1d<double, 3>& slave_normal = this->GetValue(NORMAL);
-    
-    for (unsigned int i_geom = 0; i_geom < ConditionsPointsSlave.size(); ++i_geom)
-    {
-        std::vector<PointType::Pointer> points_array (TDim); // The points are stored as local coordinates, we calculate the global coordinates of this points
-        array_1d<BelongType, TDim> belong_array;
-        for (unsigned int i_node = 0; i_node < TDim; ++i_node)
-        {
-            PointType global_point;
-            slave_geometry.GlobalCoordinates(global_point, ConditionsPointsSlave[i_geom][i_node]);
-            points_array[i_node] = boost::make_shared<PointType>(global_point);
-            belong_array[i_node] = ConditionsPointsSlave[i_geom][i_node].GetBelong();
-        }
-        
-        DecompositionType decomp_geom( points_array );
-        
-        const bool bad_shape = (TDim == 2) ? MortarUtilities::LengthCheck(decomp_geom, slave_geometry.Length() * 1.0e-6) : MortarUtilities::HeronCheck(decomp_geom);
-        
-        if (bad_shape == false)
-        {
-//             /* Delta position */
-//             Matrix delta_position_slave;
-//             delta_position_slave = DerivativesUtilitiesType::CalculateDeltaPosition(delta_position_slave, slave_geometry, ConditionsPointsSlave[i_geom]);
-            
-            const GeometryType::IntegrationPointsArrayType& integration_points_slave = decomp_geom.IntegrationPoints( ThisIntegrationMethod );
-            
-            // Integrating the mortar operators
-            for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); ++point_number )
-            {
-                // We reset the derivatives
-                rDerivativeData.ResetDerivatives();
-                            
-                // We compute the local coordinates 
-                const PointType local_point_decomp = integration_points_slave[point_number].Coordinates();
-                PointType local_point_parent;
-                PointType gp_global;
-                decomp_geom.GlobalCoordinates(gp_global, local_point_decomp);
-                slave_geometry.PointLocalCoordinates(local_point_parent, gp_global);
-                
-                // Calculate the kinematic variables
-                this->CalculateKinematics( rVariables, rDerivativeData, MasterNormal, PairIndex, local_point_decomp, local_point_parent, decomp_geom, false);//, delta_position_slave);
-                
-                // Update the derivative of the integration vertex (just in 3D)
-                if (TDim == 3) DerivativesUtilitiesType::CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, slave_geometry, mThisMasterElements[PairIndex]->GetGeometry(), slave_normal);
-                                
-                // Update the derivative of DetJ
-                DerivativesUtilitiesType::CalculateDeltaDetjSlave(decomp_geom, rVariables, rDerivativeData); 
-                
-                // Integrate
-                const double integration_weight = GetIntegrationWeight(rVariables, integration_points_slave, point_number);
-                
-                rAeData.CalculateDeltaAeComponents(rVariables, rDerivativeData, integration_weight);
-            }
-        }
-    }
-    
-    return rAeData.CalculateDeltaAe(rDerivativeData);
 }
 
 /*********************************COMPUTE KINEMATICS*********************************/
@@ -1402,13 +1310,9 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>
 /***********************************************************************************/
 
 template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional>
-double AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional>::GetIntegrationWeight(
-    GeneralVariables& rVariables,
-    const GeometryType::IntegrationPointsArrayType& ThisIntegrationMethod,
-    const unsigned int PointNumber
-    )
+double AugmentedLagrangianMethodMortarContactCondition< TDim, TNumNodes, TFrictional >::GetAxisymmetricCoefficient(const GeneralVariables& rVariables) const
 {
-    return ThisIntegrationMethod[PointNumber].Weight();
+    return 1.0;
 }
     
 /***********************************************************************************/

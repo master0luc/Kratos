@@ -72,6 +72,8 @@ public:
     
     typedef array_1d<PointBelongType,TDim>                                      ConditionArrayType;
     
+    typedef typename std::vector<ConditionArrayType>                        ConditionArrayListType;
+    
     typedef Line2D2<PointType>                                                            LineType;
     
     typedef Triangle3D3<PointType>                                                    TriangleType;
@@ -114,9 +116,9 @@ public:
     
     /**
      * This method is used to compute the directional derivatives of the jacobian determinant
-     * @param DecompGeom: The triangle used to decompose the geometry
-     * @param rVariables: The kinematic variables
-     * @param rDerivativeData: The derivatives container
+     * @param DecompGeom The triangle used to decompose the geometry
+     * @param rVariables The kinematic variables
+     * @param rDerivativeData The derivatives container
      */
     static inline void CalculateDeltaDetjSlave(
         const DecompositionType& DecompGeom,
@@ -192,6 +194,9 @@ public:
     
     /**
      * This method is used to compute the local increment of the normal
+     * @param CondGeometry The geometry where the delta normal is computed
+     * @param NodeIndex The index of the node of the geometry considered
+     * @return The matrix containing the delta normals
      * NOTE: Not the mean, look in the contact utilities 
      */
     static inline bounded_matrix<double, TDim, TDim> LocalDeltaNormal(
@@ -325,6 +330,8 @@ public:
     
     /**
      * Calculates the increment of the normal in the slave condition
+     * @param rDerivativeData The class containing the derivatives
+     * @param SlaveGeometry The geometry of the slave side
      */
     
     static inline void CalculateDeltaNormalSlave(
@@ -348,6 +355,8 @@ public:
     
     /**
      * Calculates the increment of the normal and in the master condition
+     * @param rDerivativeData The class containing the derivatives
+     * @param MasterGeometry The geometry of the master side
      */
     
     static inline void CalculateDeltaNormalMaster(
@@ -371,13 +380,13 @@ public:
     
     /**
      * This method is used to compute the directional derivatives of the cell vertex
-     * @param rVariables: The kinematic variables
-     * @param rDerivativeData: The derivatives container
-     * @param TheseBelongs: The belongs list used in the derivatives
-     * @param ConsiderNormalVariation: If consider the normal derivative
-     * @param SlaveGeometry: The slave geometry
-     * @param MasterGeometry: The master geometry
-     * @param Normal: The normal vector
+     * @param rVariables The kinematic variables
+     * @param rDerivativeData The derivatives container
+     * @param TheseBelongs The belongs list used in the derivatives
+     * @param ConsiderNormalVariation If consider the normal derivative
+     * @param SlaveGeometry The slave geometry
+     * @param MasterGeometry The master geometry
+     * @param Normal The normal vector of the slave geometry
      * The  procedure will be the following in order to compute the derivative of the clipping 
      * The expression of the clipping is the following:
      *      xclipp = xs1 - num/denom * diff3
@@ -533,16 +542,16 @@ public:
 
     /**
      * Calculates the increment of the shape functions
-     * @param rVariables: The kinematic variables
-     * @param rDerivativeData: The derivatives container
-     * @param SlaveGeometry: The geometry of the slave side
-     * @param MasterGeometry: The geometry of the master side
-     * @param SlaveNormal: The normal of the slave side
-     * @param MasterNormal: The normal of the master side
-     * @param DecompGeom: The triangle used to decompose the geometry
-     * @param LocalPointDecomp: The local coordinates in the decomposed geometry
-     * @param LocalPointParent: The local coordinates in the slave geometry
-     * @param ConsiderNormalVariation: If consider the normal derivative
+     * @param rVariables The kinematic variables
+     * @param rDerivativeData The derivatives container
+     * @param SlaveGeometry The geometry of the slave side
+     * @param MasterGeometry The geometry of the master side
+     * @param SlaveNormal The normal of the slave side
+     * @param MasterNormal The normal of the master side
+     * @param DecompGeom The triangle used to decompose the geometry
+     * @param LocalPointDecomp The local coordinates in the decomposed geometry
+     * @param LocalPointParent The local coordinates in the slave geometry
+     * @param ConsiderNormalVariation If consider the normal derivative
      */
     
     static inline void CalculateDeltaN(
@@ -629,8 +638,8 @@ public:
     
     /**
      * Returns a matrix with the increment of displacements, that can be used for compute the Jacobian reference (current) configuration
-     * @param DeltaPosition: The matrix with the increment of displacements 
-     * @param LocalCoordinates: The array containing the local coordinates of the exact integration segment
+     * @param DeltaPosition The matrix with the increment of displacements 
+     * @param LocalCoordinates The array containing the local coordinates of the exact integration segment
      */
     
     Matrix& CalculateDeltaPosition(
@@ -666,8 +675,8 @@ public:
     
     /**
      * Returns a matrix with the increment of displacements
-     * @param DeltaPosition: The matrix with the increment of displacements 
-     * @param ThisGeometry: The geometry considered 
+     * @param DeltaPosition The matrix with the increment of displacements 
+     * @param ThisGeometry The geometry considered 
      */
     
     static inline Matrix& CalculateDeltaPosition(
@@ -778,27 +787,30 @@ public:
     
     /**
      * Calculate Ae and DeltaAe matrices
+     * @param SlaveGeometry The geometry of the slave side
+     * @param SlaveNormal The normal of the slave side
+     * @param pMasterCondition The pointer to the master side
+     * @param rDerivativeData The derivatives container
+     * @param rVariables The kinematic variables
+     * @param ConsiderNormalVariation If consider the normal derivative
+     * @param ConditionsPointsSlave The points that configure the exact decomposition of the geometry
+     * @param ThisIntegrationMethod The integration method considered
+     * @param AxiSymCoeff The axisymmetric coefficient
      */
     static inline bool CalculateAeAndDeltaAe(
         GeometryType& SlaveGeometry,
         const array_1d<double, 3>& SlaveNormal,
         Condition::Pointer pMasterCondition,
-        DerivativeData<TDim, TNumNodes>& rDerivativeData,
-        MortarKinematicVariablesWithDerivatives<TDim, TNumNodes>& rVariables,
+        DerivativeDataType& rDerivativeData,
+        GeneralVariables& rVariables,
         const bool ConsiderNormalVariation,
-        std::vector<array_1d<PointBelong<TNumNodes>, TDim>>& ConditionsPointsSlave,
+        ConditionArrayListType& ConditionsPointsSlave,
         IntegrationMethod ThisIntegrationMethod,
         const double AxiSymCoeff = 1.0
         )
     {
-        // Type definitions
-        typedef Line2D2<PointType> LineType;
-        typedef Triangle3D3<PointType> TriangleType;
-        typedef typename std::conditional<TDim == 2, LineType, TriangleType >::type DecompositionType;
-        typedef typename std::conditional<TNumNodes == 2, PointBelongsLine2D2N, typename std::conditional<TNumNodes == 3, PointBelongsTriangle3D3N, PointBelongsQuadrilateral3D4N>::type>::type BelongType;
-        
         // We initilize the Ae components
-        DualLagrangeMultiplierOperatorsWithDerivatives<TDim, TNumNodes, false> rAeData;
+        AeData rAeData;
         rAeData.Initialize();
         
         rDerivativeData.InitializeDeltaAeComponents();
@@ -904,16 +916,16 @@ private:
     
     /**
      * This method is used to compute the directional derivatives of the cell vertex (locally)
-     * @param Normal: The normal of the slave surface
-     * @param DeltaNormal: The derivative of the normal vector
-     * @param N1: The shape function of the slave side
-     * @param N2: The shape function of the master side
-     * @param iDoF: The DoF computed index
-     * @param iBelong: The belong (intersection, node, etc..) index
-     * @param ConsiderNormalVariation: If the normal variation is considered
-     * @param SlaveGeometry: The geometry of the slave side
-     * @param MasterGeometry: The geometry of the master side
-     * @param Coeff: The coefficient considered in proportion
+     * @param Normal The normal of the slave surface
+     * @param DeltaNormal The derivative of the normal vector
+     * @param N1 The shape function of the slave side
+     * @param N2 The shape function of the master side
+     * @param iDoF The DoF computed index
+     * @param iBelong The belong (intersection, node, etc..) index
+     * @param ConsiderNormalVariation If the normal variation is considered
+     * @param SlaveGeometry The geometry of the slave side
+     * @param MasterGeometry The geometry of the master side
+     * @param Coeff The coefficient considered in proportion
      * @return The local vertex derivative
      */
     static inline array_1d<double, 3> LocalDeltaVertex(
@@ -958,18 +970,18 @@ private:
     
     /**
      * This method is used to compute the directional derivatives of the cell vertex (locally)
-     * @param DeltaVertexMatrix: The whole delta vertex matrix
-     * @param Normal: The normal of the slave surface
-     * @param DeltaNormal: The derivative of the normal vector
-     * @param N1: The shape function of the slave side
-     * @param N2: The shape function of the master side
-     * @param iDoF: The DoF computed index
-     * @param iTriangle: The triangle point index
-     * @param iBelong: The belong (intersection, node, etc..) index
-     * @param ConsiderNormalVariation: If the normal variation is considered
-     * @param SlaveGeometry: The geometry of the slave side
-     * @param MasterGeometry: The geometry of the master side
-     * @param Coeff: The coefficient considered in proportion
+     * @param DeltaVertexMatrix The whole delta vertex matrix
+     * @param Normal The normal of the slave surface
+     * @param DeltaNormal The derivative of the normal vector
+     * @param N1 The shape function of the slave side
+     * @param N2 The shape function of the master side
+     * @param iDoF The DoF computed index
+     * @param iTriangle The triangle point index
+     * @param iBelong The belong (intersection, node, etc..) index
+     * @param ConsiderNormalVariation If the normal variation is considered
+     * @param SlaveGeometry The geometry of the slave side
+     * @param MasterGeometry The geometry of the master side
+     * @param Coeff The coefficient considered in proportion
      */
     static inline void LocalDeltaVertex(
         bounded_matrix<double, 3, 3>& DeltaVertexMatrix,
@@ -989,11 +1001,11 @@ private:
     
     /**
      * This method computes the equivalent indexes to the auxiliar hash
-     * @param AuxIndex: The auxiliar index to decompose
-     * @param iBelongSlaveStart: The index of the first/slave segment and first node
-     * @param iBelongSlaveEnd: The index of the first/slave segment and end node
-     * @param iBelongMasterStart: The index of the second/master segment and first node
-     * @param iBelongMasterEnd: The index of the second/master segment and end node
+     * @param AuxIndex The auxiliar index to decompose
+     * @param iBelongSlaveStart The index of the first/slave segment and first node
+     * @param iBelongSlaveEnd The index of the first/slave segment and end node
+     * @param iBelongMasterStart The index of the second/master segment and first node
+     * @param iBelongMasterEnd The index of the second/master segment and end node
      */
     static inline void ConvertAuxHashIndex(
         const unsigned int AuxIndex,
@@ -1016,10 +1028,10 @@ private:
     
     /**
      * This method computes the increment of local coordinates
-     * @param rResult: The solution obtained
-     * @param DeltaPoint: The increment of position in the points
-     * @param rVariables: The kinematic variables
-     * @param ThisGeometry: The geometry considered
+     * @param rResult The solution obtained
+     * @param DeltaPoint The increment of position in the points
+     * @param ThisGeometry The geometry considered
+     * @param ThisNormal The normal of the geometry
      */
     static inline void DeltaPointLocalCoordinates(
         array_1d<double, 2>& rResult,
