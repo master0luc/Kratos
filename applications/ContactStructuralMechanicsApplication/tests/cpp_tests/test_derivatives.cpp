@@ -98,20 +98,9 @@ namespace Kratos
             MortarKinematicVariablesWithDerivatives<TDim, TNumNodes> rVariables0; // These are the kinematic variables for the initial configuration
             MortarKinematicVariablesWithDerivatives<TDim, TNumNodes> rVariables; // These are the kinematic variables for the current configuration
             
-            // Create the current contact data
-            DerivativeData<TDim, TNumNodes> rDerivativeData;
-            rDerivativeData.Initialize(slave_geometry_1, ThisModelPart.GetProcessInfo());
+            // Create the initial contact data
             DerivativeData<TDim, TNumNodes> rDerivativeData0;
-            rDerivativeData.Initialize(slave_geometry_0, ThisModelPart.GetProcessInfo());
-            
-            // We compute the normal derivatives
-            if (consider_normal_variation == true)
-            {
-                // Compute the normal derivatives of the slave
-                DerivativesUtilitiesType::CalculateDeltaNormalSlave(rDerivativeData, slave_geometry_1);
-                // Compute the normal derivatives of the master
-                DerivativesUtilitiesType::CalculateDeltaNormalMaster(rDerivativeData, master_geometry_1);
-            }
+            rDerivativeData0.Initialize(slave_geometry_0, ThisModelPart.GetProcessInfo());
             
             // We call the exact integration utility
             IntegrationUtility integration_utility = IntegrationUtility (2);
@@ -131,20 +120,39 @@ namespace Kratos
                 // Finally we move the mesh
                 noalias(node_to_move->Coordinates()) = node_to_move->GetInitialPosition().Coordinates() + node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
                 
-                PointType aux_point;
-                aux_point.Coordinates() = ZeroVector(3);
-                const array_1d<double, 3>& normal_slave_1 = slave_geometry_1.UnitNormal(aux_point);
-                SlaveCondition1->SetValue(NORMAL, normal_slave_1);
-                for (unsigned int i_node = 0; i_node < slave_geometry_1.size(); ++i_node)
+                if (consider_normal_variation == true)
                 {
-                    slave_geometry_1[i_node].SetValue(NORMAL, normal_slave_1);
+                    PointType aux_point;
+                    aux_point.Coordinates() = ZeroVector(3);
+                    const array_1d<double, 3>& normal_slave = slave_geometry_1.UnitNormal(aux_point);
+                    SlaveCondition1->SetValue(NORMAL, normal_slave);
+                    for (unsigned int i_node = 0; i_node < slave_geometry_1.size(); ++i_node)
+                    {
+                        slave_geometry_1[i_node].SetValue(NORMAL, normal_slave);
+                    }
+                    const array_1d<double, 3>& normal_master = master_geometry_1.UnitNormal(aux_point);
+                    MasterCondition1->SetValue(NORMAL, normal_master);
+                    for (unsigned int i_node = 0; i_node < master_geometry_1.size(); ++i_node)
+                    {
+                        master_geometry_1[i_node].SetValue(NORMAL, normal_master);
+                    }
                 }
-                const array_1d<double, 3>& normal_master_1 = master_geometry_1.UnitNormal(aux_point);
-                MasterCondition1->SetValue(NORMAL, normal_master_1);
-                for (unsigned int i_node = 0; i_node < master_geometry_1.size(); ++i_node)
+                
+                // Create the current contact data
+                DerivativeData<TDim, TNumNodes> rDerivativeData;
+                rDerivativeData.Initialize(slave_geometry_1, ThisModelPart.GetProcessInfo());
+                
+                // We compute the normal derivatives
+                if (consider_normal_variation == true)
                 {
-                    master_geometry_1[i_node].SetValue(NORMAL, normal_master_1);
+                    // Compute the normal derivatives of the slave
+                    DerivativesUtilitiesType::CalculateDeltaNormalSlave(rDerivativeData, slave_geometry_1);
+                    // Compute the normal derivatives of the master
+                    DerivativesUtilitiesType::CalculateDeltaNormalMaster(rDerivativeData, master_geometry_1);
                 }
+                
+                const array_1d<double, 3>& normal_slave_1 = SlaveCondition1->GetValue(NORMAL);
+                const array_1d<double, 3>& normal_master_1 = MasterCondition1->GetValue(NORMAL);
                 
                 // Reading integration points
                 ConditionArrayListType conditions_points_slave0, conditions_points_slave;
@@ -358,7 +366,7 @@ namespace Kratos
                                         if (Check == LEVEL_DEBUG) KRATOS_WATCH(rDerivativeData.NormalMaster)
                                         if (Check == LEVEL_DEBUG) KRATOS_WATCH(aux_Normal_dx_master)
                                         
-                                        error_vector_slave[iter] += norm_frobenius(rDerivativeData.NormalSlave  - aux_Normal_dx_slave); 
+                                        error_vector_slave[iter] += norm_frobenius(rDerivativeData.NormalSlave  - rDerivativeData0.NormalSlave); 
                                         error_vector_master[iter] += norm_frobenius(rDerivativeData.NormalMaster - aux_Normal_dx_master);
                                     }
                                 }
@@ -388,7 +396,7 @@ namespace Kratos
             }
             else if (Check == LEVEL_QUADRATIC_CONVERGENCE)
             {
-                 const double quadratic_threshold = 1.8; 
+                 const double quadratic_threshold = 1.85; 
                  for (unsigned int iter = 0; iter < NumberIterations - 1; ++iter)
                  {
                      const double log_coeff = std::log((static_cast<double>(iter) + 2.0)/(static_cast<double>(iter) + 1.0));
@@ -406,6 +414,7 @@ namespace Kratos
                              KRATOS_CHECK_GREATER_EQUAL(slope_slave, quadratic_threshold);
                          }
                          else if ((slope_slave - 1.0) > 0.05) 
+//                          else if ((slope_slave - 1.0) > 0.05 || slope_slave < 1.0) 
                          {
                              KRATOS_WATCH(slope_slave);
                          }
@@ -424,6 +433,7 @@ namespace Kratos
                              KRATOS_CHECK_GREATER_EQUAL(slope_master, quadratic_threshold);
                          }
                          else if ((slope_master - 1.0) > 0.05)  
+//                          else if ((slope_master - 1.0) > 0.05 || slope_master < 1.0)  
                          {
                              KRATOS_WATCH(slope_master);
                          }
@@ -491,9 +501,11 @@ namespace Kratos
             Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 3, triangle0_0, p_cond_prop);
             
             p_cond0_0->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -512,9 +524,11 @@ namespace Kratos
             Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 2, triangle_1, p_cond_prop);
             Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 4, triangle0_1, p_cond_prop);
             p_cond0_1->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
             }
             
             TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 0, -5.0e-3, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
@@ -578,10 +592,13 @@ namespace Kratos
             const array_1d<double, 3>& normal_0 = quadrilateral_0.UnitNormal(aux_point);
             Condition::Pointer p_cond_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 1, quadrilateral_0, p_cond_prop);
             Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 3, quadrilateral0_0, p_cond_prop);
+            
             p_cond0_0->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (4);
@@ -602,9 +619,11 @@ namespace Kratos
             Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 2, quadrilateral_1, p_cond_prop);
             Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 4, quadrilateral0_1, p_cond_prop);
             p_cond0_1->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
             for (unsigned int i_node = 0; i_node < p_cond0_1->GetGeometry().size(); ++i_node)
             {
                 p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
             }
             
             TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 5, 1, -5.0e-3, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
@@ -664,9 +683,11 @@ namespace Kratos
             Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 3, triangle0_0, p_cond_prop);
             
             p_cond0_0->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -685,9 +706,11 @@ namespace Kratos
             Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 2, triangle_1, p_cond_prop);
             Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 4, triangle0_1, p_cond_prop);
             p_cond0_1->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
             }
             
             TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 1, -5.0e-2, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
@@ -747,9 +770,11 @@ namespace Kratos
             Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 3, triangle0_0, p_cond_prop);
             
             p_cond0_0->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -768,9 +793,11 @@ namespace Kratos
             Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 2, triangle_1, p_cond_prop);
             Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 4, triangle0_1, p_cond_prop);
             p_cond0_1->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
             }
             
             TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 1, -5.0e-2, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
@@ -830,9 +857,11 @@ namespace Kratos
             Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 3, triangle0_0, p_cond_prop);
             
             p_cond0_0->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -851,9 +880,11 @@ namespace Kratos
             Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 2, triangle_1, p_cond_prop);
             Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 4, triangle0_1, p_cond_prop);
             p_cond0_1->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
             }
             
             TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 0, -5.0e-3, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
@@ -917,10 +948,13 @@ namespace Kratos
             const array_1d<double, 3>& normal_0 = quadrilateral_0.UnitNormal(aux_point);
             Condition::Pointer p_cond_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 1, quadrilateral_0, p_cond_prop);
             Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 3, quadrilateral0_0, p_cond_prop);
+            
             p_cond0_0->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (4);
@@ -941,9 +975,11 @@ namespace Kratos
             Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 2, quadrilateral_1, p_cond_prop);
             Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 4, quadrilateral0_1, p_cond_prop);
             p_cond0_1->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
             for (unsigned int i_node = 0; i_node < p_cond0_1->GetGeometry().size(); ++i_node)
             {
                 p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
             }
             
             TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 5, 1, -5.0e-3, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
@@ -1007,10 +1043,13 @@ namespace Kratos
             const array_1d<double, 3>& normal_0 = quadrilateral_0.UnitNormal(aux_point);
             Condition::Pointer p_cond_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 1, quadrilateral_0, p_cond_prop);
             Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 3, quadrilateral0_0, p_cond_prop);
+            
             p_cond0_0->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (4);
@@ -1031,9 +1070,11 @@ namespace Kratos
             Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 2, quadrilateral_1, p_cond_prop);
             Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 4, quadrilateral0_1, p_cond_prop);
             p_cond0_1->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
             for (unsigned int i_node = 0; i_node < p_cond0_1->GetGeometry().size(); ++i_node)
             {
                 p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
             }
             
             TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 5, 1, -5.0e-3, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
@@ -1098,9 +1139,11 @@ namespace Kratos
             Condition::Pointer p_cond_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 1, quadrilateral_0, p_cond_prop);
             Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 3, quadrilateral0_0, p_cond_prop);
             p_cond0_0->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (4);
@@ -1121,9 +1164,11 @@ namespace Kratos
             Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 2, quadrilateral_1, p_cond_prop);
             Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 4, quadrilateral0_1, p_cond_prop);
             p_cond0_1->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
             for (unsigned int i_node = 0; i_node < p_cond0_1->GetGeometry().size(); ++i_node)
             {
                 p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
             }
             
             TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 5, 1, -5.0e-3, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
@@ -1131,7 +1176,7 @@ namespace Kratos
         
         /** 
          * Checks if the derivatives of the dual shape functions work as expected
-         * Case 3 of the Triangle3D3
+         * Case 1 of the Triangle3D3
          */
     
         KRATOS_TEST_CASE_IN_SUITE(TestDualShapeFunctionDerivativesTriangle1, ContactStructuralApplicationFastSuite)
@@ -1183,9 +1228,11 @@ namespace Kratos
             Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 3, triangle0_0, p_cond_prop);
             
             p_cond0_0->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -1204,9 +1251,11 @@ namespace Kratos
             Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 2, triangle_1, p_cond_prop);
             Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 4, triangle0_1, p_cond_prop);
             p_cond0_1->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
             }
             
             TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 0, -5.0e-3, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
@@ -1271,9 +1320,11 @@ namespace Kratos
             Condition::Pointer p_cond_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 1, quadrilateral_0, p_cond_prop);
             Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 3, quadrilateral0_0, p_cond_prop);
             p_cond0_0->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
             for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
             {
                 p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (4);
@@ -1294,12 +1345,195 @@ namespace Kratos
             Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 2, quadrilateral_1, p_cond_prop);
             Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 4, quadrilateral0_1, p_cond_prop);
             p_cond0_1->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
             for (unsigned int i_node = 0; i_node < p_cond0_1->GetGeometry().size(); ++i_node)
             {
                 p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
             }
             
             TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 5, 1, -5.0e-3, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
+        }
+        
+        /** 
+         * Checks if the derivatives of the normal work as expected
+         * Case 1 of the Triangle3D3
+         */
+    
+        KRATOS_TEST_CASE_IN_SUITE(TestNormalDerivativesTriangle1, ContactStructuralApplicationFastSuite)
+        {
+            ModelPart model_part("Main");
+            model_part.SetBufferSize(2);
+            model_part.GetProcessInfo()[CONSIDER_NORMAL_VARIATION] = true;
+            
+            Properties::Pointer p_cond_prop = model_part.pGetProperties(0);
+            
+            // Variables addition
+            model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            
+            PointType aux_point;
+            aux_point.Coordinates() = ZeroVector(3);
+            
+            // First we create the nodes 
+            NodeType::Pointer p_node_1 = model_part.CreateNewNode(1,-0.1,0.1,1.0e-3);
+            NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.1,0.2,0.0);
+            NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 0.1,1.0,0.0);
+            
+            NodeType::Pointer p_node_4 = model_part.CreateNewNode(4,-0.1,1.3,1.0e-3);
+            NodeType::Pointer p_node_5 = model_part.CreateNewNode(5, 0.1,0.2,1.0e-3);
+            NodeType::Pointer p_node_6 = model_part.CreateNewNode(6, 1.2,0.2,2.0e-3);
+            
+            NodeType::Pointer p_node0_1 = model_part.CreateNewNode(7, p_node_1->X(), p_node_1->Y(), p_node_1->Z());
+            NodeType::Pointer p_node0_2 = model_part.CreateNewNode(8, p_node_2->X(), p_node_2->Y(), p_node_2->Z());
+            NodeType::Pointer p_node0_3 = model_part.CreateNewNode(9, p_node_3->X(), p_node_3->Y(), p_node_3->Z());
+            
+            NodeType::Pointer p_node0_4 = model_part.CreateNewNode(10, p_node_4->X(), p_node_4->Y(), p_node_4->Z());
+            NodeType::Pointer p_node0_5 = model_part.CreateNewNode(11, p_node_5->X(), p_node_5->Y(), p_node_5->Z());
+            NodeType::Pointer p_node0_6 = model_part.CreateNewNode(12, p_node_6->X(), p_node_6->Y(), p_node_6->Z());
+            
+            // Now we create the "conditions"
+            std::vector<NodeType::Pointer> condition_nodes_0 (3);
+            condition_nodes_0[0] = p_node_1;
+            condition_nodes_0[1] = p_node_2;
+            condition_nodes_0[2] = p_node_3;
+            Triangle3D3 <Node<3>> triangle_0( condition_nodes_0 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_0 (3);
+            condition_nodes0_0[0] = p_node0_1;
+            condition_nodes0_0[1] = p_node0_2;
+            condition_nodes0_0[2] = p_node0_3;
+            Triangle3D3 <Node<3>> triangle0_0( condition_nodes0_0 );
+            
+            const array_1d<double, 3>& normal_0 = triangle_0.UnitNormal(aux_point);
+            Condition::Pointer p_cond_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 1, triangle_0, p_cond_prop);
+            Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 3, triangle0_0, p_cond_prop);
+            
+            p_cond0_0->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
+            for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
+            {
+                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+            }
+            
+            std::vector<NodeType::Pointer> condition_nodes_1 (3);
+            condition_nodes_1[0] = p_node_4;
+            condition_nodes_1[1] = p_node_5;
+            condition_nodes_1[2] = p_node_6;
+            Triangle3D3 <Node<3>> triangle_1( condition_nodes_1 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_1 (3);
+            condition_nodes0_1[0] = p_node0_4;
+            condition_nodes0_1[1] = p_node0_5;
+            condition_nodes0_1[2] = p_node0_6;
+            Triangle3D3 <Node<3>> triangle0_1( condition_nodes0_1 );
+            
+            const array_1d<double, 3>& normal_1 = triangle_0.UnitNormal(aux_point);
+            Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 2, triangle_1, p_cond_prop);
+            Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 4, triangle0_1, p_cond_prop);
+            p_cond0_1->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
+            for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
+            {
+                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+            }
+            
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 2, 5.0e-3, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
+        }
+        
+         /** 
+         * Checks if the derivatives of the normal functions work as expected
+         * Case 1 of the Quadrilateral3D4
+         */
+    
+        KRATOS_TEST_CASE_IN_SUITE(TestNormalDerivativesQuadrilateral1, ContactStructuralApplicationFastSuite)
+        {
+            ModelPart model_part("Main");
+            model_part.SetBufferSize(2);
+            model_part.GetProcessInfo()[CONSIDER_NORMAL_VARIATION] = true;
+            
+            Properties::Pointer p_cond_prop = model_part.pGetProperties(0);
+            
+            // Variables addition
+            model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            
+            PointType aux_point;
+            aux_point.Coordinates() = ZeroVector(3);
+            
+            // First we create the nodes 
+            NodeType::Pointer p_node_1 = model_part.CreateNewNode(1, 0.0,0.2,1.0e-3);
+            NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.0,0.2,1.0e-3);
+            NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 1.1,1.1,0.0);
+            NodeType::Pointer p_node_4 = model_part.CreateNewNode(4, 0.2,1.0,0.0);
+            
+            NodeType::Pointer p_node_5 = model_part.CreateNewNode(5,-0.1,1.0,1.0e-3);
+            NodeType::Pointer p_node_6 = model_part.CreateNewNode(6, 1.0,1.1,1.0e-3);
+            NodeType::Pointer p_node_7 = model_part.CreateNewNode(7, 1.0,0.1,2.0e-3);
+            NodeType::Pointer p_node_8 = model_part.CreateNewNode(8, 0.0,0.1,2.0e-3);
+            
+            NodeType::Pointer p_node0_1 = model_part.CreateNewNode(9, p_node_1->X(), p_node_1->Y(), p_node_1->Z());
+            NodeType::Pointer p_node0_2 = model_part.CreateNewNode(10, p_node_2->X(), p_node_2->Y(), p_node_2->Z());
+            NodeType::Pointer p_node0_3 = model_part.CreateNewNode(11, p_node_3->X(), p_node_3->Y(), p_node_3->Z());
+            NodeType::Pointer p_node0_4 = model_part.CreateNewNode(12, p_node_4->X(), p_node_4->Y(), p_node_4->Z());
+            
+            NodeType::Pointer p_node0_5 = model_part.CreateNewNode(13, p_node_5->X(), p_node_5->Y(), p_node_5->Z());
+            NodeType::Pointer p_node0_6 = model_part.CreateNewNode(14, p_node_6->X(), p_node_6->Y(), p_node_6->Z());
+            NodeType::Pointer p_node0_7 = model_part.CreateNewNode(15, p_node_7->X(), p_node_7->Y(), p_node_7->Z());
+            NodeType::Pointer p_node0_8 = model_part.CreateNewNode(16, p_node_8->X(), p_node_8->Y(), p_node_8->Z());
+            
+            // Now we create the "conditions"
+            std::vector<NodeType::Pointer> condition_nodes_0 (4);
+            condition_nodes_0[0] = p_node_1;
+            condition_nodes_0[1] = p_node_2;
+            condition_nodes_0[2] = p_node_3;
+            condition_nodes_0[3] = p_node_4;
+            Quadrilateral3D4 <Node<3>> quadrilateral_0( condition_nodes_0 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_0 (4);
+            condition_nodes0_0[0] = p_node0_1;
+            condition_nodes0_0[1] = p_node0_2;
+            condition_nodes0_0[2] = p_node0_3;
+            condition_nodes0_0[3] = p_node0_4;
+            Quadrilateral3D4 <Node<3>> quadrilateral0_0( condition_nodes0_0 );
+            
+            const array_1d<double, 3>& normal_0 = quadrilateral_0.UnitNormal(aux_point);
+            Condition::Pointer p_cond_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 1, quadrilateral_0, p_cond_prop);
+            Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 3, quadrilateral0_0, p_cond_prop);
+            p_cond0_0->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
+            for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
+            {
+                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, normal_0);
+            }
+            
+            std::vector<NodeType::Pointer> condition_nodes_1 (4);
+            condition_nodes_1[0] = p_node_5;
+            condition_nodes_1[1] = p_node_6;
+            condition_nodes_1[2] = p_node_7;
+            condition_nodes_1[3] = p_node_8;
+            Quadrilateral3D4 <Node<3>> quadrilateral_1( condition_nodes_1 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_1 (4);
+            condition_nodes0_1[0] = p_node0_5;
+            condition_nodes0_1[1] = p_node0_6;
+            condition_nodes0_1[2] = p_node0_7;
+            condition_nodes0_1[3] = p_node0_8;
+            Quadrilateral3D4 <Node<3>> quadrilateral0_1( condition_nodes0_1 );
+            
+            const array_1d<double, 3>& normal_1 = quadrilateral_0.UnitNormal(aux_point);
+            Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 2, quadrilateral_1, p_cond_prop);
+            Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D4N", 4, quadrilateral0_1, p_cond_prop);
+            p_cond0_1->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
+            for (unsigned int i_node = 0; i_node < p_cond0_1->GetGeometry().size(); ++i_node)
+            {
+                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
+            }
+            
+            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 5, 2, -5.0e-3, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
     } // namespace Testing
