@@ -155,7 +155,7 @@ namespace Kratos {
         InitializeDEMElements();
         InitializeFEMElements();
         UpdateMaxIdOfCreatorDestructor();
-        //TODO InitializeClusters(); // This adds elements to the balls modelpart
+        InitializeClusters(); // This adds elements to the balls modelpart
 
         RebuildListOfSphericParticles<SphericParticle>(r_model_part.GetCommunicator().LocalMesh().Elements(), mListOfSphericParticles);
         RebuildListOfSphericParticles<SphericParticle>(r_model_part.GetCommunicator().GhostMesh().Elements(), mListOfGhostSphericParticles);

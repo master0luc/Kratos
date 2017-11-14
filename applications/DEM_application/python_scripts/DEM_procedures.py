@@ -419,8 +419,8 @@ class Procedures(object):
         model_part.AddNodalSolutionStepVariable(RIGID_ELEMENT_FORCE)
         model_part.AddNodalSolutionStepVariable(DAMP_FORCES)
         model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT) #TODO: only if self.DEM_parameters-RotationOption! Check that no one accesses them in c++ without checking the rotation option
-        #model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_FORCE)
-        #model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_MOMENT)
+        model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_FORCE)
+        model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_MOMENT)
 
         # BASIC PARTICLE PROPERTIES
         model_part.AddNodalSolutionStepVariable(RADIUS)
@@ -501,8 +501,8 @@ class Procedures(object):
         # FORCES
         model_part.AddNodalSolutionStepVariable(RIGID_ELEMENT_FORCE)
         model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT)
-        #model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_FORCE)
-        #model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_MOMENT)
+        model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_FORCE)
+        model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_MOMENT)
         
         # PHYSICAL PROPERTIES
         model_part.AddNodalSolutionStepVariable(PRINCIPAL_MOMENTS_OF_INERTIA)
@@ -533,8 +533,8 @@ class Procedures(object):
         model_part.AddNodalSolutionStepVariable(TOTAL_FORCES)
         model_part.AddNodalSolutionStepVariable(RIGID_ELEMENT_FORCE)
         model_part.AddNodalSolutionStepVariable(PARTICLE_MOMENT)
-        #model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_FORCE)
-        #model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_MOMENT)
+        model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_FORCE)
+        model_part.AddNodalSolutionStepVariable(EXTERNAL_APPLIED_MOMENT)
         
         # PHYSICAL PROPERTIES
         model_part.AddNodalSolutionStepVariable(PRINCIPAL_MOMENTS_OF_INERTIA)
@@ -1570,6 +1570,7 @@ class DEMIo(object):
         self.PushPrintVar(1,                         DELTA_DISPLACEMENT,           self.rigid_body_variables)
         self.PushPrintVar(1,                         DELTA_ROTATION,               self.rigid_body_variables)
         self.PushPrintVar(1,                         EXTERNAL_APPLIED_FORCE,       self.rigid_body_variables)
+        self.PushPrintVar(1,                         EXTERNAL_APPLIED_MOMENT,      self.rigid_body_variables)
 
     def AddContactVariables(self):
         # Contact Elements Variables
