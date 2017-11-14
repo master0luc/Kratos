@@ -17,6 +17,7 @@ class ExplicitStrategy:
         self.fem_model_part = all_model_parts.Get("RigidFacePart")
         self.cluster_model_part = all_model_parts.Get("ClusterPart")
         self.contact_model_part = all_model_parts.Get("ContactPart")
+        self.rigid_body_model_part = all_model_parts.Get("RigidBodyPart")
 
         self.DEM_parameters = DEM_parameters
 
@@ -232,6 +233,9 @@ class ExplicitStrategy:
 
         for properties in self.cluster_model_part.Properties:
             self.ModifyProperties(properties)
+        
+        for properties in self.rigid_body_model_part.Properties:
+            self.ModifyProperties(properties, 1)
 
         # RESOLUTION METHODS AND PARAMETERS
         # Creating the solution strategy
@@ -241,6 +245,8 @@ class ExplicitStrategy:
         self.settings.fem_model_part = self.fem_model_part
         self.settings.inlet_model_part = self.inlet_model_part
         self.settings.cluster_model_part = self.cluster_model_part
+        self.settings.rigid_body_model_part = self.rigid_body_model_part
+        
 
     def CheckMomentumConservation(self):
 
@@ -442,10 +448,12 @@ class ExplicitStrategy:
 
         return scheme, error_status, summary
 
-    def ModifyProperties(self, properties):
-        DiscontinuumConstitutiveLawString = properties[DEM_DISCONTINUUM_CONSTITUTIVE_LAW_NAME]
-        DiscontinuumConstitutiveLaw = globals().get(DiscontinuumConstitutiveLawString)()
-        DiscontinuumConstitutiveLaw.SetConstitutiveLawInProperties(properties, True)
+    def ModifyProperties(self, properties, param = 0):
+        
+        if not param:
+            DiscontinuumConstitutiveLawString = properties[DEM_DISCONTINUUM_CONSTITUTIVE_LAW_NAME]
+            DiscontinuumConstitutiveLaw = globals().get(DiscontinuumConstitutiveLawString)()
+            DiscontinuumConstitutiveLaw.SetConstitutiveLawInProperties(properties, True)
 
         coefficient_of_restitution = properties[COEFFICIENT_OF_RESTITUTION]
 
