@@ -618,7 +618,7 @@ public:
         Ae = ZeroMatrix(TNumNodes, TNumNodes);
         
         // Derivatives Ae
-        for (unsigned int i = 0; i < 2 * TNumNodes * TDim; ++i)
+        for (unsigned int i = 0; i < size_3; ++i)
         {
             DeltaAe[i] = ZeroMatrix(TNumNodes, TNumNodes);
         }
@@ -1561,7 +1561,7 @@ public:
         BaseClassType::Initialize();
         
         // Derivatives matrices
-        for (unsigned int i = 0; i < 2 * TNumNodes * TDim; ++i)
+        for (unsigned int i = 0; i < size_3; ++i)
         {
             DeltaMe[i] = ZeroMatrix(TNumNodes, TNumNodes);
             DeltaDe[i] = ZeroMatrix(TNumNodes, TNumNodes);
@@ -1583,10 +1583,6 @@ public:
         const Vector n1 = rKinematicVariables.NSlave;
         
         BaseClassType::CalculateAeComponents(rKinematicVariables, rIntegrationWeight);
-        
-        static const unsigned int size_1 = (TNumNodes * TDim);
-        static const unsigned int size_2 = 2 * (TNumNodes * TDim);
-        static const unsigned int size_3 = (TDim == 2) ? size_1 : size_2;
         
         for (unsigned int i = 0; i < size_3; ++i)
         {
@@ -1625,9 +1621,6 @@ public:
         
         noalias(rDerivativeData.Ae) = prod(BaseClassType::De, inv_Me);
         
-        static const unsigned int size_1 = (TNumNodes * TDim);
-        static const unsigned int size_2 = 2 * (TNumNodes * TDim);
-        static const unsigned int size_3 = (TDim == 2) ? size_1 : size_2;
         array_1d<boost::numeric::ublas::bounded_matrix<double, TNumNodes, TNumNodes> , size_3>& delta_Ae = rDerivativeData.DeltaAe;
         
         for (unsigned int i = 0; i < size_3; ++i)
@@ -1647,7 +1640,7 @@ public:
         BaseClassType::PrintInfo(rOStream);
         
         // Derivatives matrices
-        for (unsigned int i = 0; i < TNumNodes * TDim; ++i)
+        for (unsigned int i = 0; i < size_3; ++i)
         {
             rOStream << "DeltaMe_" << i << ": " << DeltaMe[i] << std::endl;
             rOStream << "DeltaDe_" << i << ": " << DeltaDe[i] << std::endl;
