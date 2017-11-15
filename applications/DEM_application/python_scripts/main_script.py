@@ -331,7 +331,7 @@ class Solution(object):
         
         if not os.path.isfile(rigidbody_mp_filename + ".mdpa"):
             print("\n\nThe rigid body mpda file does not exist, please update your problem type!!!\n")
-            timer.sleep(5) # Inserting a delay of 5 seconds so the user has ample time to read the message
+            timer.sleep(5) # Delay of 5 seconds to read the message
             open(rigidbody_mp_filename + ".mdpa",'w').close()
 
 

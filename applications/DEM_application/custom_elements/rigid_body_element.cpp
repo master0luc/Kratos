@@ -134,7 +134,6 @@ namespace Kratos {
             noalias(previous_position) = node_position;
             noalias(node_position)= central_node.Coordinates() + global_relative_coordinates;
             noalias(delta_displacement) = node_position - previous_position;
-
             noalias(i->FastGetSolutionStepValue(VELOCITY)) = rigid_element_velocity;
 
             iter++;
@@ -168,58 +167,13 @@ namespace Kratos {
             iter++;
         }
     }   
-    
-    void RigidBodyElement3D::CollectForcesAndTorquesFromNodes() {
-        
-        Node<3>& central_node = GetGeometry()[0]; //CENTRAL NODE OF THE RBE
-        array_1d<double, 3>& center_forces       = central_node.FastGetSolutionStepValue(TOTAL_FORCES);
-        array_1d<double, 3>& center_torque       = central_node.FastGetSolutionStepValue(PARTICLE_MOMENT);
-        array_1d<double, 3>& center_rigid_forces = central_node.FastGetSolutionStepValue(RIGID_ELEMENT_FORCE);
-        center_forces[0] = center_forces[1]= center_forces[2]= center_torque[0]= center_torque[1]= center_torque[2]= center_rigid_forces[0]= center_rigid_forces[1]= center_rigid_forces[2]= 0.0;
 
-        array_1d<double, 3> center_to_node_vector;
-        array_1d<double, 3> additional_torque;
-        
-        for (unsigned int i=0; i < mListOfCoordinates.size(); i++) {
-            
-            //if (mListOfCoordinates[i]->mNeighbourElements.size()==0 && mListOfCoordinates[i]->mNeighbourRigidFaces.size()==0) continue; //Assuming the sphere only adds contact forces to the cluster
-            
-            Node<3>& sphere_node = mListOfSphericParticles[i]->GetGeometry()[0];
-            array_1d<double, 3>& node_forces           = sphere_node.FastGetSolutionStepValue(TOTAL_FORCES);
-            array_1d<double, 3>& rigid_particle_forces = sphere_node.FastGetSolutionStepValue(RIGID_ELEMENT_FORCE);
-            center_forces[0] += node_forces[0];
-            center_forces[1] += node_forces[1];
-            center_forces[2] += node_forces[2];
-            center_rigid_forces[0] += rigid_particle_forces[0];
-            center_rigid_forces[1] += rigid_particle_forces[1];
-            center_rigid_forces[2] += rigid_particle_forces[2];
-            
-            array_1d<double, 3>& particle_torque = sphere_node.FastGetSolutionStepValue(PARTICLE_MOMENT); 
-            center_torque[0] += particle_torque[0];
-            center_torque[1] += particle_torque[1];
-            center_torque[2] += particle_torque[2];
-                        
-            //Now adding the torque due to the eccentric forces (spheres are not on the center of the cluster)
-            array_1d<double, 3>& node_position = sphere_node.Coordinates();
-            center_to_node_vector[0] = node_position[0] - central_node.Coordinates()[0];
-            center_to_node_vector[1] = node_position[1] - central_node.Coordinates()[1];
-            center_to_node_vector[2] = node_position[2] - central_node.Coordinates()[2];
-            GeometryFunctions::CrossProduct(center_to_node_vector, node_forces, additional_torque);
-            center_torque[0] += additional_torque[0];
-            center_torque[1] += additional_torque[1];
-            center_torque[2] += additional_torque[2];
-        }    
-    }
-    
     void RigidBodyElement3D::CollectForcesAndTorquesFromTheNodesOfARigidBodyElement() {
         
         KRATOS_TRY
                 
         Node<3>& central_node = GetGeometry()[0]; //CENTRAL NODE OF THE RBE
         array_1d<double, 3>& center_forces = central_node.FastGetSolutionStepValue(TOTAL_FORCES);
-        KRATOS_WATCH(center_forces[0])
-        KRATOS_WATCH(center_forces[1])
-        KRATOS_WATCH(center_forces[2])
         array_1d<double, 3>& center_torque = central_node.FastGetSolutionStepValue(PARTICLE_MOMENT);
         center_forces[0] = center_forces[1] = center_forces[2] = center_torque[0] = center_torque[1] = center_torque[2] = 0.0;
 
@@ -318,15 +272,7 @@ namespace Kratos {
 
         KRATOS_TRY
         // Gravity
-        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)[0])
-        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)[1])
-        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)[2])
-        mMass = 1.0;
         noalias(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)) += mMass * gravity;
-        
-        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)[0])
-        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)[1])
-        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)[2])
         
         // Other forces and moments
         if (mFloatingFlag) { // This is only when having a ship
@@ -368,6 +314,7 @@ namespace Kratos {
         const double drag_constant_Z = 240000000; // Such that the Z maximum velocity is 0.5 m/s
         array_1d<double, 3>& external_applied_force  = GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_FORCE);
         const array_1d<double, 3> velocity = GetGeometry()[0].FastGetSolutionStepValue(VELOCITY);
+        
         // Drag forces due to water. We are assuming the ship is moving in the X direction
         // Quadratic laws were chosen. They may be linear
         external_applied_force[0] += ((velocity[0] >= 0.0) ? -drag_constant_X * velocity[0] * velocity[0] : drag_constant_X * velocity[0] * velocity[0]);
@@ -383,10 +330,6 @@ namespace Kratos {
         
         const array_1d<double, 3> external_applied_force  = GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_FORCE);
         const array_1d<double, 3> external_applied_torque = GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_MOMENT);
-        KRATOS_WATCH(external_applied_force[0])
-        KRATOS_WATCH(external_applied_force[1])
-        KRATOS_WATCH(external_applied_force[2])
-        
         noalias(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)) += external_applied_force;
         noalias(GetGeometry()[0].FastGetSolutionStepValue(PARTICLE_MOMENT)) += external_applied_torque;
         

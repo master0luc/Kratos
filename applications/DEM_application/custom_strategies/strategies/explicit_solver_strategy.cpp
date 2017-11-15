@@ -347,8 +347,6 @@ namespace Kratos {
     void ExplicitSolverStrategy::GetRigidBodyElementsForce() {
         
         KRATOS_TRY
-                
-//        KRATOS_WATCH("Inside ExplicitSolverStrategy::GetRigidBodyElementsForce")
         
         ProcessInfo& r_process_info = GetModelPart().GetProcessInfo(); //Getting the Process Info of the Balls ModelPart!
         const array_1d<double, 3>& gravity = r_process_info[GRAVITY];
@@ -364,8 +362,6 @@ namespace Kratos {
             rigid_body_element.GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES).clear();
             rigid_body_element.GetGeometry()[0].FastGetSolutionStepValue(PARTICLE_MOMENT).clear();
             rigid_body_element.GetRigidBodyElementsForce(gravity);
-//            KRATOS_WATCH("************************************NO ES POSIBLE ACCEDER A NODAL_MASS")
-//            KRATOS_WATCH(rigid_body_element.GetGeometry()[0].FastGetSolutionStepValue(NODAL_MASS))
             
         } // loop over rigid body elements
         
@@ -611,7 +607,6 @@ namespace Kratos {
         ElementsArrayType& pGhostClusters = r_clusters_model_part.GetCommunicator().GhostMesh().Elements();
         ModelPart& r_rigid_body_model_part  = *mpRigidBody_model_part;
         ElementsArrayType& pRigidBodyElements = r_rigid_body_model_part.GetCommunicator().LocalMesh().Elements();        
-        //KRATOS_WATCH(pRigidBodyElements.size())
         
         #pragma omp parallel
         {            
@@ -642,8 +637,6 @@ namespace Kratos {
             #pragma omp for
             for (int k = 0; k < (int) pRigidBodyElements.size(); k++) {
                 ElementsArrayType::iterator it = pRigidBodyElements.ptr_begin() + k;
-//                KRATOS_WATCH("RBE")
-//                KRATOS_WATCH("Inside ExplicitSolverStrategy::PerformTimeIntegrationOfMotion")
                 RigidBodyElement3D& rigid_body_element = dynamic_cast<Kratos::RigidBodyElement3D&> (*it);
                 rigid_body_element.Move(delta_t, rotation_option, force_reduction_factor, StepFlag);
             }

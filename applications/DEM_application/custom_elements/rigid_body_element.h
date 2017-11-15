@@ -54,7 +54,6 @@ namespace Kratos {
         virtual void UpdatePositionOfNodes();
         virtual void UpdateLinearDisplacementAndVelocityOfNodes();
         virtual void GetRigidBodyElementsForce(const array_1d<double,3>& gravity);
-        virtual void CollectForcesAndTorquesFromNodes();
         virtual void CollectForcesAndTorquesFromTheNodesOfARigidBodyElement();
         virtual void ComputeBuoyancyEffects();
         virtual void ComputeAdditionalForces(const array_1d<double,3>& gravity);
@@ -98,8 +97,6 @@ namespace Kratos {
         std::vector<RigidFace3D*> mListOfRigidFaces;
         array_1d<double,3> mInertias;                                
         double mMass;
-        std::vector<SphericParticle*> mListOfSphericParticles; 
-
       
     private:
        
