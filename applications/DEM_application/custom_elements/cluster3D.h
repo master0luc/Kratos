@@ -41,9 +41,19 @@ namespace Kratos
         /// Destructor
         virtual ~Cluster3D();
       
+        using Element::Initialize;
         virtual void Initialize(ProcessInfo& r_process_info);
+        virtual void SetIntegrationScheme(DEMIntegrationScheme::Pointer& integration_scheme);
+        virtual void InitializeSolutionStep(ProcessInfo& r_process_info) override {};
+        virtual void FinalizeSolutionStep(ProcessInfo& r_process_info) override {};
         virtual void CustomInitialize(ProcessInfo& r_process_info);
+        virtual void SetOrientation(const Quaternion<double> Orientation);
         virtual void CreateParticles(ParticleCreatorDestructor* p_creator_destructor, ModelPart& dem_model_part, PropertiesProxy* p_fast_properties, const bool continuum_strategy);
+        virtual void UpdatePositionOfSpheres();
+        virtual void UpdateLinearDisplacementAndVelocityOfSpheres();
+        virtual void GetClustersForce(const array_1d<double,3>& gravity);
+        virtual void CollectForcesAndTorquesFromSpheres();
+        virtual void ComputeAdditionalForces(const array_1d<double,3>& gravity);
         unsigned int GetNumberOfSpheres() { return mListOfSphericParticles.size(); };
         std::vector<SphericParticle*> GetSpheres() { return mListOfSphericParticles; }; 
         virtual void SetContinuumGroupToBreakableClusterSpheres(const int Id);
@@ -51,6 +61,10 @@ namespace Kratos
         virtual void SetInitialNeighbours(const double search_tolerance);
         virtual void CreateContinuumConstitutiveLaws();       
         virtual void Move(const double delta_t, const bool rotation_option, const double force_reduction_factor, const int StepFlag);
+        virtual DEMIntegrationScheme& GetIntegrationScheme() { return *mpIntegrationScheme; }
+        virtual void Calculate(const Variable<double>& rVariable, double& Output, const ProcessInfo& r_process_info);
+           
+        virtual double GetMass();
         virtual double SlowGetDensity();
         virtual int SlowGetParticleMaterial();
 
@@ -75,7 +89,10 @@ namespace Kratos
  
     protected:
        
-        std::vector<double> mListOfRadii;
+        std::vector<double>                mListOfRadii;
+        std::vector<array_1d<double, 3> >  mListOfCoordinates;        
+        std::vector<SphericParticle*>      mListOfSphericParticles; 
+        DEMIntegrationScheme* mpIntegrationScheme;        
       
     private:
        

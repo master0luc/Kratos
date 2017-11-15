@@ -165,12 +165,12 @@ namespace Kratos {
         ApplyInitialConditions();
 
         // Search Neighbours and related operations
-        SetSearchRadiiOnAllParticles(r_model_part, r_process_info[SEARCH_RADIUS_INCREMENT], 1.0);
+        SetSearchRadiiOnAllParticles(*mpDem_model_part, mpDem_model_part->GetProcessInfo()[SEARCH_RADIUS_INCREMENT], 1.0);
         SearchNeighbours();
 
         ComputeNewNeighboursHistoricalData();
-
-        SetSearchRadiiWithFemOnAllParticles(r_model_part, r_process_info[SEARCH_RADIUS_INCREMENT], 1.0);
+        
+        SetSearchRadiiOnAllParticles(*mpDem_model_part, mpDem_model_part->GetProcessInfo()[SEARCH_RADIUS_INCREMENT_FOR_WALLS], 1.0);
         SearchRigidFaceNeighbours(); //initial search is performed with hierarchical method in any case MSI
         ComputeNewRigidFaceNeighboursHistoricalData();
 
@@ -332,8 +332,6 @@ namespace Kratos {
         
         #pragma omp parallel for schedule(dynamic, 100) //schedule(guided)
         for (int k = 0; k < number_of_clusters; k++) {
-            
-            KRATOS_WATCH("lele*******************************************************************************")
 
             ElementsArrayType::iterator it = pElements.ptr_begin() + k;
             Cluster3D& cluster_element = dynamic_cast<Kratos::Cluster3D&> (*it);
@@ -341,7 +339,7 @@ namespace Kratos {
             cluster_element.GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES).clear();
             cluster_element.GetGeometry()[0].FastGetSolutionStepValue(PARTICLE_MOMENT).clear();
 
-            cluster_element.GetRigidBodyElementsForce(gravity);
+            cluster_element.GetClustersForce(gravity);
         } // loop over clusters
         KRATOS_CATCH("")
     }
