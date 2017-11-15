@@ -39,7 +39,6 @@ class Solution(object):
         self.SetAnalyticParticleWatcher()
         self.PreUtilities = PreUtilities()
 
-
         # Creating necessary directories:
         self.main_path = os.getcwd()
         problem_name = self.GetProblemTypeFilename()
@@ -164,7 +163,6 @@ class Solution(object):
             self.KRATOSprint('Error: Strategy unavailable. Select a different scheme-element')
 
         return SolverStrategy
-
 
     def SetSolver(self):
         return self.solver_strategy.ExplicitStrategy(self.all_model_parts, self.creator_destructor, self.dem_fem_search, self.scheme, self.DEM_parameters, self.procedures)
@@ -298,14 +296,14 @@ class Solution(object):
         old_max_elem_Id_spheres = max_elem_Id
         max_cond_Id += self.creator_destructor.FindMaxConditionIdInModelPart(self.spheres_model_part)
         rigidFace_mp_filename   = self.GetFemFilename()
-        model_part_io_fem = self.model_part_reader(rigidFace_mp_filename,max_node_Id+1, max_elem_Id+1, max_cond_Id+1)
+        model_part_io_fem = self.model_part_reader(rigidFace_mp_filename, max_node_Id + 1, max_elem_Id + 1, max_cond_Id + 1)
         model_part_io_fem.ReadModelPart(self.rigid_face_model_part)
 
         max_node_Id = self.creator_destructor.FindMaxNodeIdInModelPart(self.rigid_face_model_part)
         max_elem_Id = self.creator_destructor.FindMaxElementIdInModelPart(self.rigid_face_model_part)
         max_cond_Id = self.creator_destructor.FindMaxConditionIdInModelPart(self.rigid_face_model_part)
         clusters_mp_filename   = self.GetClusterFilename()
-        model_part_io_clusters = self.model_part_reader(clusters_mp_filename,max_node_Id+1, max_elem_Id+1, max_cond_Id+1)
+        model_part_io_clusters = self.model_part_reader(clusters_mp_filename, max_node_Id + 1, max_elem_Id + 1, max_cond_Id + 1)
         model_part_io_clusters.ReadModelPart(self.cluster_model_part)
         max_elem_Id = self.creator_destructor.FindMaxElementIdInModelPart(self.spheres_model_part)
         if (max_elem_Id != old_max_elem_Id_spheres):
@@ -315,11 +313,11 @@ class Solution(object):
         max_elem_Id = self.creator_destructor.FindMaxElementIdInModelPart(self.cluster_model_part)
         max_cond_Id = self.creator_destructor.FindMaxConditionIdInModelPart(self.cluster_model_part)
         DEM_Inlet_filename = self.GetInletFilename()
-        model_part_io_demInlet = self.model_part_reader(DEM_Inlet_filename,max_node_Id+1, max_elem_Id+1, max_cond_Id+1)
+        model_part_io_demInlet = self.model_part_reader(DEM_Inlet_filename, max_node_Id + 1, max_elem_Id + 1, max_cond_Id + 1)
         model_part_io_demInlet.ReadModelPart(self.DEM_inlet_model_part)
-
         
         rigidbody_mp_filename = self.GetRigidBodyFileName()
+        self.CheckTheExistenceOfTheRigidBodyMdpa(rigidbody_mp_filename)
         model_part_io_rigidbody = self.model_part_reader(rigidbody_mp_filename, max_node_Id + 1, max_elem_Id + 1, max_cond_Id + 1)
         model_part_io_rigidbody.ReadModelPart(self.rigid_body_model_part)
         max_node_Id = self.creator_destructor.FindMaxNodeIdInModelPart(self.rigid_body_model_part)
@@ -327,8 +325,14 @@ class Solution(object):
         max_cond_Id = self.creator_destructor.FindMaxConditionIdInModelPart(self.rigid_body_model_part)
  
         self.model_parts_have_been_read = True
-
         self.all_model_parts.ComputeMaxIds()
+
+    def CheckTheExistenceOfTheRigidBodyMdpa(self, rigidbody_mp_filename):
+        
+        if not os.path.isfile(rigidbody_mp_filename + ".mdpa"):
+            print("\n\nThe rigid body mpda file does not exist, please update your problem type!!!\n")
+            timer.sleep(5) # Inserting a delay of 5 seconds so the user has ample time to read the message
+            open(rigidbody_mp_filename + ".mdpa",'w').close()
 
 
     def RunMainTemporalLoop(self):
@@ -387,7 +391,6 @@ class Solution(object):
 
             self.FinalizeTimeStep(self.time)
 
-
     def SetInlet(self):
         if self.DEM_parameters["dem_inlet_option"].GetBool():
             #Constructing the inlet and initializing it (must be done AFTER the self.spheres_model_part Initialize)
@@ -433,7 +436,6 @@ class Solution(object):
         self.DEMFEMProcedures.FinalizeGraphs(self.rigid_face_model_part)
         self.DEMFEMProcedures.FinalizeBallsGraphs(self.spheres_model_part)
         self.DEMEnergyCalculator.FinalizeEnergyPlot()
-
 
         os.chdir(self.main_path)
 
