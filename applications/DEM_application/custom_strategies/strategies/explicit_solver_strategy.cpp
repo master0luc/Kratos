@@ -329,9 +329,11 @@ namespace Kratos {
 
         ElementsArrayType& pElements = mpCluster_model_part->GetCommunicator().LocalMesh().Elements();
         const int number_of_clusters = pElements.size();
-
+        
         #pragma omp parallel for schedule(dynamic, 100) //schedule(guided)
         for (int k = 0; k < number_of_clusters; k++) {
+            
+            KRATOS_WATCH("lele*******************************************************************************")
 
             ElementsArrayType::iterator it = pElements.ptr_begin() + k;
             Cluster3D& cluster_element = dynamic_cast<Kratos::Cluster3D&> (*it);

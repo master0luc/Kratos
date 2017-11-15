@@ -216,7 +216,10 @@ namespace Kratos {
         KRATOS_TRY
                 
         Node<3>& central_node = GetGeometry()[0]; //CENTRAL NODE OF THE RBE
-        array_1d<double, 3>& center_forces = central_node.FastGetSolutionStepValue(TOTAL_FORCES);       
+        array_1d<double, 3>& center_forces = central_node.FastGetSolutionStepValue(TOTAL_FORCES);
+        KRATOS_WATCH(center_forces[0])
+        KRATOS_WATCH(center_forces[1])
+        KRATOS_WATCH(center_forces[2])
         array_1d<double, 3>& center_torque = central_node.FastGetSolutionStepValue(PARTICLE_MOMENT);
         center_forces[0] = center_forces[1] = center_forces[2] = center_torque[0] = center_torque[1] = center_torque[2] = 0.0;
 
@@ -315,8 +318,16 @@ namespace Kratos {
 
         KRATOS_TRY
         // Gravity
+        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)[0])
+        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)[1])
+        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)[2])
+        mMass = 1.0;
         noalias(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)) += mMass * gravity;
-
+        
+        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)[0])
+        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)[1])
+        KRATOS_WATCH(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)[2])
+        
         // Other forces and moments
         if (mFloatingFlag) { // This is only when having a ship
             ComputeBuoyancyEffects();
@@ -372,6 +383,10 @@ namespace Kratos {
         
         const array_1d<double, 3> external_applied_force  = GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_FORCE);
         const array_1d<double, 3> external_applied_torque = GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_MOMENT);
+        KRATOS_WATCH(external_applied_force[0])
+        KRATOS_WATCH(external_applied_force[1])
+        KRATOS_WATCH(external_applied_force[2])
+        
         noalias(GetGeometry()[0].FastGetSolutionStepValue(TOTAL_FORCES)) += external_applied_force;
         noalias(GetGeometry()[0].FastGetSolutionStepValue(PARTICLE_MOMENT)) += external_applied_torque;
         

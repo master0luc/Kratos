@@ -69,7 +69,7 @@ namespace Kratos {
         array_1d<double, 3 >& force = i.FastGetSolutionStepValue(TOTAL_FORCES);
         
         #ifdef KRATOS_DEBUG
-        DemDebugFunctions::CheckIfNan(force, "NAN in Force in Integration Scheme");
+            DemDebugFunctions::CheckIfNan(force, "NAN in Force in Integration Scheme");
         #endif  
         
         double mass = i.FastGetSolutionStepValue(NODAL_MASS);                   

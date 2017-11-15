@@ -102,6 +102,14 @@ namespace Kratos {
         mListOfRadii.resize(number_of_spheres);
         mListOfCoordinates.resize(number_of_spheres);
         mListOfSphericParticles.resize(number_of_spheres);
+        mFloatingFlag = false;
+        
+        GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_FORCE)[0] = 0.0;
+        GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_FORCE)[1] = 0.0;
+        GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_FORCE)[2] = 0.0;
+        GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_MOMENT)[0] = 0.0;
+        GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_MOMENT)[1] = 0.0;
+        GetGeometry()[0].FastGetSolutionStepValue(EXTERNAL_APPLIED_MOMENT)[2] = 0.0;
         
         const double scaling_factor = cl / reference_size;
         
