@@ -413,10 +413,18 @@ namespace Kratos
                          {
                              KRATOS_CHECK_GREATER_EQUAL(slope_slave, quadratic_threshold);
                          }
-                         else if ((slope_slave - 1.0) > 0.05) 
-//                          else if ((slope_slave - 1.0) > 0.05 || slope_slave < 1.0) 
+                         else
                          {
-                             KRATOS_WATCH(slope_slave);
+                             array_1d<double, 3> delta_disp_slave = ZeroVector(3);
+                             for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+                             {
+                                 delta_disp_slave += slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                             }
+                             if (norm_2(delta_disp_slave) > 0.0)
+                             {
+                                KRATOS_WATCH(slope_slave);
+                                KRATOS_WATCH(error_vector_slave);
+                             }
                          }
                      }
                      
@@ -432,18 +440,26 @@ namespace Kratos
                          {
                              KRATOS_CHECK_GREATER_EQUAL(slope_master, quadratic_threshold);
                          }
-                         else if ((slope_master - 1.0) > 0.05)  
-//                          else if ((slope_master - 1.0) > 0.05 || slope_master < 1.0)  
+                         else 
                          {
-                             KRATOS_WATCH(slope_master);
+                             array_1d<double, 3> delta_disp_master = ZeroVector(3);
+                             for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+                             {
+                                 delta_disp_master += master_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                             }
+                             if (norm_2(delta_disp_master) > 0.0)
+                             {
+                                KRATOS_WATCH(slope_master);
+                                KRATOS_WATCH(error_vector_master);
+                             }
                          }
                      }
                  }
             }
             else // LEVEL_DEBUG
             {
-                KRATOS_WATCH(error_vector_slave)
-                KRATOS_WATCH(error_vector_master)
+                KRATOS_WATCH(error_vector_slave);
+                KRATOS_WATCH(error_vector_master);
             }
         }
         
