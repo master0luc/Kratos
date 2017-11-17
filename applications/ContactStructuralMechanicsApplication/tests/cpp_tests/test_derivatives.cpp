@@ -19,8 +19,6 @@
 #include "includes/properties.h"
 #include "includes/model_part.h"
 
-/* GAUSS-LEGENDRE */
-
 /* Utilities */
 #include "utilities/mortar_utilities.h"
 #include "utilities/exact_mortar_segmentation_utility.h"
@@ -415,16 +413,8 @@ namespace Kratos
                          }
                          else
                          {
-                             array_1d<double, 3> delta_disp_slave = ZeroVector(3);
-                             for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
-                             {
-                                 delta_disp_slave += slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
-                             }
-                             if (norm_2(delta_disp_slave) > 0.0)
-                             {
-                                KRATOS_WATCH(slope_slave);
-                                KRATOS_WATCH(error_vector_slave);
-                             }
+                            KRATOS_WATCH(slope_slave);
+                            KRATOS_WATCH(error_vector_slave);
                          }
                      }
                      
@@ -442,16 +432,8 @@ namespace Kratos
                          }
                          else 
                          {
-                             array_1d<double, 3> delta_disp_master = ZeroVector(3);
-                             for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
-                             {
-                                 delta_disp_master += master_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
-                             }
-                             if (norm_2(delta_disp_master) > 0.0)
-                             {
-                                KRATOS_WATCH(slope_master);
-                                KRATOS_WATCH(error_vector_master);
-                             }
+                            KRATOS_WATCH(slope_master);
+                            KRATOS_WATCH(error_vector_master);
                          }
                      }
                  }
