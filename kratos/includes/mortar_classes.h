@@ -1621,15 +1621,7 @@ public:
         array_1d<bounded_matrix<double, TNumNodes, TNumNodes> , size_3>& delta_Ae = rDerivativeData.DeltaAe;
         
         for (unsigned int i = 0; i < size_3; ++i)
-        {
-            if (i == 10)
-            {
-                KRATOS_WATCH(BaseClassType::De)
-                KRATOS_WATCH(DeltaDe[i])
-                KRATOS_WATCH(BaseClassType::Me)
-                KRATOS_WATCH(DeltaMe[i])
-            }
-            
+        {            
             const bounded_matrix<double, TNumNodes, TNumNodes> aux_matrix = DeltaDe[i] - prod(rDerivativeData.Ae, DeltaMe[i]);
             noalias(delta_Ae[i]) = prod(aux_matrix, inv_Me);
         }
