@@ -291,8 +291,10 @@ namespace Kratos
                                             }
                                         }
                                         
+                                        if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rVariables0.NSlave)
                                         if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rVariables.NSlave)
                                         if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(aux_N_dx_slave)
+                                        if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rVariables0.NMaster)
                                         if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rVariables.NMaster)
                                         if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(aux_N_dx_master)
                                         
@@ -304,6 +306,7 @@ namespace Kratos
                                         // Now we compute the error of the delta Phi
                                         Matrix aux_Ae_dx_slave = rDerivativeData0.Ae;
                                         Vector aux_Phi_dx_slave  = rVariables0.PhiLagrangeMultipliers;
+                                        Vector aux_N_dx_slave  = rVariables0.NSlave;
                                         for (unsigned int i_node = 0; i_node < 2 * TNumNodes; ++i_node)
                                         {
                                             array_1d<double, 3> delta_disp;
@@ -315,12 +318,15 @@ namespace Kratos
                                                 aux_Phi_dx_slave  += delta_phi * delta_disp[i_dof];
                                                 const auto& delta_ae = rDerivativeData.DeltaAe[i_node * TDim + i_dof];
                                                 aux_Ae_dx_slave += delta_ae * delta_disp[i_dof];
-                                                
-                                                if (std::abs(delta_disp[i_dof]) > 0.0) KRATOS_WATCH(delta_phi);
+                                                const auto& delta_n1 = rDerivativeData.DeltaN1[i_node * TDim + i_dof];
+                                                aux_N_dx_slave += delta_n1 * delta_disp[i_dof];
                                             }
                                         }
                                         
                                         if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData.Ae - aux_Ae_dx_slave)
+                                        if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rVariables0.NSlave)
+                                        if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(aux_N_dx_slave)
+                                        if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rVariables.NSlave)
                                         if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rVariables0.PhiLagrangeMultipliers)
                                         if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rVariables.PhiLagrangeMultipliers)
                                         if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(aux_Phi_dx_slave)
@@ -1351,7 +1357,7 @@ namespace Kratos
                 p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
             }
             
-//             TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 0, -5.0e-12, 1, CHECK_PHI, LEVEL_DEBUG);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 1, -5.0e-2, 6, CHECK_PHI, LEVEL_EXACT);
         }
         
         /** 
@@ -1438,7 +1444,7 @@ namespace Kratos
                 p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
             }
             
-//             TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 0, -5.0e-3, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 4, 0, -5.0e-3, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1532,7 +1538,7 @@ namespace Kratos
                 p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, normal_1);
             }
             
-//             TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 5, 1, -5.0e-3, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
+            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, 5, 1, -5.0e-3, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
