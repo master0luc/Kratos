@@ -170,7 +170,6 @@ public:
             CoordinatesArrayType aux_coords;
             aux_coords = this_geometry.PointLocalCoordinates(aux_coords, this_geometry.Center());
             it_cond->SetValue(NORMAL, this_geometry.UnitNormal(aux_coords));
-//             const array_1d<double, 3>& normal = it_cond->GetValue(NORMAL);
             
             const unsigned int number_nodes = this_geometry.PointsNumber();
             

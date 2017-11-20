@@ -384,6 +384,8 @@ public:
         GeometryType& SlaveGeometry
         )
     {
+//         const auto& normal_slave = rDerivativeData.NormalSlave;
+        
         for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave )
         {
             // We compute the gradient and jacobian
@@ -396,9 +398,15 @@ public:
             
             // We compute the delta normal of the node
             const auto& delta_normal_node = GPDeltaNormal(jacobian, gradient);
-            for ( unsigned int i_dof = 0; i_dof < TDim * TNumNodes; ++i_dof)
+            for ( unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
             {
-                row(rDerivativeData.DeltaNormalSlave[i_dof], i_slave) = subrange(delta_normal_node[i_dof], 0, TDim);
+//                 const array_1d<double, 3> delta_disp = SlaveGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT) - SlaveGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
+                for ( unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
+                {
+                    const auto& aux_delta_normal = subrange(delta_normal_node[i_node * TDim + i_dof], 0, TDim);
+//                     const double coeff = (std::abs(delta_disp[i_dof]) > 0.0) ? - 2.0 * ((inner_prod(row(normal_slave, i_slave), aux_delta_normal) ) )/(delta_disp[i_dof] * std::pow(norm_2(aux_delta_normal),2)) : 1.0;
+                    row(rDerivativeData.DeltaNormalSlave[i_node * TDim + i_dof], i_slave) =  aux_delta_normal;
+                }
             }
         }
         
@@ -423,6 +431,8 @@ public:
         GeometryType& MasterGeometry
         )
     {
+//         const auto& normal_master = rDerivativeData.NormalMaster;
+        
         for ( unsigned int i_master = 0; i_master < TNumNodes; ++i_master )
         {
             // We compute the gradient and jacobian
@@ -435,9 +445,15 @@ public:
             
             // We compute the delta normal of the node
             const auto& delta_normal_node = GPDeltaNormal(jacobian, gradient);
-            for ( unsigned int i_dof = 0; i_dof < TDim * TNumNodes; ++i_dof)
+            for ( unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
             {
-                row(rDerivativeData.DeltaNormalMaster[i_dof], i_master) = subrange(delta_normal_node[i_dof], 0, TDim);
+//                 const array_1d<double, 3> delta_disp = MasterGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT) - MasterGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
+                for ( unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
+                {
+                    const auto& aux_delta_normal = subrange(delta_normal_node[i_node * TDim + i_dof], 0, TDim);
+//                     const double coeff = (std::abs(delta_disp[i_dof]) > 0.0) ? - 2.0 * ((inner_prod(row(normal_master, i_master), aux_delta_normal) ) )/( delta_disp[i_dof] * std::pow(norm_2(aux_delta_normal),2)) : 1.0;
+                    row(rDerivativeData.DeltaNormalMaster[i_node * TDim + i_dof], i_master) = aux_delta_normal;
+                }
             }
         }
         
