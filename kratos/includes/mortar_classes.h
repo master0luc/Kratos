@@ -1392,7 +1392,7 @@ public:
     bounded_matrix<double, TNumNodes, TNumNodes> ComputeDe(        
         const Vector& N1, 
         const double detJ 
-        )
+        ) const 
     {
         bounded_matrix<double, TNumNodes, TNumNodes> De;
     
@@ -1400,14 +1400,8 @@ public:
         {
             for (unsigned int j = 0; j < TNumNodes; ++j)
             {
-                if (i == j)
-                {
-                    De(i,i) = detJ * N1[i];
-                }
-                else
-                {
-                    De(i,j) = 0.0;
-                }
+                if (i == j) De(i,i) = detJ * N1[i];
+                else De(i,j) = 0.0;
             }
         }
         
@@ -1580,6 +1574,7 @@ public:
         )
     {
         /* DEFINITIONS */
+        const double det_j_slave = rKinematicVariables.DetjSlave;
         const Vector& n1 = rKinematicVariables.NSlave;
         
         BaseClassType::CalculateAeComponents(rKinematicVariables, rIntegrationWeight);
@@ -1587,9 +1582,13 @@ public:
         for (unsigned int i = 0; i < size_3; ++i)
         {
             const double delta_det_j = rDerivativeData.DeltaDetjSlave[i];
+            const Vector& delta_n1 = rDerivativeData.DeltaN1[i];
             
-            DeltaDe[i] += rIntegrationWeight * this->ComputeDe( n1, delta_det_j );
-            DeltaMe[i] += rIntegrationWeight * delta_det_j * outer_prod(n1, n1);
+            DeltaDe[i] += rIntegrationWeight * this->ComputeDe( n1, delta_det_j )
+                       +  rIntegrationWeight * this->ComputeDe( delta_n1, det_j_slave );
+            
+            DeltaMe[i] += rIntegrationWeight * delta_det_j * outer_prod(n1, n1)
+                       +  rIntegrationWeight * det_j_slave * (outer_prod(delta_n1, n1) + outer_prod(n1, delta_n1));
         }
     }
  
