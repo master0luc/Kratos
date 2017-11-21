@@ -400,39 +400,6 @@ public:
         GeometryType& SlaveGeometry
         )
     {
-//         const bounded_matrix<double, TNumNodes, TDim>& aux_normal_slave = rDerivativeData.NormalSlave;
-//         bounded_matrix<double, TNumNodes, TDim> aux_delta_normal_slave = ZeroMatrix(TNumNodes, TDim);
-//         
-//         for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave )
-//         {
-//             // We compute the gradient and jacobian
-//             GeometryType::CoordinatesArrayType point_local;  
-//             SlaveGeometry.PointLocalCoordinates( point_local, SlaveGeometry[i_slave].Coordinates( ) ) ;
-//             Matrix jacobian;
-//             jacobian = SlaveGeometry.Jacobian( jacobian, point_local);
-//             Matrix gradient;
-//             SlaveGeometry.ShapeFunctionsLocalGradients( gradient, point_local );
-//             
-//             // We compute the delta normal of the node
-//             const auto& delta_normal_node = GPDeltaNormal(jacobian, gradient);
-//             for ( unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
-//             {
-//                 const array_1d<double, 3> delta_disp = SlaveGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT) - SlaveGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
-//                 for ( unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
-//                 {
-//                     const auto& aux_delta_normal = subrange(delta_normal_node[i_node * TDim + i_dof], 0, TDim);
-//                     row(aux_delta_normal_slave, i_slave) += delta_disp[i_dof] * aux_delta_normal;
-//                 }
-//             }
-//         }
-//         
-//         array_1d<double, TNumNodes> coefficients;
-//         for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave )
-//         {
-//             const double inner_prod_delta_normal = inner_prod(row(aux_delta_normal_slave, i_slave), row(aux_delta_normal_slave, i_slave));
-//             coefficients[i_slave] = (inner_prod_delta_normal > 0.0) ? - inner_prod(row(aux_delta_normal_slave, i_slave), row(aux_normal_slave, i_slave))/inner_prod_delta_normal : 0.0;
-//         }
-        
         for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave )
         {
             // We compute the gradient and jacobian
@@ -451,7 +418,6 @@ public:
                 {
                     const auto& aux_delta_normal = subrange(delta_normal_node[i_node * TDim + i_dof], 0, TDim);
                     row(rDerivativeData.DeltaNormalSlave[i_node * TDim + i_dof], i_slave) = aux_delta_normal;
-//                     row(rDerivativeData.DeltaNormalSlave[i_node * TDim + i_dof], i_slave) = coefficients[i_slave] * aux_delta_normal;
                 }
             }
         }
@@ -477,39 +443,53 @@ public:
         GeometryType& MasterGeometry
         )
     {
-//         const bounded_matrix<double, TNumNodes, TDim>& aux_normal_master = rDerivativeData.NormalMaster;
-//         bounded_matrix<double, TNumNodes, TDim> aux_delta_normal_master = ZeroMatrix(TNumNodes, TDim);
-//         
-//         for ( unsigned int i_master = 0; i_master < TNumNodes; ++i_master )
-//         {
-//             // We compute the gradient and jacobian
-//             GeometryType::CoordinatesArrayType point_local;  
-//             MasterGeometry.PointLocalCoordinates( point_local, MasterGeometry[i_master].Coordinates( ) ) ;
-//             Matrix jacobian;
-//             jacobian = MasterGeometry.Jacobian( jacobian, point_local);
-//             Matrix gradient;
-//             MasterGeometry.ShapeFunctionsLocalGradients( gradient, point_local );
-//             
-//             // We compute the delta normal of the node
-//             const auto& delta_normal_node = GPDeltaNormal(jacobian, gradient);
-//             for ( unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
-//             {
-//                 const array_1d<double, 3> delta_disp = MasterGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT) - MasterGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
-//                 for ( unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
-//                 {
-//                     const auto& aux_delta_normal = subrange(delta_normal_node[i_node * TDim + i_dof], 0, TDim);
-//                     row(aux_delta_normal_master, i_master) += delta_disp[i_dof] * aux_delta_normal;
-//                 }
-//             }
-//         }
-//         
-//         array_1d<double, TNumNodes> coefficients;
-//         for ( unsigned int i_master = 0; i_master < TNumNodes; ++i_master )
-//         {
-//             const double inner_prod_delta_normal = inner_prod(row(aux_delta_normal_master, i_master), row(aux_delta_normal_master, i_master));
-//             coefficients[i_master] = (inner_prod_delta_normal > 0.0) ? - inner_prod(row(aux_delta_normal_master, i_master), row(aux_normal_master, i_master))/inner_prod_delta_normal : 0.0;
-//         }
-//         
+        bounded_matrix<double, TNumNodes, TDim> aux_normal_master = ZeroMatrix(3,3); // TODO: Replace with the real previous normal
+        aux_normal_master(0, 2) = 1.0;
+        aux_normal_master(1, 2) = 1.0;
+        aux_normal_master(2, 2) = 1.0;
+        bounded_matrix<double, TNumNodes, TDim> aux_delta_normal_master = ZeroMatrix(TNumNodes, TDim);
+        
+        for ( unsigned int i_master = 0; i_master < TNumNodes; ++i_master )
+        {
+            // We compute the gradient and jacobian
+            GeometryType::CoordinatesArrayType point_local;  
+            MasterGeometry.PointLocalCoordinates( point_local, MasterGeometry[i_master].Coordinates( ) ) ;
+            Matrix jacobian;
+            jacobian = MasterGeometry.Jacobian( jacobian, point_local);
+            Matrix gradient;
+            MasterGeometry.ShapeFunctionsLocalGradients( gradient, point_local );
+            
+            // We compute the delta normal of the node
+            const auto& delta_normal_node = GPDeltaNormal(jacobian, gradient);
+            for ( unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+            {
+                const array_1d<double, 3> delta_disp = MasterGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT) - MasterGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
+                for ( unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
+                {
+                    const auto& aux_delta_normal = subrange(delta_normal_node[i_node * TDim + i_dof], 0, TDim);
+                    row(aux_delta_normal_master, i_master) += delta_disp[i_dof] * aux_delta_normal;
+                }
+            }
+        }
+
+        bounded_matrix<double, TNumNodes, TDim> calculated_normal_master = aux_delta_normal_master + aux_normal_master;
+        for ( unsigned int i_master = 0; i_master < TNumNodes; ++i_master ) row(calculated_normal_master, i_master) /= norm_2(row(calculated_normal_master, i_master));
+            
+//         KRATOS_WATCH(calculated_normal_master)
+//         KRATOS_WATCH(aux_delta_normal_master)
+//         KRATOS_WATCH(calculated_normal_master - aux_normal_master)
+        
+        bounded_matrix<double, TDim, TDim> aux; // TODO: Do the real calculation
+        aux(0, 0) = 1.0;
+        aux(0, 1) = 1.0;
+        aux(0, 2) = ((calculated_normal_master - aux_normal_master)(0,0) - aux_delta_normal_master(0, 0) - aux_delta_normal_master(0, 1))/aux_delta_normal_master(0, 2);
+        aux(1, 0) = 1.0;
+        aux(1, 1) = 1.0;
+        aux(1, 2) = ((calculated_normal_master - aux_normal_master)(0,1) - aux_delta_normal_master(0, 0) - aux_delta_normal_master(0, 1))/aux_delta_normal_master(0, 2);
+        aux(2, 0) = 1.0;
+        aux(2, 1) = 1.0;
+        aux(2, 2) = ((calculated_normal_master - aux_normal_master)(0,2) - aux_delta_normal_master(0, 0) - aux_delta_normal_master(0, 1))/aux_delta_normal_master(0, 2);
+        
         for ( unsigned int i_master = 0; i_master < TNumNodes; ++i_master )
         {
             // We compute the gradient and jacobian
@@ -527,8 +507,7 @@ public:
                 for ( unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
                 {
                     const auto& aux_delta_normal = subrange(delta_normal_node[i_node * TDim + i_dof], 0, TDim);
-                    row(rDerivativeData.DeltaNormalMaster[i_node * TDim + i_dof], i_master) = aux_delta_normal;
-//                     row(rDerivativeData.DeltaNormalMaster[i_node * TDim + i_dof], i_master) = coefficients[i_master] * aux_delta_normal;
+                    row(rDerivativeData.DeltaNormalMaster[i_node * TDim + i_dof], i_master) = prod(aux, aux_delta_normal);
                 }
             }
         }
