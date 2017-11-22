@@ -395,15 +395,16 @@ namespace Kratos
                             
                             for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node) // TODO: Fix this!!!
                             {
-                                if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) if (norm_2(row(aux_Normal_dx_master, i_node)) > 1.0) KRATOS_WATCH(norm_2(row(aux_Normal_dx_master, i_node)))
+//                                 if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) 
+//                                 if (norm_2(row(aux_Normal_dx_master, i_node)) > 1.0) KRATOS_WATCH(norm_2(row(aux_Normal_dx_master, i_node)))
                                 
                                 row(aux_Normal_dx_slave, i_node) /= norm_2(row(aux_Normal_dx_slave, i_node));
                                 row(aux_Normal_dx_master, i_node) /= norm_2(row(aux_Normal_dx_master, i_node));
                             }
 
-//                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData0.NormalSlave)
-//                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData.NormalSlave)
-//                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(aux_Normal_dx_slave)
+                            if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData0.NormalSlave)
+                            if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData.NormalSlave)
+                            if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(aux_Normal_dx_slave)
                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData0.NormalMaster)
                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData.NormalMaster)
                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(aux_Normal_dx_master)
@@ -1755,7 +1756,7 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-//             TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 5.0e-3, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 5.0e-3, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1852,7 +1853,7 @@ namespace Kratos
             std::vector<unsigned int> nodes_perturbed(2);
             nodes_perturbed[0] = 4;
             nodes_perturbed[1] = 5;
-//             TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 1.0e-0, 1, CHECK_NORMAL, LEVEL_EXACT);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 1.0e-1, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1947,7 +1948,7 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-//             TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 5.0e-3, 1, CHECK_NORMAL, LEVEL_DEBUG);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 5.0e-2, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
          /** 
@@ -2049,7 +2050,7 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, -5.0e-4, 1, CHECK_NORMAL, LEVEL_DEBUG);
+            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, -5.0e-2, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
     } // namespace Testing
