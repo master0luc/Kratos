@@ -392,15 +392,6 @@ namespace Kratos
                                     aux_Normal_dx_master += delta_normal_master * delta_disp_master[i_dof];
                                 }
                             }
-                            
-                            for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node) // TODO: Fix this!!!
-                            {
-//                                 if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) 
-//                                 if (norm_2(row(aux_Normal_dx_master, i_node)) > 1.0) KRATOS_WATCH(norm_2(row(aux_Normal_dx_master, i_node)))
-                                
-                                row(aux_Normal_dx_slave, i_node) /= norm_2(row(aux_Normal_dx_slave, i_node));
-                                row(aux_Normal_dx_master, i_node) /= norm_2(row(aux_Normal_dx_master, i_node));
-                            }
 
                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData0.NormalSlave)
                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData.NormalSlave)

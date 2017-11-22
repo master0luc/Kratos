@@ -396,43 +396,43 @@ public:
         GeometryType& rThisGeometry
         )
     {
-//         bounded_matrix<double, TNumNodes, TDim> aux_normal_geometry = MortarUtilities::GetVariableMatrix<TDim,TNumNodes>(rThisGeometry,  NORMAL, 1);
-//         bounded_matrix<double, TNumNodes, TDim> aux_delta_normal_geometry = ZeroMatrix(TNumNodes, TDim);
-//         
-//         for ( unsigned int i_geometry = 0; i_geometry < TNumNodes; ++i_geometry )
-//         {
-//             // We compute the gradient and jacobian
-//             GeometryType::CoordinatesArrayType point_local;  
-//             rThisGeometry.PointLocalCoordinates( point_local, rThisGeometry[i_geometry].Coordinates( ) ) ;
-//             Matrix jacobian;
-//             jacobian = rThisGeometry.Jacobian( jacobian, point_local);
-//             Matrix gradient;
-//             rThisGeometry.ShapeFunctionsLocalGradients( gradient, point_local );
-//             
-//             // We compute the delta normal of the node
-//             const auto& delta_normal_node = GPDeltaNormal(jacobian, gradient);
-//             for ( unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
-//             {
-//                 const array_1d<double, 3> delta_disp = rThisGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT) - rThisGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
-//                 for ( unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
-//                 {
-//                     const auto& aux_delta_normal = subrange(delta_normal_node[i_node * TDim + i_dof], 0, TDim);
-//                     row(aux_delta_normal_geometry, i_geometry) += delta_disp[i_dof] * aux_delta_normal;
-//                 }
-//             }
-//         }
-// 
-//         bounded_matrix<double, TNumNodes, TDim> calculated_normal_geometry = aux_delta_normal_geometry + aux_normal_geometry;
-//         for ( unsigned int i_geometry = 0; i_geometry < TNumNodes; ++i_geometry ) row(calculated_normal_geometry, i_geometry) /= norm_2(row(calculated_normal_geometry, i_geometry));
-//             
-//         // We compute the diff matrix to compute the auxiliar matrix later
-//         const bounded_matrix<double, TNumNodes, TDim> diff_matrix = calculated_normal_geometry - aux_normal_geometry;  
+        bounded_matrix<double, TNumNodes, TDim> aux_normal_geometry = MortarUtilities::GetVariableMatrix<TDim,TNumNodes>(rThisGeometry,  NORMAL, 1);
+        bounded_matrix<double, TNumNodes, TDim> aux_delta_normal_geometry = ZeroMatrix(TNumNodes, TDim);
+        
+        for ( unsigned int i_geometry = 0; i_geometry < TNumNodes; ++i_geometry )
+        {
+            // We compute the gradient and jacobian
+            GeometryType::CoordinatesArrayType point_local;  
+            rThisGeometry.PointLocalCoordinates( point_local, rThisGeometry[i_geometry].Coordinates( ) ) ;
+            Matrix jacobian;
+            jacobian = rThisGeometry.Jacobian( jacobian, point_local);
+            Matrix gradient;
+            rThisGeometry.ShapeFunctionsLocalGradients( gradient, point_local );
+            
+            // We compute the delta normal of the node
+            const auto& delta_normal_node = GPDeltaNormal(jacobian, gradient);
+            for ( unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+            {
+                const array_1d<double, 3> delta_disp = rThisGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT) - rThisGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
+                for ( unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
+                {
+                    const auto& aux_delta_normal = subrange(delta_normal_node[i_node * TDim + i_dof], 0, TDim);
+                    row(aux_delta_normal_geometry, i_geometry) += delta_disp[i_dof] * aux_delta_normal;
+                }
+            }
+        }
+        
+        bounded_matrix<double, TNumNodes, TDim> calculated_normal_geometry = aux_delta_normal_geometry + aux_normal_geometry;
+        for ( unsigned int i_geometry = 0; i_geometry < TNumNodes; ++i_geometry ) row(calculated_normal_geometry, i_geometry) /= norm_2(row(calculated_normal_geometry, i_geometry));
+        
+        // We compute the diff matrix to compute the auxiliar matrix later
+        const bounded_matrix<double, TNumNodes, TDim> diff_matrix = calculated_normal_geometry - aux_normal_geometry;  
         
         // We iterate over the nodes of the geometry
         for ( unsigned int i_geometry = 0; i_geometry < TNumNodes; ++i_geometry )
         {
-//             // Computing auxiliar matrix
-//             const bounded_matrix<double, TDim, TDim> aux = ComputeAuxiliarMatrix(diff_matrix, aux_delta_normal_geometry, i_geometry);
+            // Computing auxiliar matrix
+            const bounded_matrix<double, TDim, TDim> aux = ComputeAuxiliarMatrix(diff_matrix, aux_delta_normal_geometry, i_geometry);
             
             // We compute the gradient and jacobian
             GeometryType::CoordinatesArrayType point_local;  
@@ -449,8 +449,8 @@ public:
                 for ( unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
                 {
                     const auto& aux_delta_normal = subrange(delta_normal_node[i_node * TDim + i_dof], 0, TDim);
-                    row(rDeltaNormal[i_node * TDim + i_dof], i_geometry) = aux_delta_normal;
-//                     row(rDeltaNormal[i_node * TDim + i_dof], i_geometry) = prod(aux, aux_delta_normal);
+//                     row(rDeltaNormal[i_node * TDim + i_dof], i_geometry) = aux_delta_normal;
+                    row(rDeltaNormal[i_node * TDim + i_dof], i_geometry) = prod(aux, aux_delta_normal);
                 }
             }
         }
@@ -1166,8 +1166,9 @@ private:
             {
                 bounded_matrix<double, 3, 3> aux_matrix;
                 
-                const unsigned int aux_index_1 = (itry + 1) == 3 ? 0 : itry + 1;
-                const unsigned int aux_index_2 = (itry + 2) == 3 ? 0 : itry + 2;
+                const unsigned int aux_index_1 = itry == 2 ? 0 : itry + 1;
+                const unsigned int aux_index_2 = itry == 2 ? 1 : itry + 2;
+                
                 const double diff = DeltaNormal(iGeometry, aux_index_1) + DeltaNormal(iGeometry, aux_index_2);
                 const double coeff = DeltaNormal(iGeometry, itry);
                 
