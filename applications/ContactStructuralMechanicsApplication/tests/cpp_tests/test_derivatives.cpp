@@ -63,9 +63,9 @@ namespace Kratos
             Condition::Pointer MasterCondition0,
             Condition::Pointer SlaveCondition1,
             Condition::Pointer MasterCondition1,
-            std::vector<unsigned int> NodesPerturbation,
+            const std::vector<unsigned int> NodesPerturbation,
             unsigned int IndexPerturbation,
-            const double Coeff,
+            const std::vector<double> Coeff,
             const unsigned int NumberIterations,
             const DerivateToCheck Derivative = CHECK_SHAPE_FUNCTION,
             const CheckLevel Check = LEVEL_QUADRATIC_CONVERGENCE
@@ -111,11 +111,12 @@ namespace Kratos
                 {
                     // We add displacement to the corresponding node
                     array_1d<double, 3> aux_delta_disp = ZeroVector(3);
-                    aux_delta_disp[IndexPerturbation] = static_cast<double>(iter + 1) * Coeff;
+                    aux_delta_disp[IndexPerturbation] = static_cast<double>(iter + 1) * Coeff[i_per];
                     Node<3>::Pointer node_to_move = ThisModelPart.pGetNode(NodesPerturbation[i_per]);
                     array_1d<double, 3>& current_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
+                    const array_1d<double, 3>& aux_previous_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
                     array_1d<double, 3>& previous_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT, 1);
-                    previous_disp = current_disp;
+                    previous_disp = aux_previous_disp;
                     current_disp = aux_delta_disp;
                     // Finally we move the mesh
                     noalias(node_to_move->Coordinates()) = node_to_move->GetInitialPosition().Coordinates() + node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
@@ -132,7 +133,10 @@ namespace Kratos
                         GeometryType::CoordinatesArrayType point_local; 
                         slave_geometry_1.PointLocalCoordinates( point_local, slave_geometry_1[i_node].Coordinates( ) ) ;
                         const array_1d<double, 3>& node_normal_slave = slave_geometry_1.UnitNormal(point_local);
-                        slave_geometry_1[i_node].SetValue(NORMAL, node_normal_slave);
+                        array_1d<double, 3>& current_normal = slave_geometry_1[i_node].FastGetSolutionStepValue(NORMAL);
+                        array_1d<double, 3>& previous_normal = slave_geometry_1[i_node].FastGetSolutionStepValue(NORMAL, 1);
+                        previous_normal = current_normal;
+                        current_normal = node_normal_slave;
                     }
                     const array_1d<double, 3>& normal_master = master_geometry_1.UnitNormal(aux_point);
                     MasterCondition1->SetValue(NORMAL, normal_master);
@@ -141,7 +145,10 @@ namespace Kratos
                         GeometryType::CoordinatesArrayType point_local; 
                         master_geometry_1.PointLocalCoordinates( point_local, master_geometry_1[i_node].Coordinates( ) ) ;
                         const array_1d<double, 3>& node_normal_master = master_geometry_1.UnitNormal(point_local);
-                        master_geometry_1[i_node].SetValue(NORMAL, node_normal_master);
+                        array_1d<double, 3>& current_normal = master_geometry_1[i_node].FastGetSolutionStepValue(NORMAL);
+                        array_1d<double, 3>& previous_normal = master_geometry_1[i_node].FastGetSolutionStepValue(NORMAL, 1);
+                        previous_normal = current_normal;
+                        current_normal = node_normal_master;
                     }
                 }
                 
@@ -153,9 +160,9 @@ namespace Kratos
                 if (consider_normal_variation == true)
                 {
                     // Compute the normal derivatives of the slave
-                    DerivativesUtilitiesType::CalculateDeltaNormalSlave(rDerivativeData, slave_geometry_1);
+                    DerivativesUtilitiesType::CalculateDeltaNormal(rDerivativeData.DeltaNormalSlave, slave_geometry_1);
                     // Compute the normal derivatives of the master
-                    DerivativesUtilitiesType::CalculateDeltaNormalMaster(rDerivativeData, master_geometry_1);
+                    DerivativesUtilitiesType::CalculateDeltaNormal(rDerivativeData.DeltaNormalMaster, master_geometry_1);
                 }
                 
                 const array_1d<double, 3>& normal_slave_1 = SlaveCondition1->GetValue(NORMAL);
@@ -361,7 +368,7 @@ namespace Kratos
                                         if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rVariables.DetjSlave)
                                         if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(aux_Detj_dx_slave)
                                         
-                                        error_vector_slave[iter] += std::abs(rVariables.DetjSlave  - aux_Detj_dx_slave);
+                                        error_vector_slave[iter] += std::abs(rVariables.DetjSlave - aux_Detj_dx_slave);
                                     }
                                 }
                             }
@@ -385,14 +392,6 @@ namespace Kratos
                                     aux_Normal_dx_master += delta_normal_master * delta_disp_master[i_dof];
                                 }
                             }
-                            
-//                             for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node) // TODO: Fix this!!!
-//                             {
-//                                 if (norm_2(row(aux_Normal_dx_master, i_node)) > 1.0) KRATOS_WATCH(norm_2(row(aux_Normal_dx_master, i_node)))
-//                                 
-//                                 row(aux_Normal_dx_slave, i_node) /= norm_2(row(aux_Normal_dx_slave, i_node));
-//                                 row(aux_Normal_dx_master, i_node) /= norm_2(row(aux_Normal_dx_master, i_node));
-//                             }
 
                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData0.NormalSlave)
                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData.NormalSlave)
@@ -493,6 +492,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -538,8 +538,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -564,12 +564,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-1, 1, CHECK_JACOBIAN, LEVEL_EXACT);
+            std::vector<double> coeff_perturbation(1, -5.0e-1);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 1, CHECK_JACOBIAN, LEVEL_EXACT);
         }
         
         /** 
@@ -587,6 +588,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -632,8 +634,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -658,12 +660,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, -5.0e-3, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, coeff_perturbation, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
         }
              
         /** 
@@ -681,6 +684,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -732,8 +736,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (4);
@@ -760,12 +764,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-3, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -783,6 +788,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -828,8 +834,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -854,12 +860,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-2, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
+            std::vector<double> coeff_perturbation(1, -5.0e-2);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
         }
         
         /** 
@@ -877,6 +884,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -922,8 +930,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -948,12 +956,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-2, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
+            std::vector<double> coeff_perturbation(1, -5.0e-2);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
         }
         
         /** 
@@ -971,6 +980,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -1016,8 +1026,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -1042,12 +1052,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, -5.0e-3, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1065,6 +1076,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -1116,8 +1128,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (4);
@@ -1144,12 +1156,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-3, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1167,6 +1180,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -1218,8 +1232,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (4);
@@ -1246,12 +1260,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-3, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1269,6 +1284,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -1319,8 +1335,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (4);
@@ -1347,12 +1363,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-3, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1370,6 +1387,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -1415,8 +1433,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -1441,12 +1459,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-2, 6, CHECK_PHI, LEVEL_EXACT);
+            std::vector<double> coeff_perturbation(1, -5.0e-2);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_PHI, LEVEL_EXACT);
         }
         
         /** 
@@ -1464,6 +1483,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -1509,8 +1529,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -1535,12 +1555,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, -5.0e-3, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, coeff_perturbation, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1558,6 +1579,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -1608,8 +1630,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (4);
@@ -1636,12 +1658,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-3, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1659,6 +1682,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -1704,8 +1728,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -1730,12 +1754,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-//             TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 5.0e-3, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, 5.0e-3);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, coeff_perturbation, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1753,6 +1778,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -1798,8 +1824,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -1824,14 +1850,15 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(2);
+            std::vector<double> coeff_perturbation(2, 1.0e-1);
             nodes_perturbed[0] = 4;
             nodes_perturbed[1] = 5;
-            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 1.0e-0, 1, CHECK_NORMAL, LEVEL_EXACT);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, coeff_perturbation, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1849,6 +1876,107 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
+            
+            PointType aux_point;
+            aux_point.Coordinates() = ZeroVector(3);
+            
+            // First we create the nodes
+            NodeType::Pointer p_node_1 = model_part.CreateNewNode(1, 0.0,0.0,0.0);
+            NodeType::Pointer p_node_2 = model_part.CreateNewNode(2, 1.0,0.0,0.0);
+            NodeType::Pointer p_node_3 = model_part.CreateNewNode(3, 0.0,1.0,0.0);
+            
+            NodeType::Pointer p_node_4 = model_part.CreateNewNode(4, 0.0,1.0,1.0e-3);
+            NodeType::Pointer p_node_5 = model_part.CreateNewNode(5, 0.0,0.0,1.0e-3);
+            NodeType::Pointer p_node_6 = model_part.CreateNewNode(6, 1.0,0.0,1.0e-3);
+            
+            NodeType::Pointer p_node0_1 = model_part.CreateNewNode(7, p_node_1->X(), p_node_1->Y(), p_node_1->Z());
+            NodeType::Pointer p_node0_2 = model_part.CreateNewNode(8, p_node_2->X(), p_node_2->Y(), p_node_2->Z());
+            NodeType::Pointer p_node0_3 = model_part.CreateNewNode(9, p_node_3->X(), p_node_3->Y(), p_node_3->Z());
+            
+            NodeType::Pointer p_node0_4 = model_part.CreateNewNode(10, p_node_4->X(), p_node_4->Y(), p_node_4->Z());
+            NodeType::Pointer p_node0_5 = model_part.CreateNewNode(11, p_node_5->X(), p_node_5->Y(), p_node_5->Z());
+            NodeType::Pointer p_node0_6 = model_part.CreateNewNode(12, p_node_6->X(), p_node_6->Y(), p_node_6->Z());
+            
+            // Now we create the "conditions"
+            std::vector<NodeType::Pointer> condition_nodes_0 (3);
+            condition_nodes_0[0] = p_node_1;
+            condition_nodes_0[1] = p_node_2;
+            condition_nodes_0[2] = p_node_3;
+            Triangle3D3 <Node<3>> triangle_0( condition_nodes_0 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_0 (3);
+            condition_nodes0_0[0] = p_node0_1;
+            condition_nodes0_0[1] = p_node0_2;
+            condition_nodes0_0[2] = p_node0_3;
+            Triangle3D3 <Node<3>> triangle0_0( condition_nodes0_0 );
+            
+            const array_1d<double, 3>& normal_0 = triangle_0.UnitNormal(aux_point);
+            Condition::Pointer p_cond_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 1, triangle_0, p_cond_prop);
+            Condition::Pointer p_cond0_0 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 3, triangle0_0, p_cond_prop);
+            
+            p_cond0_0->SetValue(NORMAL, normal_0);
+            p_cond_0->SetValue(NORMAL, normal_0);
+            for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
+            {
+                GeometryType::CoordinatesArrayType point_local; 
+                p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
+                const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+            }
+            
+            std::vector<NodeType::Pointer> condition_nodes_1 (3);
+            condition_nodes_1[0] = p_node_4;
+            condition_nodes_1[1] = p_node_5;
+            condition_nodes_1[2] = p_node_6;
+            Triangle3D3 <Node<3>> triangle_1( condition_nodes_1 );
+            
+            std::vector<NodeType::Pointer> condition_nodes0_1 (3);
+            condition_nodes0_1[0] = p_node0_4;
+            condition_nodes0_1[1] = p_node0_5;
+            condition_nodes0_1[2] = p_node0_6;
+            Triangle3D3 <Node<3>> triangle0_1( condition_nodes0_1 );
+            
+            const array_1d<double, 3>& normal_1 = triangle_0.UnitNormal(aux_point);
+            Condition::Pointer p_cond_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 2, triangle_1, p_cond_prop);
+            Condition::Pointer p_cond0_1 = model_part.CreateNewCondition("ALMFrictionlessMortarContactCondition3D3N", 4, triangle0_1, p_cond_prop);
+            p_cond0_1->SetValue(NORMAL, normal_1);
+            p_cond_1->SetValue(NORMAL, normal_1);
+            for (unsigned int i_node = 0; i_node < p_cond0_0->GetGeometry().size(); ++i_node)
+            {
+                GeometryType::CoordinatesArrayType point_local; 
+                p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
+                const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+            }
+            
+            std::vector<unsigned int> nodes_perturbed(2);
+            std::vector<double> coeff_perturbation(2);
+            nodes_perturbed[0] = 4;
+            nodes_perturbed[1] = 5;
+            coeff_perturbation[0] = 1.0e-1;
+            coeff_perturbation[1] = 5.0e-2;
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, coeff_perturbation, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
+        }
+        
+        /** 
+         * Checks if the derivatives of the normal work as expected
+         * Case 4 of the Triangle3D3
+         */
+    
+        KRATOS_TEST_CASE_IN_SUITE(TestNormalDerivativesTriangle4, ContactStructuralApplicationFastSuite)
+        {
+            ModelPart model_part("Main");
+            model_part.SetBufferSize(2);
+            model_part.GetProcessInfo()[CONSIDER_NORMAL_VARIATION] = true;
+            
+            Properties::Pointer p_cond_prop = model_part.pGetProperties(0);
+            
+            // Variables addition
+            model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -1894,8 +2022,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (3);
@@ -1920,12 +2048,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-//             TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 5.0e-3, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, 5.0e-2);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, coeff_perturbation, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
          /** 
@@ -1943,6 +2072,7 @@ namespace Kratos
             
             // Variables addition
             model_part.AddNodalSolutionStepVariable(DISPLACEMENT);
+            model_part.AddNodalSolutionStepVariable(NORMAL);
             
             PointType aux_point;
             aux_point.Coordinates() = ZeroVector(3);
@@ -1993,8 +2123,8 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_0->GetGeometry().PointLocalCoordinates( point_local, p_cond0_0->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_0->GetGeometry().UnitNormal(point_local);
-                p_cond0_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_0->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_0->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<NodeType::Pointer> condition_nodes_1 (4);
@@ -2021,12 +2151,13 @@ namespace Kratos
                 GeometryType::CoordinatesArrayType point_local; 
                 p_cond0_1->GetGeometry().PointLocalCoordinates( point_local, p_cond0_1->GetGeometry()[i_node].Coordinates( ) ) ;
                 const array_1d<double, 3>& node_normal = p_cond0_1->GetGeometry().UnitNormal(point_local);
-                p_cond0_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
-                p_cond_1->GetGeometry()[i_node].SetValue(NORMAL, node_normal);
+                p_cond0_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
+                p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-//             TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, -5.0e-3, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-2);
+            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, coeff_perturbation, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
     } // namespace Testing
