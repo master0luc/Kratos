@@ -63,9 +63,9 @@ namespace Kratos
             Condition::Pointer MasterCondition0,
             Condition::Pointer SlaveCondition1,
             Condition::Pointer MasterCondition1,
-            std::vector<unsigned int> NodesPerturbation,
+            const std::vector<unsigned int> NodesPerturbation,
             unsigned int IndexPerturbation,
-            const double Coeff,
+            const std::vector<double> Coeff,
             const unsigned int NumberIterations,
             const DerivateToCheck Derivative = CHECK_SHAPE_FUNCTION,
             const CheckLevel Check = LEVEL_QUADRATIC_CONVERGENCE
@@ -111,7 +111,7 @@ namespace Kratos
                 {
                     // We add displacement to the corresponding node
                     array_1d<double, 3> aux_delta_disp = ZeroVector(3);
-                    aux_delta_disp[IndexPerturbation] = static_cast<double>(iter + 1) * Coeff;
+                    aux_delta_disp[IndexPerturbation] = static_cast<double>(iter + 1) * Coeff[i_per];
                     Node<3>::Pointer node_to_move = ThisModelPart.pGetNode(NodesPerturbation[i_per]);
                     array_1d<double, 3>& current_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
                     const array_1d<double, 3>& aux_previous_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
@@ -569,7 +569,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-1, 1, CHECK_JACOBIAN, LEVEL_EXACT);
+            std::vector<double> coeff_perturbation(1, -5.0e-1);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 1, CHECK_JACOBIAN, LEVEL_EXACT);
         }
         
         /** 
@@ -664,7 +665,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, -5.0e-3, 1, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, coeff_perturbation, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
         }
              
         /** 
@@ -767,7 +769,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-3, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -862,7 +865,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-2, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
+            std::vector<double> coeff_perturbation(1, -5.0e-2);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
         }
         
         /** 
@@ -957,7 +961,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-2, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
+            std::vector<double> coeff_perturbation(1, -5.0e-2);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
         }
         
         /** 
@@ -1052,7 +1057,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, -5.0e-3, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1155,7 +1161,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-3, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1258,7 +1265,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-3, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1360,7 +1368,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-3, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1455,7 +1464,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-2, 6, CHECK_PHI, LEVEL_EXACT);
+            std::vector<double> coeff_perturbation(1, -5.0e-2);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_PHI, LEVEL_EXACT);
         }
         
         /** 
@@ -1550,7 +1560,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, -5.0e-3, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, coeff_perturbation, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1652,7 +1663,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, -5.0e-3, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-3);
+            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_PHI, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1747,7 +1759,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 5.0e-3, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, 5.0e-3);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, coeff_perturbation, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1842,9 +1855,10 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(2);
+            std::vector<double> coeff_perturbation(2, 1.0e-1);
             nodes_perturbed[0] = 4;
             nodes_perturbed[1] = 5;
-            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 1.0e-1, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, coeff_perturbation, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1939,7 +1953,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 5.0e-2, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, 5.0e-2);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, coeff_perturbation, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
          /** 
@@ -2041,7 +2056,8 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, -5.0e-2, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
+            std::vector<double> coeff_perturbation(1, -5.0e-2);
+            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, coeff_perturbation, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
     } // namespace Testing
