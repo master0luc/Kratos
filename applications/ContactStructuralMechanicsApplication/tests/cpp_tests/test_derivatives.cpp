@@ -114,8 +114,9 @@ namespace Kratos
                     aux_delta_disp[IndexPerturbation] = static_cast<double>(iter + 1) * Coeff;
                     Node<3>::Pointer node_to_move = ThisModelPart.pGetNode(NodesPerturbation[i_per]);
                     array_1d<double, 3>& current_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
+                    const array_1d<double, 3>& aux_previous_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
                     array_1d<double, 3>& previous_disp = node_to_move->FastGetSolutionStepValue(DISPLACEMENT, 1);
-                    previous_disp = current_disp;
+                    previous_disp = aux_previous_disp;
                     current_disp = aux_delta_disp;
                     // Finally we move the mesh
                     noalias(node_to_move->Coordinates()) = node_to_move->GetInitialPosition().Coordinates() + node_to_move->FastGetSolutionStepValue(DISPLACEMENT);
@@ -132,8 +133,8 @@ namespace Kratos
                         GeometryType::CoordinatesArrayType point_local; 
                         slave_geometry_1.PointLocalCoordinates( point_local, slave_geometry_1[i_node].Coordinates( ) ) ;
                         const array_1d<double, 3>& node_normal_slave = slave_geometry_1.UnitNormal(point_local);
-                        array_1d<double, 3>& previous_normal = slave_geometry_1[i_node].FastGetSolutionStepValue(NORMAL, 1);
                         array_1d<double, 3>& current_normal = slave_geometry_1[i_node].FastGetSolutionStepValue(NORMAL);
+                        array_1d<double, 3>& previous_normal = slave_geometry_1[i_node].FastGetSolutionStepValue(NORMAL, 1);
                         previous_normal = current_normal;
                         current_normal = node_normal_slave;
                     }
@@ -144,8 +145,8 @@ namespace Kratos
                         GeometryType::CoordinatesArrayType point_local; 
                         master_geometry_1.PointLocalCoordinates( point_local, master_geometry_1[i_node].Coordinates( ) ) ;
                         const array_1d<double, 3>& node_normal_master = master_geometry_1.UnitNormal(point_local);
-                        array_1d<double, 3>& previous_normal = master_geometry_1[i_node].FastGetSolutionStepValue(NORMAL, 1);
                         array_1d<double, 3>& current_normal = master_geometry_1[i_node].FastGetSolutionStepValue(NORMAL);
+                        array_1d<double, 3>& previous_normal = master_geometry_1[i_node].FastGetSolutionStepValue(NORMAL, 1);
                         previous_normal = current_normal;
                         current_normal = node_normal_master;
                     }
@@ -295,8 +296,8 @@ namespace Kratos
                                         for (unsigned int i_node = 0; i_node < 2 * TNumNodes; ++i_node)
                                         {
                                             array_1d<double, 3> delta_disp;
-                                            if (i_node < TNumNodes) delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);// - slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
-                                            else delta_disp = master_geometry_1[i_node - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT);// - master_geometry_1[i_node - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT, 1);
+                                            if (i_node < TNumNodes) delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                                            else delta_disp = master_geometry_1[i_node - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT);
                                             for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
                                             {                                                
                                                 const auto& delta_n1 = rDerivativeData.DeltaN1[i_node * TDim + i_dof];
@@ -325,8 +326,8 @@ namespace Kratos
                                         for (unsigned int i_node = 0; i_node < 2 * TNumNodes; ++i_node)
                                         {
                                             array_1d<double, 3> delta_disp;
-                                            if (i_node < TNumNodes) delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);// - slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
-                                            else delta_disp = master_geometry_1[i_node - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT);// - master_geometry_1[i_node - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT, 1);
+                                            if (i_node < TNumNodes) delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                                            else delta_disp = master_geometry_1[i_node - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT);
                                             for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
                                             {
                                                 const auto& delta_phi = rDerivativeData.DeltaPhi[i_node * TDim + i_dof];
@@ -355,8 +356,8 @@ namespace Kratos
                                         for (unsigned int i_node = 0; i_node < 2 * TNumNodes; ++i_node)
                                         {
                                             array_1d<double, 3> delta_disp;
-                                            if (i_node < TNumNodes) delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);// - slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
-                                            else delta_disp = master_geometry_1[i_node - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT);// - master_geometry_1[i_node - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT, 1);
+                                            if (i_node < TNumNodes) delta_disp = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                                            else delta_disp = master_geometry_1[i_node - TNumNodes].FastGetSolutionStepValue(DISPLACEMENT);
                                             for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
                                             {
                                                 const auto& delta_detj = rDerivativeData.DeltaDetjSlave[i_node * TDim + i_dof];
@@ -381,8 +382,8 @@ namespace Kratos
                             
                             for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
                             {
-                                const array_1d<double, 3>& delta_disp_slave = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);// - slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
-                                const array_1d<double, 3>& delta_disp_master = master_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);// - master_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
+                                const array_1d<double, 3>& delta_disp_slave = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                                const array_1d<double, 3>& delta_disp_master = master_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
                                 for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
                                 {
                                     const auto& delta_normal_slave = rDerivativeData.DeltaNormalSlave[i_node * TDim + i_dof];
@@ -392,17 +393,17 @@ namespace Kratos
                                 }
                             }
                             
-//                             for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node) // TODO: Fix this!!!
-//                             {
-//                                 if (norm_2(row(aux_Normal_dx_master, i_node)) > 1.0) KRATOS_WATCH(norm_2(row(aux_Normal_dx_master, i_node)))
-//                                 
-//                                 row(aux_Normal_dx_slave, i_node) /= norm_2(row(aux_Normal_dx_slave, i_node));
-//                                 row(aux_Normal_dx_master, i_node) /= norm_2(row(aux_Normal_dx_master, i_node));
-//                             }
+                            for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node) // TODO: Fix this!!!
+                            {
+                                if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) if (norm_2(row(aux_Normal_dx_master, i_node)) > 1.0) KRATOS_WATCH(norm_2(row(aux_Normal_dx_master, i_node)))
+                                
+                                row(aux_Normal_dx_slave, i_node) /= norm_2(row(aux_Normal_dx_slave, i_node));
+                                row(aux_Normal_dx_master, i_node) /= norm_2(row(aux_Normal_dx_master, i_node));
+                            }
 
-                            if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData0.NormalSlave)
-                            if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData.NormalSlave)
-                            if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(aux_Normal_dx_slave)
+//                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData0.NormalSlave)
+//                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData.NormalSlave)
+//                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(aux_Normal_dx_slave)
                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData0.NormalMaster)
                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData.NormalMaster)
                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(aux_Normal_dx_master)
@@ -1754,7 +1755,7 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 5.0e-3, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
+//             TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 5.0e-3, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1851,7 +1852,7 @@ namespace Kratos
             std::vector<unsigned int> nodes_perturbed(2);
             nodes_perturbed[0] = 4;
             nodes_perturbed[1] = 5;
-            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 1.0e-0, 1, CHECK_NORMAL, LEVEL_EXACT);
+//             TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 1.0e-0, 1, CHECK_NORMAL, LEVEL_EXACT);
         }
         
         /** 
@@ -1946,7 +1947,7 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
-//             TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 5.0e-3, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
+//             TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, 5.0e-3, 1, CHECK_NORMAL, LEVEL_DEBUG);
         }
         
          /** 
@@ -2048,7 +2049,7 @@ namespace Kratos
             }
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
-//             TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, -5.0e-3, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
+            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, -5.0e-4, 1, CHECK_NORMAL, LEVEL_DEBUG);
         }
         
     } // namespace Testing
