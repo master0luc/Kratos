@@ -372,17 +372,82 @@ public:
      * It computes the delta normal of the center of the geoemtry
      * @param ThisGeometry The geometry where the delta normal is computed
      */
-    static inline array_1d<array_1d<double, 3>, TDim * TNumNodes> DeltaNormalSlaveCenter(GeometryType& ThisGeometry)
+    static inline array_1d<array_1d<double, 3>, TDim * TNumNodes> DeltaNormalSlaveCenter(GeometryType& rThisGeometry)
     {
         // We compute the gradient and jacobian
         GeometryType::CoordinatesArrayType point_local;  
-        ThisGeometry.PointLocalCoordinates( point_local, (ThisGeometry.Center()).Coordinates( ) ) ;
+        rThisGeometry.PointLocalCoordinates( point_local, (rThisGeometry.Center()).Coordinates( ) ) ;
         Matrix jacobian;
-        jacobian = ThisGeometry.Jacobian( jacobian, point_local);
+        jacobian = rThisGeometry.Jacobian( jacobian, point_local);
         Matrix gradient;
-        ThisGeometry.ShapeFunctionsLocalGradients( gradient, point_local );
+        rThisGeometry.ShapeFunctionsLocalGradients( gradient, point_local );
         
-        return GPDeltaNormal(jacobian, gradient);
+        // We compute the previous normal in the geometry (TODO: Think about to save it instead)
+        Matrix previous_jacobian, delta_position;
+        delta_position = CalculateDeltaPosition(delta_position, rThisGeometry);
+        previous_jacobian = rThisGeometry.Jacobian( previous_jacobian, point_local, delta_position);
+        
+        // We define the normal and tangents
+        array_1d<double,3> tangent_xi(3, 0.0), tangent_eta(3, 0.0);
+        
+        // Using the Jacobian tangent directions
+        if (TDim == 2)
+        {
+            tangent_eta[2] = 1.0;
+            for (unsigned int i_dim = 0; i_dim < TDim; i_dim++)
+            {
+                tangent_xi[i_dim]  = previous_jacobian(i_dim, 0);
+            } 
+        }
+        else
+        {
+            for (unsigned int i_dim = 0; i_dim < TDim; i_dim++)
+            {
+                tangent_xi[i_dim]  = previous_jacobian(i_dim, 0);
+                tangent_eta[i_dim] = previous_jacobian(i_dim, 1);
+            } 
+        }
+
+        array_1d<double, 3> previous_normal;
+        MathUtils<double>::CrossProduct(previous_normal, tangent_xi, tangent_eta);
+        const double norm_normal = norm_2(previous_normal);
+        previous_normal /= norm_normal;
+        KRATOS_ERROR_IF(norm_normal < std::numeric_limits<double>::epsilon()) << "ERROR: The normal norm is zero or almost zero. Norm. normal: " << norm_normal << std::endl;
+        
+        // Now we compute the normal + DeltaNormal
+        array_1d<double, 3> aux_delta_normal0(3, 0.0);
+        const auto& aux_delta_normal_0 = GPDeltaNormal(jacobian, gradient);
+        
+        for ( unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+        {
+            const array_1d<double, 3> delta_disp = rThisGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT) - rThisGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
+            for ( unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
+            {
+                const auto& aux_delta_normal = subrange(aux_delta_normal_0[i_node * TDim + i_dof], 0, TDim);
+                aux_delta_normal0 += delta_disp[i_dof] * aux_delta_normal;
+            }
+        }
+        
+        array_1d<double, 3> calculated_normal_geometry = aux_delta_normal0 + previous_normal;
+        calculated_normal_geometry /= norm_2(calculated_normal_geometry);
+        
+        // We compute the diff matrix to compute the auxiliar matrix later
+        const array_1d<double, 3> diff_vector = calculated_normal_geometry - previous_normal;  
+        
+        // Computing auxiliar matrix
+        const array_1d<double, 3>& aux = ComputeAuxiliarMatrix(diff_vector, aux_delta_normal0);
+        
+        array_1d<array_1d<double, 3>, TDim * TNumNodes> normalized_delta_normal_0;
+        for ( unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+        {
+            for ( unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
+            {
+                const auto& aux_delta_normal = subrange(aux_delta_normal_0[i_node * TDim + i_dof], 0, TDim);
+                normalized_delta_normal_0[i_node * TDim + i_dof] = prod(aux, aux_delta_normal);
+            }
+        }
+        
+        return normalized_delta_normal_0;
     }
 
     /**
@@ -449,7 +514,6 @@ public:
                 for ( unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
                 {
                     const auto& aux_delta_normal = subrange(delta_normal_node[i_node * TDim + i_dof], 0, TDim);
-//                     row(rDeltaNormal[i_node * TDim + i_dof], i_geometry) = aux_delta_normal;
                     row(rDeltaNormal[i_node * TDim + i_dof], i_geometry) = prod(aux, aux_delta_normal);
                 }
             }
@@ -1148,8 +1212,49 @@ private:
     }
     
     /**
-     * This method computes the auxiliar matrix used to keep unitary the 
-     * @param DiffMatrix The auxiliar matrix of difference of two matrices
+     * This method computes the auxiliar matrix used to keep unitary the normal
+     * @param DiffVector The auxiliar vector of difference of two normal vectors
+     * @param DeltaNormal The vector containing the delta normal
+     * @return The auxiliar matrix computed
+     */
+    static inline array_1d<double, 3> ComputeAuxiliarMatrix(
+        const array_1d<double, 3>& DiffVector, 
+        const array_1d<double, 3> DeltaNormal
+        ) 
+    {
+        for (unsigned int itry = 0; itry < 3; ++itry)
+        {
+            if (DeltaNormal[itry] > std::numeric_limits<double>::epsilon())
+            {
+                bounded_matrix<double, 3, 3> aux_matrix;
+                
+                const unsigned int aux_index_1 = itry == 2 ? 0 : itry + 1;
+                const unsigned int aux_index_2 = itry == 2 ? 1 : itry + 2;
+                
+                const double diff = DeltaNormal[aux_index_1] + DeltaNormal[aux_index_2];
+                const double coeff = DeltaNormal[itry];
+                
+                aux_matrix(0, aux_index_1) = 1.0; 
+                aux_matrix(0, aux_index_2) = 1.0;
+                aux_matrix(1, aux_index_1) = 1.0; 
+                aux_matrix(1, aux_index_2) = 1.0;
+                aux_matrix(2, aux_index_1) = 1.0; 
+                aux_matrix(2, aux_index_2) = 1.0;
+
+                aux_matrix(0, itry) = (DiffVector[0] - diff)/coeff;
+                aux_matrix(1, itry) = (DiffVector[1] - diff)/coeff;
+                aux_matrix(2, itry) = (DiffVector[2] - diff)/coeff;
+                
+                return aux_matrix;
+            }
+        }
+        
+        return IdentityMatrix(3, 3);
+    }
+    
+    /**
+     * This method computes the auxiliar matrix used to keep unitary the normal
+     * @param DiffMatrix The auxiliar matrix of difference of two normal matrices
      * @param DeltaNormal The matrix containing the delta normal
      * @param iGeometry The index of the node of the geoemtry computed
      * @return The auxiliar matrix computed
