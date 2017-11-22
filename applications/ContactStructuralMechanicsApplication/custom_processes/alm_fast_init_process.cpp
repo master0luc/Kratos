@@ -46,7 +46,7 @@ namespace Kratos
         const int num_nodes = static_cast<int>(nodes_array.size());
         
         #pragma omp parallel for firstprivate(zero_vector)
-        for(int i = 0; i < num_nodes; i++) 
+        for(int i = 0; i < num_nodes; ++i) 
         {
             auto it_node = nodes_array.begin() + i;
             
@@ -82,7 +82,7 @@ namespace Kratos
         const int num_conditions = static_cast<int>(conditions_array.size());
         
         #pragma omp parallel for firstprivate(zero_vector)
-        for(int i = 0; i < num_conditions; i++) 
+        for(int i = 0; i < num_conditions; ++i) 
         {
             auto it_cond = conditions_array.begin() + i;
             

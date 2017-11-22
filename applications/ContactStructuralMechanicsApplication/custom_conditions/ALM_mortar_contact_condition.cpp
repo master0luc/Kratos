@@ -645,7 +645,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
     if (consider_normal_variation == true)
     {
         // Compute the normal derivatives of the slave
-        DerivativesUtilitiesType::CalculateDeltaNormalSlave(rDerivativeData, GetGeometry());
+        DerivativesUtilitiesType::CalculateDeltaNormal(rDerivativeData.DeltaNormalSlave, GetGeometry());
     }
     
     // Create the mortar operators
@@ -687,7 +687,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                 if (consider_normal_variation == true)
                 {
                     // Compute the normal derivatives of the master
-                    DerivativesUtilitiesType::CalculateDeltaNormalMaster(rDerivativeData, master_geometry);
+                    DerivativesUtilitiesType::CalculateDeltaNormal(rDerivativeData.DeltaNormalMaster, master_geometry);
                 }
                 
                 const bool dual_LM =  DerivativesUtilitiesType::CalculateAeAndDeltaAe(slave_geometry, normal_slave, mThisMasterElements[pair_index], rDerivativeData, rVariables, consider_normal_variation, conditions_points_slave, this_integration_method, GetAxisymmetricCoefficient(rVariables));
