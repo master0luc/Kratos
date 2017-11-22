@@ -474,24 +474,21 @@ public:
 
         bounded_matrix<double, TNumNodes, TDim> calculated_normal_master = aux_delta_normal_master + aux_normal_master;
         for ( unsigned int i_master = 0; i_master < TNumNodes; ++i_master ) row(calculated_normal_master, i_master) /= norm_2(row(calculated_normal_master, i_master));
-            
-//         KRATOS_WATCH(calculated_normal_master)
-//         KRATOS_WATCH(aux_delta_normal_master)
-//         KRATOS_WATCH(calculated_normal_master - aux_normal_master)
         
-        bounded_matrix<double, TDim, TDim> aux; // TODO: Do the real calculation
-        aux(0, 0) = 1.0;
-        aux(0, 1) = 1.0;
-        aux(0, 2) = ((calculated_normal_master - aux_normal_master)(0,0) - aux_delta_normal_master(0, 0) - aux_delta_normal_master(0, 1))/aux_delta_normal_master(0, 2);
-        aux(1, 0) = 1.0;
-        aux(1, 1) = 1.0;
-        aux(1, 2) = ((calculated_normal_master - aux_normal_master)(0,1) - aux_delta_normal_master(0, 0) - aux_delta_normal_master(0, 1))/aux_delta_normal_master(0, 2);
-        aux(2, 0) = 1.0;
-        aux(2, 1) = 1.0;
-        aux(2, 2) = ((calculated_normal_master - aux_normal_master)(0,2) - aux_delta_normal_master(0, 0) - aux_delta_normal_master(0, 1))/aux_delta_normal_master(0, 2);
+        bounded_matrix<double, TDim, TDim> aux;
+        aux(0, 0) = 1.0; aux(0, 1) = 1.0;
+        aux(1, 0) = 1.0; aux(1, 1) = 1.0;
+        aux(2, 0) = 1.0; aux(2, 1) = 1.0;
+        const auto& diff = calculated_normal_master - aux_normal_master;
         
         for ( unsigned int i_master = 0; i_master < TNumNodes; ++i_master )
         {
+            const double less = aux_delta_normal_master(i_master, 0) + aux_delta_normal_master(i_master, 1);
+            const double div = aux_delta_normal_master(i_master, 2);
+            aux(0, 2) = (diff(i_master,0) - less)/div;
+            aux(1, 2) = (diff(i_master,1) - less)/div;
+            aux(2, 2) = (diff(i_master,2) - less)/div;
+            
             // We compute the gradient and jacobian
             GeometryType::CoordinatesArrayType point_local;  
             MasterGeometry.PointLocalCoordinates( point_local, MasterGeometry[i_master].Coordinates( ) ) ;
