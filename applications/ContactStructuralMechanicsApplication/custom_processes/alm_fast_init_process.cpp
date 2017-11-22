@@ -70,9 +70,6 @@ namespace Kratos
                 it_node->SetValue(AUGMENTED_TANGENT_CONTACT_PRESSURE, 0.0);
             }
             
-            // The normal and tangents vectors
-            it_node->SetValue(NORMAL, zero_vector);
-            
             // The delta normal if necessary
             if (init_delta_normal == true)
             {

@@ -181,8 +181,8 @@ public:
         array_1d<double, 3> current_global_coords;
 
         array_1d<array_1d<double, 3>, 2> normals;
-        normals[0] = GeomOrigin[0].GetValue(NORMAL);
-        normals[1] = GeomOrigin[1].GetValue(NORMAL);
+        normals[0] = GeomOrigin[0].FastGetSolutionStepValue(NORMAL);
+        normals[1] = GeomOrigin[1].FastGetSolutionStepValue(NORMAL);
         
         bounded_matrix<double,2,2> X;
         bounded_matrix<double,2,1> DN;
@@ -375,7 +375,7 @@ public:
         array_1d<double,3> normal = ZeroVector(3);
         for( unsigned int i_node = 0; i_node < Geom.PointsNumber(); ++i_node )
         {
-            normal += N[i_node] * Geom[i_node].GetValue(NORMAL); 
+            normal += N[i_node] * Geom[i_node].FastGetSolutionStepValue(NORMAL); 
         }
         
         const double this_norm = norm_2(normal);
