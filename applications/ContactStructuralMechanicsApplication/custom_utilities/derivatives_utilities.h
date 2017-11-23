@@ -336,10 +336,7 @@ public:
         MathUtils<double>::CrossProduct(normal, j0, j1);
         const double area_normal_norm = norm_2(normal);
     #ifdef KRATOS_DEBUG
-        if (area_normal_norm < std::numeric_limits<double>::epsilon()) 
-        {
-            KRATOS_ERROR << "ZERO NORMAL: " << area_normal_norm << std::endl;
-        }
+        KRATOS_ERROR_IF(area_normal_norm < std::numeric_limits<double>::epsilon()) << "ZERO NORMAL: " << area_normal_norm << std::endl;
     #endif
         const array_1d<double, 3> unit_normal = normal/area_normal_norm;
         
@@ -382,37 +379,8 @@ public:
         Matrix gradient;
         rThisGeometry.ShapeFunctionsLocalGradients( gradient, point_local );
         
-        // We compute the previous normal in the geometry (TODO: Think about to save it instead)
-        Matrix previous_jacobian, delta_position;
-        delta_position = CalculateDeltaPosition(delta_position, rThisGeometry);
-        previous_jacobian = rThisGeometry.Jacobian( previous_jacobian, point_local, delta_position);
-        
-        // We define the normal and tangents
-        array_1d<double,3> tangent_xi(3, 0.0), tangent_eta(3, 0.0);
-        
-        // Using the Jacobian tangent directions
-        if (TDim == 2)
-        {
-            tangent_eta[2] = 1.0;
-            for (unsigned int i_dim = 0; i_dim < TDim; i_dim++)
-            {
-                tangent_xi[i_dim]  = previous_jacobian(i_dim, 0);
-            } 
-        }
-        else
-        {
-            for (unsigned int i_dim = 0; i_dim < TDim; i_dim++)
-            {
-                tangent_xi[i_dim]  = previous_jacobian(i_dim, 0);
-                tangent_eta[i_dim] = previous_jacobian(i_dim, 1);
-            } 
-        }
-
-        array_1d<double, 3> previous_normal;
-        MathUtils<double>::CrossProduct(previous_normal, tangent_xi, tangent_eta);
-        const double norm_normal = norm_2(previous_normal);
-        previous_normal /= norm_normal;
-        KRATOS_ERROR_IF(norm_normal < std::numeric_limits<double>::epsilon()) << "ERROR: The normal norm is zero or almost zero. Norm. normal: " << norm_normal << std::endl;
+        // We compute the previous normal (TODO: Think about to save it instead)
+        const array_1d<double, 3>& previous_normal = PreviousNormalGeometry(rThisGeometry, point_local);
         
         // Now we compute the normal + DeltaNormal
         array_1d<double, 3> aux_delta_normal0(3, 0.0);
@@ -435,8 +403,7 @@ public:
         const array_1d<double, 3> diff_vector = calculated_normal_geometry - previous_normal;  
         
         // Computing auxiliar matrix
-        const array_1d<double, 3>& renormalizer_matrix = ComputeRenormalizerMatrix(diff_vector, aux_delta_normal0);
-        
+        const bounded_matrix<double, 3, 3>& renormalizer_matrix = ComputeRenormalizerMatrix(diff_vector, aux_delta_normal0);
         array_1d<array_1d<double, 3>, TDim * TNumNodes> normalized_delta_normal_0;
         for ( unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
         {
@@ -1217,9 +1184,9 @@ private:
      * @param DeltaNormal The vector containing the delta normal
      * @return The auxiliar matrix computed
      */
-    static inline array_1d<double, 3> ComputeRenormalizerMatrix(
+    static inline bounded_matrix<double, 3, 3> ComputeRenormalizerMatrix(
         const array_1d<double, 3>& DiffVector, 
-        const array_1d<double, 3> DeltaNormal
+        const array_1d<double, 3>& DeltaNormal
         ) 
     {
         for (unsigned int itry = 0; itry < 3; ++itry)
@@ -1261,7 +1228,7 @@ private:
      */
     static inline bounded_matrix<double, 3, 3> ComputeRenormalizerMatrix(
         const bounded_matrix<double, TNumNodes, TDim>& DiffMatrix, 
-        const bounded_matrix<double, TNumNodes, TDim> DeltaNormal,
+        const bounded_matrix<double, TNumNodes, TDim>& DeltaNormal,
         const unsigned int iGeometry
         )
     {
@@ -1293,6 +1260,52 @@ private:
         }
         
         return IdentityMatrix(3, 3);
+    }
+    
+    /**
+     * This method computes the normal in the previous configuration
+     * @param rThisGeometry The geometry where compute
+     * @param PointLocal The local coordinates of the point
+     * @return The normal in the previous configuration
+     */
+    static inline array_1d<double, 3> PreviousNormalGeometry(
+        const GeometryType& rThisGeometry,
+        const GeometryType::CoordinatesArrayType& PointLocal
+        )
+    {
+        // We compute the previous normal in the geometry 
+        Matrix previous_jacobian, delta_position;
+        delta_position = CalculateDeltaPosition(delta_position, rThisGeometry);
+        previous_jacobian = rThisGeometry.Jacobian( previous_jacobian, PointLocal, delta_position);
+        
+        // We define the normal and tangents
+        array_1d<double,3> tangent_xi(3, 0.0), tangent_eta(3, 0.0);
+        
+        // Using the Jacobian tangent directions
+        if (TDim == 2)
+        {
+            tangent_eta[2] = 1.0;
+            for (unsigned int i_dim = 0; i_dim < TDim; i_dim++)
+            {
+                tangent_xi[i_dim]  = previous_jacobian(i_dim, 0);
+            } 
+        }
+        else
+        {
+            for (unsigned int i_dim = 0; i_dim < TDim; i_dim++)
+            {
+                tangent_xi[i_dim]  = previous_jacobian(i_dim, 0);
+                tangent_eta[i_dim] = previous_jacobian(i_dim, 1);
+            } 
+        }
+
+        array_1d<double, 3> previous_normal;
+        MathUtils<double>::CrossProduct(previous_normal, tangent_xi, tangent_eta);
+        const double norm_normal = norm_2(previous_normal);
+        previous_normal /= norm_normal;
+        KRATOS_ERROR_IF(norm_normal < std::numeric_limits<double>::epsilon()) << "ERROR: The normal norm is zero or almost zero. Norm. normal: " << norm_normal << std::endl;
+        
+        return previous_normal;
     }
     
     /**
