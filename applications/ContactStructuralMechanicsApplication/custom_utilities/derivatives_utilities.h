@@ -231,7 +231,7 @@ public:
     
     /**
      * It computes the delta normal of the center of the geoemtry
-     * @param ThisGeometry The geometry where the delta normal is computed
+     * @param rThisGeometry The geometry where the delta normal is computed
      */
     static inline array_1d<array_1d<double, 3>, TDim * TNumNodes> DeltaNormalCenter(GeometryType& rThisGeometry)
     {
@@ -1062,7 +1062,7 @@ private:
                 bounded_matrix<double, 3, 3> aux_matrix;
                 
                 const unsigned int aux_index_1 = itry == 2 ? 0 : itry + 1;
-                const unsigned int aux_index_2 = itry == 2 ? 1 : itry + 2;
+                const unsigned int aux_index_2 = itry == 2 ? (itry == 1 ? 0 : 1) : itry + 2;
                 
                 const double diff = DeltaNormal[aux_index_1] + DeltaNormal[aux_index_2];
                 const double coeff = DeltaNormal[itry];
