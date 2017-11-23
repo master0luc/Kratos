@@ -1062,7 +1062,7 @@ private:
                 bounded_matrix<double, 3, 3> aux_matrix;
                 
                 const unsigned int aux_index_1 = itry == 2 ? 0 : itry + 1;
-                const unsigned int aux_index_2 = itry == 2 ? (itry == 1 ? 0 : 1) : itry + 2;
+                const unsigned int aux_index_2 = itry == 2 ? 1 : (itry == 1 ? 0 : 2);
                 
                 const double diff = DeltaNormal[aux_index_1] + DeltaNormal[aux_index_2];
                 const double coeff = DeltaNormal[itry];
@@ -1097,15 +1097,15 @@ private:
         const bounded_matrix<double, TNumNodes, TDim>& DeltaNormal,
         const unsigned int iGeometry
         )
-    {
+    {        
         for (unsigned int itry = 0; itry < 3; ++itry)
-        {
+        {            
             if (DeltaNormal(iGeometry, itry) > std::numeric_limits<double>::epsilon())
             {
                 bounded_matrix<double, 3, 3> aux_matrix;
                 
                 const unsigned int aux_index_1 = itry == 2 ? 0 : itry + 1;
-                const unsigned int aux_index_2 = itry == 2 ? 1 : itry + 2;
+                const unsigned int aux_index_2 = itry == 2 ? 1 : (itry == 1 ? 0 : 2);
                 
                 const double diff = DeltaNormal(iGeometry, aux_index_1) + DeltaNormal(iGeometry, aux_index_2);
                 const double coeff = DeltaNormal(iGeometry, itry);
