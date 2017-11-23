@@ -165,142 +165,6 @@ public:
     
     /**
      * This method is used to compute the local increment of the normal
-     * @param CondGeometry The geometry where the delta normal is computed
-     * @param NodeIndex The index of the node of the geometry considered
-     * @return The matrix containing the delta normals
-     * NOTE: Not the mean, look in the contact utilities 
-     */
-    static inline bounded_matrix<double, TDim, TDim> LocalDeltaNormal(
-        const GeometryType& CondGeometry,
-        const unsigned int NodeIndex
-        )
-    {
-        // Tolerance
-        const double tolerance = std::numeric_limits<double>::epsilon();
-            
-        bounded_matrix<double, TDim, TDim> DeltaNeAdj;
-        bounded_matrix<double, TDim, TDim> Ce;
-        
-        const bounded_matrix<double, TDim, TDim> I = IdentityMatrix(TDim, TDim);
-        
-        bounded_matrix<double, TDim, TDim> delta_normal = ZeroMatrix(TDim,TDim);
-        
-        // Normalized condition normal
-        PointType auxiliar_center;
-        auxiliar_center.Coordinates() = ZeroVector(3);
-        const array_1d<double, 3>& Ne = CondGeometry.UnitNormal(auxiliar_center);
-        bounded_matrix<double, TDim, TDim> NeoNe = subrange( outer_prod( Ne, Ne ), 0, TDim, 0, TDim );
-        
-        // Auxiliar value
-        // The norm of a geometry's normal is its characteristic dimension - length for 2D and area for 3D 
-        double NeNorm = (TDim == 2) ? CondGeometry.Length( ) : CondGeometry.Area( );
-        
-        if (TDim == 2)
-        {                
-            DeltaNeAdj( 0, 0 ) =  0.0;
-            DeltaNeAdj( 0, 1 ) = -1.0;
-            DeltaNeAdj( 1, 0 ) =  1.0;
-            DeltaNeAdj( 1, 1 ) =  0.0;
-            
-            const double DNDej = (NodeIndex == 0) ? - 0.5 : 0.5;
-            
-            Ce = prod( I - NeoNe, DeltaNeAdj ) / NeNorm; // In 2D, DeltaNeAdj is node-independent => evaluated outside the nodes loop
-            
-            delta_normal = - 2.0 * Ce * DNDej; // NOTE: Check why - 2???!!!, it was the only wayto ensure the same value as the symbolic. You will need to repeat this in 3D            
-        //         delta_normal = Ce * DNDej;     
-        }
-        else
-        {
-            MatrixType J = ZeroMatrix( 3, 2 ); // Jacobian [ 3D global x 2D local ]
-            array_1d<double, 2> DNDej;
-            array_1d<double, 3> LocalCoordsj;
-            
-            if( TNumNodes == 3 )    // linear triangle element
-            {
-                if( NodeIndex == 0 )
-                {
-                    LocalCoordsj[0] = 0.0;
-                    LocalCoordsj[1] = 0.0;
-                    DNDej[0] = - 1.0;
-                    DNDej[1] = - 1.0;
-                }
-                else if( NodeIndex == 1 )
-                {
-                    LocalCoordsj[0] = 1.0;
-                    LocalCoordsj[1] = 0.0;
-                    DNDej[0] = 1.0;
-                    DNDej[1] = 0.0;
-                }
-                else // NodeIndex == 2
-                {
-                    LocalCoordsj[0] = 0.0;
-                    LocalCoordsj[1] = 1.0;
-                    DNDej[0] = 0.0;
-                    DNDej[1] = 1.0;
-                }
-            }
-            else if( TNumNodes == 4 )    // linear quad element 
-            {
-                if( NodeIndex == 0 )
-                {
-                    LocalCoordsj[0] = - 1.0;
-                    LocalCoordsj[1] = - 1.0;
-                    DNDej[0] = - 0.5;
-                    DNDej[1] = - 0.5;
-                }
-                else if( NodeIndex == 1 )
-                {
-                    LocalCoordsj[0] =   1.0;
-                    LocalCoordsj[1] = - 1.0;
-                    DNDej[0] =   0.5;
-                    DNDej[1] = - 0.5;
-                }
-                else if( NodeIndex == 2 )
-                {
-                    LocalCoordsj[0] =  1.0;
-                    LocalCoordsj[1] =  1.0;
-                    DNDej[0] =  0.5;
-                    DNDej[1] =  0.5;
-                }
-                else // NodeIndex == 3
-                {
-                    LocalCoordsj[0] = - 1.0;
-                    LocalCoordsj[1] =   1.0;
-                    DNDej[0] = - 0.5;
-                    DNDej[1] =   0.5;
-                }
-            }
-            
-            CondGeometry.Jacobian( J, LocalCoordsj );
-            
-            DeltaNeAdj(0,0) = 0.0;
-            DeltaNeAdj(0,1) = +J(2,1) * DNDej[0] - J(2,0) * DNDej[1]; 
-            DeltaNeAdj(0,2) = -J(1,1) * DNDej[0] + J(1,0) * DNDej[1]; 
-            DeltaNeAdj(1,0) = -J(2,1) * DNDej[0] + J(2,0) * DNDej[1]; 
-            DeltaNeAdj(1,1) = 0.0;                   
-            DeltaNeAdj(1,2) = +J(0,1) * DNDej[0] - J(0,0) * DNDej[1]; 
-            DeltaNeAdj(2,0) = +J(1,1) * DNDej[0] - J(1,0) * DNDej[1]; 
-            DeltaNeAdj(2,1) = -J(0,1) * DNDej[0] + J(0,0) * DNDej[1]; 
-            DeltaNeAdj(2,2) = 0.0;
-            
-            Ce = prod( I - NeoNe, DeltaNeAdj ) / NeNorm;
-            delta_normal = Ce;
-        }
-        
-        NeNorm = norm_2( Ne );
-        const double NeNorm3 = NeNorm * NeNorm * NeNorm;
-        
-        if ( NeNorm3 > tolerance )
-        {
-            const bounded_matrix<double, TDim, TDim> Cj = I / NeNorm - NeoNe / NeNorm3;
-            delta_normal = prod( Cj, delta_normal );
-        }
-            
-        return delta_normal; 
-    }
-    
-    /**
-     * This method is used to compute the local increment of the normal
      * @param Jacobian The jacobian on the GP
      * @param DNDe The local gradient
      * @return The matrix containing the delta normals
@@ -369,7 +233,7 @@ public:
      * It computes the delta normal of the center of the geoemtry
      * @param ThisGeometry The geometry where the delta normal is computed
      */
-    static inline array_1d<array_1d<double, 3>, TDim * TNumNodes> DeltaNormalSlaveCenter(GeometryType& rThisGeometry)
+    static inline array_1d<array_1d<double, 3>, TDim * TNumNodes> DeltaNormalCenter(GeometryType& rThisGeometry)
     {
         // We compute the gradient and jacobian
         GeometryType::CoordinatesArrayType point_local;  
@@ -522,7 +386,8 @@ public:
         )
     {
         // The Normal and delta Normal in the center of the element
-        bounded_matrix<double, TDim, TDim> delta_normal;
+        const array_1d<array_1d<double, 3>, TDim * TNumNodes>& all_delta_normal = DeltaNormalCenter(SlaveGeometry);
+        array_1d<double, 3> delta_normal;
         
         const double aux_nodes_coeff = static_cast<double>(TNumNodes);
         
@@ -549,11 +414,6 @@ public:
                 const array_1d<double, 3>& xs2 = MortarUtilities::FastProject(slave_center, MasterGeometry[belong_index_master_start], Normal).Coordinates(); // Start coordinates of the second segment
                 const array_1d<double, 3>& xe2 = MortarUtilities::FastProject(slave_center, MasterGeometry[belong_index_master_end], Normal).Coordinates(); // End coordinates of the second segment
                 
-//                 const array_1d<double, 3>& xs1 = SlaveGeometry[belong_index_slave_start].Coordinates();   // Start coordinates of the first segment
-//                 const array_1d<double, 3>& xe1 = SlaveGeometry[belong_index_slave_end].Coordinates();     // End coordinates of the first segment
-//                 const array_1d<double, 3>& xs2 = MasterGeometry[belong_index_master_start].Coordinates(); // Start coordinates of the second segment
-//                 const array_1d<double, 3>& xe2 = MasterGeometry[belong_index_master_end].Coordinates();   // End coordinates of the second segment
-                
                 // We define the array containing the indexes of the vertexes
                 array_1d<unsigned int, 4> belong_indexes;
                 belong_indexes[0] = belong_index_slave_start;
@@ -578,12 +438,12 @@ public:
                     // The index of the node
                     const unsigned int belong_index = belong_indexes[i_belong];
                     
-                    // We compute the delta normal
-                    if (ConsiderNormalVariation == true && belong_index < TNumNodes) delta_normal = LocalDeltaNormal(SlaveGeometry, belong_index) * (1.0/aux_nodes_coeff);
-                    else delta_normal = ZeroMatrix(3, 3);
-                    
                     for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                     {                    
+                        // We get the delta normal
+                        if (ConsiderNormalVariation == true && belong_index < TNumNodes) delta_normal = all_delta_normal[belong_index * TDim + i_dof] * (1.0/aux_nodes_coeff);
+                        else delta_normal = ZeroVector(3);
+                    
                         bounded_matrix<double, 3, 3>& local_delta_vertex = rDerivativeData.DeltaCellVertex[belong_index * TDim + i_dof];
                         
                         // Special cases (slave nodes)
@@ -605,8 +465,8 @@ public:
                         // We add the part corresponding purely to delta normal
                         if (ConsiderNormalVariation == true)
                         {
-                            noalias(row(local_delta_vertex, i_triangle)) += diff3 * coeff1 * inner_prod(aux_num,  trans(column(delta_normal, i_dof))); 
-                            noalias(row(local_delta_vertex, i_triangle)) += diff3 * coeff2 * inner_prod(aux_denom, trans(column(delta_normal, i_dof))); 
+                            noalias(row(local_delta_vertex, i_triangle)) += diff3 * coeff1 * inner_prod(aux_num,  delta_normal); 
+                            noalias(row(local_delta_vertex, i_triangle)) += diff3 * coeff2 * inner_prod(aux_denom, delta_normal); 
                         }
                         
                         // We compute the delta diffs
@@ -636,11 +496,12 @@ public:
             {
                 const unsigned int belong_index = static_cast<unsigned int>(TheseBelongs[i_triangle]);
                 
-                if (ConsiderNormalVariation == true && belong_index < TNumNodes) delta_normal = LocalDeltaNormal(SlaveGeometry, belong_index) * (1.0/aux_nodes_coeff);
-                else delta_normal = ZeroMatrix(3, 3);
-                
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                 {
+                    // We get the delta normal
+                    if (ConsiderNormalVariation == true && belong_index < TNumNodes) delta_normal = all_delta_normal[belong_index * TDim + i_dof] * (1.0/aux_nodes_coeff);
+                    else delta_normal = ZeroVector(3);
+                    
                     bounded_matrix<double, 3, 3>& local_delta_vertex = rDerivativeData.DeltaCellVertex[belong_index * TDim + i_dof];
                     
                     LocalDeltaVertex(local_delta_vertex, Normal, delta_normal, i_dof, i_triangle, belong_index, ConsiderNormalVariation, SlaveGeometry, MasterGeometry);
@@ -681,7 +542,7 @@ public:
         const MatrixType& DNDe1 = rVariables.DNDeSlave;
         
         // The Normal and delta Normal in the center of the element
-        bounded_matrix<double, TDim, TDim> delta_normal = ZeroMatrix(TDim, TDim);
+        const array_1d<array_1d<double, 3>, TDim * TNumNodes>& all_delta_normal = DeltaNormalCenter(SlaveGeometry);
         
         /* Shape function decomposition */
         VectorType N_decomp;
@@ -697,6 +558,10 @@ public:
             {
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof) 
                 {
+                    // We get the delta normal
+                    const array_1d<double, 3>& delta_normal = (ConsiderNormalVariation == true && i_node < TNumNodes) ? all_delta_normal[i_node * TDim + i_dof] : ZeroVector(3);
+                    
+                    // We compute the residuals
                     array_1d<double, 3> aux_RHS1 = ZeroVector(3);
                     
                     // The vertex cell contribution
@@ -707,7 +572,7 @@ public:
                     }
                     
                     // Local contribution
-                    const array_1d<double, 3>& aux_delta_node = LocalDeltaVertex( SlaveNormal,  delta_normal, i_dof, i_node, ConsiderNormalVariation, SlaveGeometry, MasterGeometry );
+                    const array_1d<double, 3>& aux_delta_node = LocalDeltaVertex( SlaveNormal, delta_normal, i_dof, i_node, ConsiderNormalVariation, SlaveGeometry, MasterGeometry );
                     if (i_node < TNumNodes) noalias(aux_RHS1) -= N1[i_node] * aux_delta_node;
                     
                     // We compute the delta coordinates 
@@ -760,7 +625,7 @@ public:
         const MatrixType& DNDe2 = rVariables.DNDeMaster;
         
         // The Normal and delta Normal in the center of the element
-        bounded_matrix<double, TDim, TDim> delta_normal = ZeroMatrix(TDim, TDim);
+        const array_1d<array_1d<double, 3>, TDim * TNumNodes>& all_delta_normal = DeltaNormalCenter(SlaveGeometry);
         
         /* Shape function decomposition */
         VectorType N_decomp;
@@ -776,6 +641,10 @@ public:
             {
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof) 
                 {
+                    // We get the delta normal
+                    const array_1d<double, 3>& delta_normal = (ConsiderNormalVariation == true && i_node < TNumNodes) ? all_delta_normal[i_node * TDim + i_dof] : ZeroVector(3);
+                    
+                    // We compute the residuals
                     array_1d<double, 3> aux_RHS1 = ZeroVector(3);
                     
                     // The vertex cell contribution
@@ -787,7 +656,7 @@ public:
                     array_1d<double, 3> aux_RHS2 = aux_RHS1;
                     
                     // Local contribution
-                    const array_1d<double, 3>& aux_delta_node = LocalDeltaVertex( SlaveNormal,  delta_normal, i_dof, i_node, ConsiderNormalVariation, SlaveGeometry, MasterGeometry );
+                    const array_1d<double, 3>& aux_delta_node = LocalDeltaVertex( SlaveNormal, delta_normal, i_dof, i_node, ConsiderNormalVariation, SlaveGeometry, MasterGeometry );
                     if (i_node < TNumNodes) noalias(aux_RHS1) -= N1[i_node] * aux_delta_node;
                     else noalias(aux_RHS2) -= N2[i_node - TNumNodes] * aux_delta_node;
                     
@@ -1108,7 +977,7 @@ private:
      */
     static inline array_1d<double, 3> LocalDeltaVertex(
         const array_1d<double, 3>& Normal,
-        const bounded_matrix<double, TDim, TDim>& DeltaNormal,
+        const array_1d<double, 3>& DeltaNormal,
         const unsigned int iDoF,
         const unsigned int iBelong,
         const bool ConsiderNormalVariation,
@@ -1126,9 +995,6 @@ private:
         //  We initialize some values
         const array_1d<double, 3>& coords_center = SlaveGeometry.Center().Coordinates();
         const array_1d<double, 3>& coords_node = (iBelong < TNumNodes) ? SlaveGeometry[iBelong].Coordinates() : MasterGeometry[iBelong - TNumNodes].Coordinates();
-//         double delta_position;
-//         CalculateDeltaPosition(delta_position, SlaveGeometry, MasterGeometry, iBelong, iDoF);
-//         Coeff = (std::abs(delta_position) > 0.0) ? Coeff : 0.0;
     
         // The corresponding part to the nodal coordinates
         array_1d<double, 3> aux_der = ZeroVector(3);
@@ -1136,7 +1002,7 @@ private:
         aux_delta_vertex += aux_der;
         
         // The corresponding part to the normal
-        const double coordsxdeltanormal = (ConsiderNormalVariation == true) ? inner_prod(coords_node - coords_center, column(DeltaNormal, iDoF)) : 0.0;
+        const double coordsxdeltanormal = (ConsiderNormalVariation == true) ? inner_prod(coords_node - coords_center, DeltaNormal) : 0.0;
         
         const double factor_belong = (iBelong < TNumNodes) ? (1.0 - auxiliar_coeff) : 1.0; 
         const double deltacoordsxnormal =  factor_belong * Normal[iDoF];
@@ -1144,7 +1010,7 @@ private:
         
         // The corresponding part to delta normal
         const double coordsxnormal = - inner_prod(coords_node - coords_center, Normal);
-        if (ConsiderNormalVariation == true) aux_delta_vertex += coordsxnormal * trans(column(DeltaNormal, iDoF));
+        if (ConsiderNormalVariation == true) aux_delta_vertex += coordsxnormal * DeltaNormal;
         
         return Coeff * aux_delta_vertex;
     }
@@ -1165,7 +1031,7 @@ private:
     static inline void LocalDeltaVertex(
         bounded_matrix<double, 3, 3>& DeltaVertexMatrix,
         const array_1d<double, 3>& Normal,
-        const bounded_matrix<double, TDim, TDim>& DeltaNormal,
+        const array_1d<double, 3>& DeltaNormal,
         const unsigned int iDoF,
         const unsigned int iTriangle,
         const unsigned int iBelong,

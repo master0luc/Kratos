@@ -380,7 +380,7 @@ namespace Kratos
                             auto aux_Normal_dx_slave = rDerivativeData0.NormalSlave;
                             auto aux_Normal_dx_master = rDerivativeData0.NormalMaster;
                             array_1d<double, 3> aux_normal_0 = normal_slave_0;
-                            const array_1d<array_1d<double, 3>, TDim * TNumNodes>& delta_normal_0 = DerivativesUtilitiesType::DeltaNormalSlaveCenter(slave_geometry_1);
+                            const array_1d<array_1d<double, 3>, TDim * TNumNodes>& delta_normal_0 = DerivativesUtilitiesType::DeltaNormalCenter(slave_geometry_1);
                             
                             for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
                             {
