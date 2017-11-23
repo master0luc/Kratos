@@ -82,7 +82,10 @@ namespace Kratos
             typedef DerivativesUtilities<TDim, TNumNodes, false> DerivativesUtilitiesType;
             typedef ExactMortarIntegrationUtility<TDim, TNumNodes, true> IntegrationUtility;
             
+            // Some definitions
             const bool consider_normal_variation = ThisModelPart.GetProcessInfo()[CONSIDER_NORMAL_VARIATION];
+            const double quadratic_threshold = 1.8; 
+            const double tolerance = 1.0e-6;
             
             GeometryType& slave_geometry_0 = SlaveCondition0->GetGeometry();
             GeometryType& master_geometry_0 = MasterCondition0->GetGeometry();
@@ -281,7 +284,7 @@ namespace Kratos
                                     
                                     // Now we compute the derivatives
                                     if (TDim == 3) DerivativesUtilitiesType::CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, consider_normal_variation, slave_geometry_1, master_geometry_1, normal_slave_1);
-        
+                                    
                                     // Update the derivative of DetJ
                                     DerivativesUtilitiesType::CalculateDeltaDetjSlave(decomp_geom, rVariables, rDerivativeData);
                                     
@@ -347,7 +350,7 @@ namespace Kratos
                                         if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rVariables.PhiLagrangeMultipliers)
                                         if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(aux_Phi_dx_slave)
                                         
-                                        error_vector_slave[iter]  += norm_2(rVariables.PhiLagrangeMultipliers - aux_Phi_dx_slave);
+                                        error_vector_slave[iter] += norm_2(rVariables.PhiLagrangeMultipliers - aux_Phi_dx_slave);
                                     }
                                     else if (Derivative == CHECK_JACOBIAN)
                                     {
@@ -379,6 +382,7 @@ namespace Kratos
                             // Now we compute the error of the delta Normal
                             auto aux_Normal_dx_slave = rDerivativeData0.NormalSlave;
                             auto aux_Normal_dx_master = rDerivativeData0.NormalMaster;
+                            array_1d<double, 2> delta_normal_0_error(2, 0.0);
                             array_1d<double, 3> aux_normal_0 = normal_slave_0;
                             const array_1d<array_1d<double, 3>, TDim * TNumNodes>& delta_normal_0 = DerivativesUtilitiesType::DeltaNormalCenter(slave_geometry_1);
                             
@@ -386,17 +390,18 @@ namespace Kratos
                             {
                                 const array_1d<double, 3>& delta_disp_slave = slave_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
                                 const array_1d<double, 3>& delta_disp_master = master_geometry_1[i_node].FastGetSolutionStepValue(DISPLACEMENT);
+                                
                                 for (unsigned int i_dof = 0; i_dof < TDim; ++i_dof)
                                 {
                                     const auto& delta_normal_slave = rDerivativeData.DeltaNormalSlave[i_node * TDim + i_dof];
                                     const auto& delta_normal_master = rDerivativeData.DeltaNormalMaster[i_node * TDim + i_dof];
                                     aux_Normal_dx_slave  += delta_normal_slave * delta_disp_slave[i_dof];
-                                    aux_normal_0  += delta_normal_0[i_node * TDim + i_dof] * delta_disp_slave[i_dof];
+                                    aux_normal_0 += delta_normal_0[i_node * TDim + i_dof] * delta_disp_slave[i_dof];
                                     aux_Normal_dx_master += delta_normal_master * delta_disp_master[i_dof]; 
                                 }
                             }
                             
-//                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(norm_2(aux_normal_0 - SlaveCondition1->GetValue(NORMAL)))
+                            const double error_delta_n0 = norm_2(aux_normal_0 - SlaveCondition1->GetValue(NORMAL));
                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData0.NormalSlave)
                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(rDerivativeData.NormalSlave)
                             if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(aux_Normal_dx_slave)
@@ -406,6 +411,30 @@ namespace Kratos
                                 
                             error_vector_slave[iter] += norm_frobenius(rDerivativeData.NormalSlave - aux_Normal_dx_slave); 
                             error_vector_master[iter] += norm_frobenius(rDerivativeData.NormalMaster - aux_Normal_dx_master);
+                            
+                            if (error_delta_n0 > 0.0) 
+                            {
+                                if (Check == LEVEL_DEBUG || Check == LEVEL_FULL_DEBUG) KRATOS_WATCH(error_delta_n0)
+                                if (iter > 0) 
+                                { 
+                                    delta_normal_0_error[0] = delta_normal_0_error[1];
+                                    delta_normal_0_error[1] = error_delta_n0;
+                                    const double log_coeff = std::log((static_cast<double>(iter) + 2.0)/(static_cast<double>(iter) + 1.0));
+                                    const double slope = std::log(delta_normal_0_error[1]/delta_normal_0_error[0])/log_coeff;
+                                    if (slope >= quadratic_threshold) 
+                                    {
+                                        KRATOS_CHECK_GREATER_EQUAL(slope, quadratic_threshold);
+                                    }
+                                    else 
+                                    {
+                                        std::cout << "SLOPE NORMAL 0: " << slope << "\tCurrent:" << delta_normal_0_error[1] << "\tPrevious" << delta_normal_0_error[0] << std::endl;
+                                    }
+                                }
+                                else 
+                                {
+                                    delta_normal_0_error[1] = error_delta_n0;
+                                }
+                            }
                         }
                     }
                     else
@@ -419,7 +448,6 @@ namespace Kratos
                 }
             }
             
-            const double tolerance = 1.0e-6;
             if (Check == LEVEL_EXACT) // LEVEL_EXACT SOLUTION
             {
                 for (unsigned int iter = 0; iter < NumberIterations; ++iter)
@@ -430,46 +458,43 @@ namespace Kratos
             }
             else if (Check == LEVEL_QUADRATIC_CONVERGENCE)
             {
-                 const double quadratic_threshold = 1.8; 
                  for (unsigned int iter = 0; iter < NumberIterations - 1; ++iter)
                  {
                      const double log_coeff = std::log((static_cast<double>(iter) + 2.0)/(static_cast<double>(iter) + 1.0));
                      
                      // First "exact" check
-                     if (error_vector_slave[iter+1] < tolerance)
+                     if (error_vector_slave[iter + 1] < tolerance) 
                      {
-                         KRATOS_CHECK_LESS_EQUAL(error_vector_slave[iter+1], tolerance);
+                         KRATOS_CHECK_LESS_EQUAL(error_vector_slave[iter + 1], tolerance);
                      }
                      else
                      {
                          const double slope_slave = std::log(error_vector_slave[iter + 1]/error_vector_slave[iter])/log_coeff;
-                         if (slope_slave > quadratic_threshold) 
+                         if (slope_slave >= quadratic_threshold) 
                          {
                              KRATOS_CHECK_GREATER_EQUAL(slope_slave, quadratic_threshold);
                          }
-                         else
+                         else 
                          {
-                            KRATOS_WATCH(slope_slave);
-                            KRATOS_WATCH(error_vector_slave);
+                             std::cout << "SLOPE: " << slope_slave << "\tCurrent: " << error_vector_slave[iter + 1] << "\tPrevious: " << error_vector_slave[iter] << std::endl;
                          }
                      }
                      
                      // First "exact" check
-                     if (error_vector_master[iter+1] < tolerance)
+                     if (error_vector_master[iter + 1] < tolerance) 
                      {
-                         KRATOS_CHECK_LESS_EQUAL(error_vector_master[iter+1], tolerance);
+                         KRATOS_CHECK_LESS_EQUAL(error_vector_master[iter + 1], tolerance);
                      }
                      else
                      {
                          const double slope_master = std::log(error_vector_master[iter + 1]/error_vector_master[iter])/log_coeff;
-                         if (slope_master > quadratic_threshold)
+                         if (slope_master >= quadratic_threshold) 
                          {
                              KRATOS_CHECK_GREATER_EQUAL(slope_master, quadratic_threshold);
                          }
                          else 
                          {
-                            KRATOS_WATCH(slope_master);
-                            KRATOS_WATCH(error_vector_master);
+                             std::cout << "SLOPE: " << slope_master << "\tCurrent: " << error_vector_master[iter + 1] << "\tPrevious: " << error_vector_master[iter] << std::endl;
                          }
                      }
                  }
@@ -574,7 +599,7 @@ namespace Kratos
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
             std::vector<double> coeff_perturbation(1, -5.0e-1);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 1, CHECK_JACOBIAN, LEVEL_EXACT);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 1, CHECK_JACOBIAN, LEVEL_EXACT);
         }
         
         /** 
@@ -670,7 +695,7 @@ namespace Kratos
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
             std::vector<double> coeff_perturbation(1, -5.0e-3);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, coeff_perturbation, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, coeff_perturbation, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
         }
              
         /** 
@@ -774,7 +799,7 @@ namespace Kratos
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
             std::vector<double> coeff_perturbation(1, -5.0e-3);
-            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
+            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_JACOBIAN, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -870,7 +895,7 @@ namespace Kratos
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
             std::vector<double> coeff_perturbation(1, -5.0e-2);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
         }
         
         /** 
@@ -966,7 +991,7 @@ namespace Kratos
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
             std::vector<double> coeff_perturbation(1, -5.0e-2);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_EXACT);
         }
         
         /** 
@@ -1062,7 +1087,7 @@ namespace Kratos
             
             std::vector<unsigned int> nodes_perturbed(1, 4);
             std::vector<double> coeff_perturbation(1, -5.0e-3);
-            TestDerivatives<3,3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 0, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1166,7 +1191,7 @@ namespace Kratos
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
             std::vector<double> coeff_perturbation(1, -5.0e-3);
-            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
+            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1270,7 +1295,7 @@ namespace Kratos
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
             std::vector<double> coeff_perturbation(1, -5.0e-3);
-            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
+            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1373,7 +1398,7 @@ namespace Kratos
             
             std::vector<unsigned int> nodes_perturbed(1, 5);
             std::vector<double> coeff_perturbation(1, -5.0e-3);
-            TestDerivatives<3,4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
+            TestDerivatives<3, 4>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 1, coeff_perturbation, 6, CHECK_SHAPE_FUNCTION, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 
@@ -1858,9 +1883,9 @@ namespace Kratos
                 p_cond_1->GetGeometry()[i_node].FastGetSolutionStepValue(NORMAL) = node_normal;
             }
             
-            std::vector<unsigned int> nodes_perturbed(1, 1);
-            std::vector<double> coeff_perturbation(1, -5.0e-3);
-//             TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, coeff_perturbation, 6, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE); // FIXME
+            std::vector<unsigned int> nodes_perturbed(1, 3);
+            std::vector<double> coeff_perturbation(1, -5.0e-2);
+            TestDerivatives<3, 3>( model_part, p_cond0_0, p_cond0_1, p_cond_0, p_cond_1, nodes_perturbed, 2, coeff_perturbation, 1, CHECK_NORMAL, LEVEL_QUADRATIC_CONVERGENCE);
         }
         
         /** 

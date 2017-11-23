@@ -587,17 +587,9 @@ public:
             DeltaN1[i + TNumNodes * TDim] = ZeroVector(TNumNodes);
             DeltaN2[i] = ZeroVector(TNumNodes);
             DeltaN2[i + TNumNodes * TDim] = ZeroVector(TNumNodes);
-            DeltaNormalSlave[i] = ZeroMatrix(TNumNodes, TDim);
         }
     
-        if (TDim == 2) // Derivative of master's normal
-        {
-            for (unsigned int i = 0; i < TNumNodes * TDim; ++i)
-            {
-                DeltaNormalMaster[i] = ZeroMatrix(TNumNodes, TDim);
-            }
-        }
-        else // Derivative of the cell vertex
+        if (TDim == 3) // Derivative of the cell vertex
         {
             for (unsigned int i = 0; i < TNumNodes * TDim; ++i)
             {
