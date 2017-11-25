@@ -25,6 +25,7 @@ typedef array_1d<double,3> Vector3;
 KRATOS_CREATE_VARIABLE( Element::Pointer , ELEMENT_POINTER )                         // A pointer  the element belonging to this condition
 KRATOS_CREATE_VARIABLE( int , INTEGRATION_ORDER_CONTACT )                            // The integration order computed in the contact
 KRATOS_CREATE_VARIABLE( double, ACTIVE_CHECK_FACTOR )                                // The factor employed to search an active/inactive node
+KRATOS_CREATE_VARIABLE( bool, LOCAL_COMPUTING_CONTACT )                              // This variable determines if the computing of the contact terms is done locally 
 
 /* Weighted values */
 KRATOS_CREATE_VARIABLE( double, WEIGHTED_GAP )                                       // The integrated gap employed in mortar formulation

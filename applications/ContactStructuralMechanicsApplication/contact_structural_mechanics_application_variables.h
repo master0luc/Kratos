@@ -49,6 +49,7 @@ namespace Kratos
 KRATOS_DEFINE_VARIABLE( Element::Pointer, ELEMENT_POINTER )                          // A pointer to the element belonging to this condition
 KRATOS_DEFINE_VARIABLE( int , INTEGRATION_ORDER_CONTACT )                            // The integration order computed in the contact
 KRATOS_DEFINE_VARIABLE( double, ACTIVE_CHECK_FACTOR )                                // The factor employed to search an active/inactive node
+KRATOS_DEFINE_VARIABLE( bool, LOCAL_COMPUTING_CONTACT )                              // This variable determines if the computing of the contact terms is done locally 
 
 /* Weighted values */
 KRATOS_DEFINE_VARIABLE( double, WEIGHTED_GAP )                                       // The integrated gap employed in mortar formulation
