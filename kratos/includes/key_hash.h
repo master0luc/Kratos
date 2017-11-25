@@ -13,6 +13,13 @@
 #ifndef KRATOS_KEY_HASH_H_INCLUDED
 #define KRATOS_KEY_HASH_H_INCLUDED
 
+// System includes
+
+// External includes
+
+// Project includes
+#include "includes/node.h"
+
 namespace Kratos 
 {
 ///@addtogroup Kratos Core
@@ -169,6 +176,31 @@ namespace Kratos
             ) const
         {
             return first.get() == second.get();
+        }
+    };
+    
+    /**
+     * This is the hasher for DoF
+     */
+    struct DoFIteratorHash
+    {
+        std::size_t operator()(const Node<3>::DofType::Pointer& it) const
+        {
+            std::size_t seed = 0;
+            boost::hash_combine(seed, it->Id());
+            boost::hash_combine(seed, (it->GetVariable()).Key());
+            return seed;
+        }
+    };
+
+    /**
+     * This is the comparator for DoF
+     */
+    struct DoFIteratorComparator
+    {
+        std::size_t operator()(const Node<3>::DofType::Pointer& it1, const Node<3>::DofType::Pointer& it2) const
+        {
+            return (((it1->Id() == it2->Id() && (it1->GetVariable()).Key()) == (it2->GetVariable()).Key()));
         }
     };
     
