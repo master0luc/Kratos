@@ -130,18 +130,21 @@ public:
     /// Default constructor
     AugmentedLagrangianMethodMortarContactCondition(): Condition() 
     {
+        mPairIndex = 0;
         mIntegrationOrder = 2; // Default value
     }
     
     // Constructor 1
     AugmentedLagrangianMethodMortarContactCondition(IndexType NewId, GeometryType::Pointer pGeometry):Condition(NewId, pGeometry)
     {
+        mPairIndex = 0;
         mIntegrationOrder = 2; // Default value
     }
     
     // Constructor 2
     AugmentedLagrangianMethodMortarContactCondition(IndexType NewId, GeometryType::Pointer pGeometry, PropertiesType::Pointer pProperties):Condition( NewId, pGeometry, pProperties )
     {
+        mPairIndex = 0;
         mIntegrationOrder = 2; // Default value
     }
 
@@ -199,7 +202,8 @@ public:
     void InitializeSystemMatrices( 
         MatrixType& rLeftHandSideMatrix,
         VectorType& rRightHandSideVector,
-        Flags& rCalculationFlags
+        Flags& rCalculationFlags,
+        ProcessInfo& rCurrentProcessInfo
         );
 
     /**
@@ -501,7 +505,7 @@ protected:
      * total_dofs = SUM( master_u_dofs + 2 * slave_u_dofs) 
      */
     
-    const unsigned int CalculateConditionSize( );
+    const unsigned int CalculateConditionSize(const bool LocalCompute);
     
     /**
      * Calculate condition kinematics
@@ -511,12 +515,10 @@ protected:
         GeneralVariables& rVariables,
         const DerivativeDataType rDerivativeData,
         const array_1d<double, 3> MasterNormal,
-        const unsigned int PairIndex,
         const PointType& LocalPointDecomp,
         const PointType& LocalPointParent,
         GeometryPointType& GeometryDecomp,
-        const bool DualLM = true,
-        Matrix DeltaPosition = ZeroMatrix(TNumNodes, TDim)
+        const bool DualLM = true
         );
 
     /********************************************************************************/
@@ -529,8 +531,8 @@ protected:
 
     void CalculateAndAddLHS( 
         LocalSystem& rLocalSystem,
-        const bounded_matrix<double, MatrixSize, MatrixSize>& LHS_contact_pair, 
-        const unsigned int rPairIndex
+        const bounded_matrix<double, MatrixSize, MatrixSize>& LHSContactPair,
+        const bool LocalCompute
         );
 
     /**
@@ -539,8 +541,7 @@ protected:
     
     void AssembleContactPairLHSToConditionSystem( 
         const bounded_matrix<double, MatrixSize, MatrixSize>& rPairLHS,
-        MatrixType& rConditionLHS,
-        const unsigned int rPairIndex
+        MatrixType& rConditionLHS
         );
 
     /**
@@ -559,8 +560,8 @@ protected:
     
     void CalculateAndAddRHS( 
         LocalSystem& rLocalSystem,
-        const array_1d<double, MatrixSize>& RHS_contact_pair, 
-        const unsigned int rPairIndex
+        const array_1d<double, MatrixSize>& RHSContactPair,
+        const bool LocalCompute
         );
     
     /**
@@ -569,8 +570,7 @@ protected:
     
     void AssembleContactPairRHSToConditionSystem( 
         const array_1d<double, MatrixSize>& rPairRHS,
-        VectorType& rConditionRHS,
-        const unsigned int rPairIndex
+        VectorType& rConditionRHS
         );
     
     /**
@@ -594,8 +594,7 @@ protected:
     void MasterShapeFunctionValue(
         GeneralVariables& rVariables,
         const array_1d<double, 3> MasterNormal,
-        const PointType& LocalPoint,
-        const unsigned int PairIndex
+        const PointType& LocalPoint
     );
     
     /******************************************************************/

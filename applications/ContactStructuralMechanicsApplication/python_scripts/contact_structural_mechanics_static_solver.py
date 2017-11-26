@@ -35,7 +35,7 @@ class StaticMechanicalSolver(structural_mechanics_static_solver.StaticMechanical
             "contact_settings" :
             {
                 "mortar_type"                            : "",
-                "local_computation"                      : true,
+                "local_computation"                      : false,
                 "contact_tolerance"                      : 0.0e0,
                 "condn_convergence_criterion"            : false,
                 "fancy_convergence_criterion"            : true,
@@ -112,18 +112,19 @@ class StaticMechanicalSolver(structural_mechanics_static_solver.StaticMechanical
     def AddProcessesList(self, processes_list):
         self.processes_list = ContactStructuralMechanicsApplication.ProcessFactoryUtility(processes_list)
         
-    def _create_builder_and_solver(self):
-        local_computing = self.contact_settings["local_computation"].GetBool()
-        self.main_model_part.ProcessInfo.SetValue(ContactStructuralMechanicsApplication.LOCAL_COMPUTING_CONTACT, local_computing)
-        if (local_computing == False):
-            super()._create_builder_and_solver()
-        else:
-            linear_solver = self.get_linear_solver()
-            if self.settings["block_builder"].GetBool():
-                builder_and_solver = ContactStructuralMechanicsApplication.ContactResidualBasedBlockBuilderAndSolver(linear_solver)
-            else:
-                builder_and_solver = ContactStructuralMechanicsApplication.ContactResidualBasedEliminationBuilderAndSolver(linear_solver)
-            return builder_and_solver
+    #def _create_builder_and_solver(self):
+        ##local_computing = self.contact_settings["local_computation"].GetBool()
+        ##self.main_model_part.ProcessInfo.SetValue(ContactStructuralMechanicsApplication.LOCAL_COMPUTING_CONTACT, local_computing)
+        #super()._create_builder_and_solver()
+        ##if (local_computing == False):
+            ##super()._create_builder_and_solver()
+        ##else:
+            ##linear_solver = self.get_linear_solver()
+            ##if self.settings["block_builder"].GetBool():
+                ##builder_and_solver = ContactStructuralMechanicsApplication.ContactResidualBasedBlockBuilderAndSolver(linear_solver)
+            ##else:
+                ##builder_and_solver = ContactStructuralMechanicsApplication.ContactResidualBasedEliminationBuilderAndSolver(linear_solver)
+            ##return builder_and_solver
         
     def _create_convergence_criterion(self):
         # Create an auxiliary Kratos parameters object to store the convergence settings.
