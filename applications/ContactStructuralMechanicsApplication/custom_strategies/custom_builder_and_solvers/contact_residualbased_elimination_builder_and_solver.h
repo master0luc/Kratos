@@ -20,6 +20,7 @@
 
 /* Project includes */
 #include "includes/key_hash.h"
+#include "includes/mapping_variables.h"
 #include "solving_strategies/builder_and_solvers/residualbased_elimination_builder_and_solver.h"
 
 namespace Kratos
@@ -161,8 +162,8 @@ public:
         const int nconditions = static_cast<int>(rModelPart.Conditions().size());
 
         ProcessInfo& CurrentProcessInfo = rModelPart.GetProcessInfo();
-        ModelPart::ElementsContainerType::iterator el_begin = rModelPart.ElementsBegin();
-        ModelPart::ConditionsContainerType::iterator cond_begin = rModelPart.ConditionsBegin();
+        auto el_begin = rModelPart.ElementsBegin();
+        auto cond_begin = rModelPart.ConditionsBegin();
 
         //contributions to the system
         LocalSystemMatrixType LHS_Contribution = LocalSystemMatrixType(0, 0);
@@ -179,7 +180,7 @@ public:
             #pragma omp  for schedule(guided, 512) nowait
             for (int k = 0; k < nelements; k++)
             {
-                ModelPart::ElementsContainerType::iterator it = el_begin + k;
+                auto it = el_begin + k;
 
                 // Detect if the element is active or not. If the user did not make any choice the element is active by default
                 bool element_is_active = true;
@@ -205,26 +206,30 @@ public:
             #pragma omp  for schedule(guided, 512)
             for (int k = 0; k < nconditions; k++)
             {
-                ModelPart::ConditionsContainerType::iterator it = cond_begin + k;
+                auto it = cond_begin + k;
 
-                //detect if the element is active or not. If the user did not make any choice the element
-                //is active by default
+                // Detect if the element is active or not. If the user did not make any choice the element is active by default
                 bool condition_is_active = true;
                 if (it->IsDefined(ACTIVE))
                         condition_is_active = it->Is(ACTIVE);
-
+                    
                 if (condition_is_active)
                 {
-                    // Calculate elemental contribution
-                    pScheme->Condition_CalculateSystemContributions(*(it.base()), LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
+                    const unsigned int number_iters = ((*(it.base()))->Has(MAPPING_PAIRS)) ? ((*(it.base()))->GetValue(MAPPING_PAIRS))->size() : 1;
+                    
+                    for (unsigned int cond_iter = 0; cond_iter < number_iters; ++cond_iter)
+                    {
+                        // Calculate elemental contribution
+                        pScheme->Condition_CalculateSystemContributions(*(it.base()), LHS_Contribution, RHS_Contribution, EquationId, CurrentProcessInfo);
 
 #ifdef _OPENMP
-                    BaseType::Assemble(A, b, LHS_Contribution, RHS_Contribution, EquationId, mlock_array);
+                        BaseType::Assemble(A, b, LHS_Contribution, RHS_Contribution, EquationId, mlock_array);
 #else
-                    BaseType::Assemble(A, b, LHS_Contribution, RHS_Contribution, EquationId);
+                        BaseType::Assemble(A, b, LHS_Contribution, RHS_Contribution, EquationId);
 #endif
-                    // Clean local elemental memory
-                    pScheme->CleanMemory(*(it.base()));
+                        // Clean local elemental memory
+                        pScheme->CleanMemory(*(it.base()));
+                    }
                 }
             }
         }
@@ -270,7 +275,7 @@ public:
         ProcessInfo& CurrentProcessInfo = rModelPart.GetProcessInfo();
 
         // Assemble all elements
-        for (typename ElementsArrayType::ptr_iterator it = rElements.ptr_begin(); it != rElements.ptr_end(); ++it)
+        for (auto it = rElements.ptr_begin(); it != rElements.ptr_end(); ++it)
         {
             //calculate elemental contribution
             pScheme->Calculate_LHS_Contribution(*it, LHS_Contribution, EquationId, CurrentProcessInfo);
@@ -285,13 +290,18 @@ public:
         LHS_Contribution.resize(0, 0, false);
 
         // Assemble all conditions
-        for (typename ConditionsArrayType::ptr_iterator it = rConditions.ptr_begin(); it != rConditions.ptr_end(); ++it)
+        for (auto it = rConditions.ptr_begin(); it != rConditions.ptr_end(); ++it)
         {
-            // Calculate elemental contribution
-            pScheme->Condition_Calculate_LHS_Contribution(*it, LHS_Contribution, EquationId, CurrentProcessInfo);
+            const unsigned int number_iters = ((*(it.base()))->Has(MAPPING_PAIRS)) ? ((*(it.base()))->GetValue(MAPPING_PAIRS))->size() : 1;
+            
+            for (unsigned int cond_iter = 0; cond_iter < number_iters; ++cond_iter)
+            {
+                // Calculate elemental contribution
+                pScheme->Condition_Calculate_LHS_Contribution(*it, LHS_Contribution, EquationId, CurrentProcessInfo);
 
-            // Assemble the elemental contribution
-            BaseType::AssembleLHS(A, LHS_Contribution, EquationId);
+                // Assemble the elemental contribution
+                BaseType::AssembleLHS(A, LHS_Contribution, EquationId);
+            }
         }
 
         KRATOS_CATCH("")
@@ -326,7 +336,7 @@ public:
         Element::EquationIdVectorType EquationId;
 
         // Assemble all elements
-        for (typename ElementsArrayType::ptr_iterator it = rElements.ptr_begin(); it != rElements.ptr_end(); ++it)
+        for (auto it = rElements.ptr_begin(); it != rElements.ptr_end(); ++it)
         {
             // Calculate elemental contribution
             pScheme->Calculate_LHS_Contribution(*it, LHS_Contribution, EquationId, CurrentProcessInfo);
@@ -340,13 +350,18 @@ public:
 
         LHS_Contribution.resize(0, 0, false);
         // Assemble all conditions
-        for (typename ConditionsArrayType::ptr_iterator it = rConditions.ptr_begin(); it != rConditions.ptr_end(); ++it)
+        for (auto it = rConditions.ptr_begin(); it != rConditions.ptr_end(); ++it)
         {
-            // Calculate elemental contribution
-            pScheme->Condition_Calculate_LHS_Contribution(*it, LHS_Contribution, EquationId, CurrentProcessInfo);
+            const unsigned int number_iters = ((*(it.base()))->Has(MAPPING_PAIRS)) ? ((*(it.base()))->GetValue(MAPPING_PAIRS))->size() : 1;
+            
+            for (unsigned int cond_iter = 0; cond_iter < number_iters; ++cond_iter)
+            {
+                // Calculate elemental contribution
+                pScheme->Condition_Calculate_LHS_Contribution(*it, LHS_Contribution, EquationId, CurrentProcessInfo);
 
-            // Assemble the elemental contribution
-            AssembleLHS_CompleteOnFreeRows(A, LHS_Contribution, EquationId);
+                // Assemble the elemental contribution
+                AssembleLHS_CompleteOnFreeRows(A, LHS_Contribution, EquationId);
+            }
         }
 
         KRATOS_CATCH("")
@@ -389,9 +404,9 @@ public:
         {
             const int nelements = static_cast<int>(pElements.size());
             #pragma omp for schedule(guided, 512) nowait
-            for (int i = 0; i<nelements; i++)
+            for (int i = 0; i<nelements; ++i)
             {
-                typename ElementsArrayType::iterator it = pElements.begin() + i;
+                auto it = pElements.begin() + i;
                 // Detect if the element is active or not. If the user did not make any choice the element is active by default
                 bool element_is_active = true;
                 if (it->IsDefined(ACTIVE))
@@ -410,7 +425,7 @@ public:
             // assemble all conditions
             const int nconditions = static_cast<int>(pConditions.size());
             #pragma omp  for schedule(guided, 512)
-            for (int i = 0; i<nconditions; i++)
+            for (int i = 0; i<nconditions; ++i)
             {
                 auto it = pConditions.begin() + i;
                 // Detect if the element is active or not. If the user did not make any choice the element is active by default
@@ -420,11 +435,16 @@ public:
 
                 if (condition_is_active)
                 {
-                    // Calculate elemental contribution
-                    pScheme->Condition_Calculate_RHS_Contribution(*(it.base()), RHS_Contribution, EquationId, CurrentProcessInfo);
+                    const unsigned int number_iters = ((*(it.base()))->Has(MAPPING_PAIRS)) ? ((*(it.base()))->GetValue(MAPPING_PAIRS))->size() : 1;
+                    
+                    for (unsigned int cond_iter = 0; cond_iter < number_iters; ++cond_iter)
+                    {
+                        // Calculate elemental contribution
+                        pScheme->Condition_Calculate_RHS_Contribution(*(it.base()), RHS_Contribution, EquationId, CurrentProcessInfo);
 
-                    // Assemble the elemental contribution
-                    AssembleRHS(b, RHS_Contribution, EquationId);
+                        // Assemble the elemental contribution
+                        AssembleRHS(b, RHS_Contribution, EquationId);
+                    }
                 }
             }
         }
@@ -462,7 +482,7 @@ public:
 
         std::vector<set_type> dofs_aux_list(nthreads);
 
-        for (int i = 0; i < static_cast<int>(nthreads); i++)
+        for (int i = 0; i < static_cast<int>(nthreads); ++i)
         {
 #ifdef USE_GOOGLE_HASH
             dofs_aux_list[i].set_empty_key(Node<3>::DofType::Pointer());
@@ -472,9 +492,9 @@ public:
         }
 
 #pragma omp parallel for firstprivate(nelements, ElementalDofList)
-        for (int i = 0; i < static_cast<int>(nelements); i++)
+        for (int i = 0; i < static_cast<int>(nelements); ++i)
         {
-            typename ElementsArrayType::iterator it = pElements.begin() + i;
+            auto it = pElements.begin() + i;
             const unsigned int this_thread_id = OpenMPUtils::ThisThread();
 
             // gets list of Dof involved on every element
@@ -486,14 +506,19 @@ public:
         ConditionsArrayType& pConditions = rModelPart.Conditions();
         const int nconditions = static_cast<int>(pConditions.size());
 #pragma omp parallel for firstprivate(nconditions, ElementalDofList)
-        for (int i = 0; i < nconditions; i++)
+        for (int i = 0; i < nconditions; ++i)
         {
-            typename ConditionsArrayType::iterator it = pConditions.begin() + i;
+            auto it = pConditions.begin() + i;
             const unsigned int this_thread_id = OpenMPUtils::ThisThread();
 
-            // gets list of Dof involved on every element
-            pScheme->GetConditionDofList(*(it.base()), ElementalDofList, CurrentProcessInfo);
-            dofs_aux_list[this_thread_id].insert(ElementalDofList.begin(), ElementalDofList.end());
+            const unsigned int number_iters = ((*(it.base()))->Has(MAPPING_PAIRS)) ? ((*(it.base()))->GetValue(MAPPING_PAIRS))->size() : 1;
+            
+            for (unsigned int cond_iter = 0; cond_iter < number_iters; ++cond_iter)
+            {
+                // Gets list of Dof involved on every element
+                pScheme->GetConditionDofList(*(it.base()), ElementalDofList, CurrentProcessInfo);
+                dofs_aux_list[this_thread_id].insert(ElementalDofList.begin(), ElementalDofList.end());
+            }
         }
 
         // Here we do a reduction in a tree so to have everything on thread 0
@@ -502,7 +527,7 @@ public:
         while (new_max >= 1 && new_max != old_max)
         {
 #pragma omp parallel for
-            for (int i = 0; i < static_cast<int>(new_max); i++)
+            for (int i = 0; i < static_cast<int>(new_max); ++i)
             {
                 if (i + new_max < old_max)
                 {
@@ -539,13 +564,13 @@ public:
 #ifdef _OPENMP
         if (mlock_array.size() != 0)
         {
-            for (int i = 0; i < static_cast<int>(mlock_array.size()); i++)
+            for (int i = 0; i < static_cast<int>(mlock_array.size()); ++i)
                 omp_destroy_lock(&mlock_array[i]);
         }
 
         mlock_array.resize(BaseType::mDofSet.size());
 
-        for (int i = 0; i < static_cast<int>(mlock_array.size()); i++)
+        for (int i = 0; i < static_cast<int>(mlock_array.size()); ++i)
             omp_init_lock(&mlock_array[i]);
 #endif
 
@@ -604,7 +629,7 @@ protected:
 #endif
 
 #pragma omp parallel for firstprivate(equation_size)
-        for (int iii = 0; iii < static_cast<int>(equation_size); iii++)
+        for (int iii = 0; iii < static_cast<int>(equation_size); ++iii)
         {
 #ifdef USE_GOOGLE_HASH
             indices[iii].set_empty_key(empty_key);
@@ -617,12 +642,12 @@ protected:
 
         const int nelements = static_cast<int>(rElements.size());
 #pragma omp parallel for firstprivate(nelements, ids)
-        for (int iii = 0; iii<nelements; iii++)
+        for (int iii = 0; iii<nelements; ++iii)
         {
-            typename ElementsContainerType::iterator i_element = rElements.begin() + iii;
+            auto i_element = rElements.begin() + iii;
             pScheme->EquationId( *(i_element.base()), ids, CurrentProcessInfo);
 
-            for (std::size_t i = 0; i < ids.size(); i++)
+            for (std::size_t i = 0; i < ids.size(); ++i)
             {
                 if (ids[i] < BaseType::mEquationSystemSize)
                 {
@@ -644,33 +669,39 @@ protected:
 
         const int nconditions = static_cast<int>(rConditions.size());
 #pragma omp parallel for firstprivate(nconditions, ids)
-        for (int iii = 0; iii<nconditions; iii++)
+        for (int iii = 0; iii<nconditions; ++iii)
         {
-            typename ConditionsArrayType::iterator i_condition = rConditions.begin() + iii;
-            pScheme->Condition_EquationId( *(i_condition.base()) , ids, CurrentProcessInfo);
-            for (std::size_t i = 0; i < ids.size(); i++)
+            auto i_condition = rConditions.begin() + iii;
+            
+            const unsigned int number_iters = ((*(i_condition.base()))->Has(MAPPING_PAIRS)) ? ((*(i_condition.base()))->GetValue( MAPPING_PAIRS ))->size() : 1;
+            
+            for (unsigned int cond_iter = 0; cond_iter < number_iters; ++cond_iter)
             {
-                if (ids[i] < BaseType::mEquationSystemSize)
+                pScheme->Condition_EquationId( *(i_condition.base()) , ids, CurrentProcessInfo);
+                for (std::size_t i = 0; i < ids.size(); ++i)
                 {
-#ifdef _OPENMP
-                    omp_set_lock(&mlock_array[ids[i]]);
-#endif
-                    auto& row_indices = indices[ids[i]];
-                    for (auto it = ids.begin(); it != ids.end(); it++)
+                    if (ids[i] < BaseType::mEquationSystemSize)
                     {
-                        if (*it < BaseType::mEquationSystemSize)
-                            row_indices.insert(*it);
-                    }
 #ifdef _OPENMP
-                    omp_unset_lock(&mlock_array[ids[i]]);
+                        omp_set_lock(&mlock_array[ids[i]]);
 #endif
+                        auto& row_indices = indices[ids[i]];
+                        for (auto it = ids.begin(); it != ids.end(); it++)
+                        {
+                            if (*it < BaseType::mEquationSystemSize)
+                                row_indices.insert(*it);
+                        }
+#ifdef _OPENMP
+                        omp_unset_lock(&mlock_array[ids[i]]);
+#endif
+                    }
                 }
             }
         }
 
         //count the row sizes
         unsigned int nnz = 0;
-        for (unsigned int i = 0; i < indices.size(); i++)
+        for (unsigned int i = 0; i < indices.size(); ++i)
                 nnz += indices[i].size();
 
         A = compressed_matrix<double>(indices.size(), indices.size(), nnz);
@@ -681,11 +712,11 @@ protected:
 
         //filling the index1 vector - DO NOT MAKE PARALLEL THE FOLLOWING LOOP!
         Arow_indices[0] = 0;
-        for (int i = 0; i < static_cast<int>(A.size1()); i++)
+        for (int i = 0; i < static_cast<int>(A.size1()); ++i)
             Arow_indices[i + 1] = Arow_indices[i] + indices[i].size();
 
 #pragma omp parallel for
-        for (int i = 0; i < static_cast<int>(A.size1()); i++)
+        for (int i = 0; i < static_cast<int>(A.size1()); ++i)
         {
             const unsigned int row_begin = Arow_indices[i];
             const unsigned int row_end = Arow_indices[i + 1];

@@ -498,7 +498,7 @@ template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional, bool TNor
 const unsigned int AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>::CalculateConditionSize(const bool LocalCompute)
 {
     if (LocalCompute)
-        return MatrixSize;
+        return (mPairSize == 0) ? 0 : MatrixSize;
     else
         return mPairSize * MatrixSize;
 }
@@ -538,7 +538,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
     
     const bool local_compute = rCurrentProcessInfo.Has(LOCAL_COMPUTING_CONTACT) ? rCurrentProcessInfo[LOCAL_COMPUTING_CONTACT] : false;
     
-    const unsigned int max_pair_iter = local_compute ? 1 : mPairSize;
+    const unsigned int max_pair_iter = local_compute ? (mPairSize == 0 ? 0 : 1) : mPairSize;
     
     // Iterate over the master segments
     for (unsigned int pair_iter = 0; pair_iter < max_pair_iter; ++pair_iter)
@@ -687,7 +687,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
     }
     
     // Reseting pair index 
-    if (mPairIndex == (mPairSize - 1)) mPairIndex = 0;
+    if (mPairIndex == mPairSize) mPairIndex = 0;
     
     // Reseting flag
     if (this->Is(VISITED)) this->Set(VISITED, false);
