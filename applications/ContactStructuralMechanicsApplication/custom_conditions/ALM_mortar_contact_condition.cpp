@@ -83,6 +83,8 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     KRATOS_TRY;
     
     mIntegrationOrder = GetProperties().Has(INTEGRATION_ORDER_CONTACT) ? GetProperties().GetValue(INTEGRATION_ORDER_CONTACT) : 2;
+    mPairIndex = 0;
+    mPairSize = 0;
     
     KRATOS_CATCH( "" );
 }
@@ -683,7 +685,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
             }
         }
         
-        ++mPairIndex;
+        if (local_compute == false) ++mPairIndex;
     }
     
     // Reseting pair index 
