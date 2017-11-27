@@ -22,9 +22,7 @@
 #include "includes/define.h"
 #include "utilities/table_stream_utility.h"
 #include "solving_strategies/convergencecriterias/convergence_criteria.h"
-#if !defined(_WIN32)
-    #include "utilities/color_utilities.h"
-#endif
+#include "utilities/color_utilities.h"
 
 namespace Kratos
 {
@@ -90,11 +88,13 @@ public:
 
     /// Constructor.
     /**
-     * @param DispRatioTolerance: Relative tolerance for displacement error
-     * @param DispAbsTolerance: Absolute tolerance for displacement error
-     * @param LMRatioTolerance: Relative tolerance for lagrange multiplier error
-     * @param LMAbsTolerance: Absolute tolerance for lagrange multiplier error
-     * @param EnsureContact: To check if the contact is lost
+     * @param DispRatioTolerance Relative tolerance for displacement error
+     * @param DispAbsTolerance Absolute tolerance for displacement error
+     * @param LMRatioTolerance Relative tolerance for lagrange multiplier error
+     * @param LMAbsTolerance Absolute tolerance for lagrange multiplier error
+     * @param EnsureContact To check if the contact is lost
+     * @param pTable The pointer to the output table
+     * @param PrintingOutput If the output is going to be printed in a txt file
      */
     
     DisplacementLagrangeMultiplierContactCriteria(  
@@ -242,15 +242,9 @@ public:
                     std::cout.precision(4);
                     if (mPrintingOutput == false)
                     {
-                    #if !defined(_WIN32)
                         std::cout << BOLDFONT("DoF ONVERGENCE CHECK") << "\tSTEP: " << rModelPart.GetProcessInfo()[TIME_STEPS] << "\tNL ITERATION: " << rModelPart.GetProcessInfo()[NL_ITERATION_NUMBER] << std::endl;
                         std::cout << BOLDFONT("\tDISPLACEMENT: RATIO = ") << disp_ratio << BOLDFONT(" EXP.RATIO = ") << mDispRatioTolerance << BOLDFONT(" ABS = ") << disp_abs << BOLDFONT(" EXP.ABS = ") << mDispAbsTolerance << std::endl;
                         std::cout << BOLDFONT(" LAGRANGE MUL:\tRATIO = ") << lm_ratio << BOLDFONT(" EXP.RATIO = ") << mLMRatioTolerance << BOLDFONT(" ABS = ") << lm_abs << BOLDFONT(" EXP.ABS = ") << mLMAbsTolerance << std::endl;
-                    #else
-                        std::cout << "DoF ONVERGENCE CHECK" << "\tSTEP: " << rModelPart.GetProcessInfo()[TIME_STEPS] << "\tNL ITERATION: " << rModelPart.GetProcessInfo()[NL_ITERATION_NUMBER] << std::endl;
-                        std::cout << "\tDISPLACEMENT: RATIO = " << disp_ratio << " EXP.RATIO = " << mDispRatioTolerance << " ABS = " << disp_abs << " EXP.ABS = " << mDispAbsTolerance << std::endl;
-                        std::cout << " LAGRANGE MUL:\tRATIO = " << lm_ratio << " EXP.RATIO = " << mLMRatioTolerance << " ABS = " << lm_abs << " EXP.ABS = " << mLMAbsTolerance << std::endl;
-                    #endif
                     }
                     else
                     {
@@ -271,11 +265,7 @@ public:
                         auto& table = mpTable->GetTable();
                         if (mPrintingOutput == false)
                         {
-                        #if !defined(_WIN32)
                             table << BOLDFONT(FGRN("       Achieved"));
-                        #else
-                            table << "Achieved";
-                        #endif
                         }
                         else
                         {
@@ -286,11 +276,7 @@ public:
                     {
                         if (mPrintingOutput == false)
                         {
-                        #if !defined(_WIN32)
                             std::cout << BOLDFONT("\tDoF") << " convergence is " << BOLDFONT(FGRN("achieved")) << std::endl;
-                        #else
-                            std::cout << "\tDoF convergence is achieved" << std::endl;
-                        #endif
                         }
                         else
                         {
@@ -309,11 +295,7 @@ public:
                         auto& table = mpTable->GetTable();
                         if (mPrintingOutput == false)
                         {
-                        #if !defined(_WIN32)
                             table << BOLDFONT(FRED("   Not achieved"));
-                        #else
-                            table << "Not achieved";
-                        #endif
                         }
                         else
                         {
@@ -324,11 +306,7 @@ public:
                     {
                         if (mPrintingOutput == false)
                         {
-                        #if !defined(_WIN32)
                             std::cout << BOLDFONT("\tDoF") << " convergence is " << BOLDFONT(FRED(" not achieved")) << std::endl;
-                        #else
-                            std::cout << "\tDoF convergence is not achieved" << std::endl;
-                        #endif
                         }
                         else
                         {

@@ -131,7 +131,7 @@ namespace Kratos
             
             double det = MathUtils<double>::GeneralizedDet(mat23);
             
-            KRATOS_CHECK_NEAR(det, 0.0, tolerance);
+            KRATOS_CHECK_NEAR(det, 1.0, tolerance);
             
             Matrix mat55 = ZeroMatrix(5, 5);
             mat55(0,0) =   1.0;
@@ -548,7 +548,6 @@ namespace Kratos
             }
             
             KRATOS_CHECK_EQUAL(converged, true);
-            
         }
         
         /** Checks if it calculates the dot product 
@@ -596,8 +595,10 @@ namespace Kratos
             array_1d<double, 3> b = ZeroVector(3);
             b[0] = 1.0;
 
-            const array_1d<double, 3>  c = MathUtils<double>::CrossProduct(a, b);
-            const array_1d<double, 3>  d = MathUtils<double>::UnitCrossProduct(a, b);
+            array_1d<double, 3>  c, d;
+
+            MathUtils<double>::CrossProduct(c, b, a);
+            MathUtils<double>::UnitCrossProduct(d, b, a);
             
             KRATOS_CHECK_EQUAL(c[2], 2.0);
             KRATOS_CHECK_EQUAL(d[2], 1.0);

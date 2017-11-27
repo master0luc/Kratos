@@ -22,9 +22,7 @@
 #include "includes/define.h"
 #include "utilities/table_stream_utility.h"
 #include "solving_strategies/convergencecriterias/convergence_criteria.h"
-#if !defined(_WIN32)
-    #include "utilities/color_utilities.h"
-#endif
+#include "utilities/color_utilities.h"
 
 namespace Kratos
 {
@@ -92,9 +90,11 @@ public:
     /**
      * @param DispRatioTolerance Relative tolerance for displacement residual error
      * @param DispAbsTolerance Absolute tolerance for displacement residual error
-     * @param lm_ratioTolerance Relative tolerance for lagrange multiplier residual  error
-     * @param lm_absTolerance Absolute tolerance for lagrange multiplier residual error
-     * @param EnsureContact: To check if the contact is lost
+     * @param LMRatioTolerance Relative tolerance for lagrange multiplier residual  error
+     * @param LMAbsTolerance Absolute tolerance for lagrange multiplier residual error
+     * @param EnsureContact To check if the contact is lost
+     * @param pTable The pointer to the output table
+     * @param PrintingOutput If the output is going to be printed in a txt file
      */
     
     DisplacementLagrangeMultiplierMixedContactCriteria(  
@@ -265,15 +265,9 @@ public:
                     std::cout.precision(4);
                     if (mPrintingOutput == false)
                     {
-                    #if !defined(_WIN32)
                         std::cout << BOLDFONT("MIXED CONVERGENCE CHECK") << "\tSTEP: " << rModelPart.GetProcessInfo()[TIME_STEPS] << "\tNL ITERATION: " << rModelPart.GetProcessInfo()[NL_ITERATION_NUMBER] << std::endl << std::scientific;
                         std::cout << BOLDFONT("\tDISPLACEMENT: RATIO = ") << residual_disp_ratio << BOLDFONT(" EXP.RATIO = ") << mDispRatioTolerance << BOLDFONT(" ABS = ") << residual_disp_abs << BOLDFONT(" EXP.ABS = ") << mDispAbsTolerance << std::endl;
                         std::cout << BOLDFONT("\tLAGRANGE MUL: RATIO = ") << lm_ratio << BOLDFONT(" EXP.RATIO = ") << mLMRatioTolerance << BOLDFONT(" ABS = ") << lm_abs << BOLDFONT(" EXP.ABS = ") << mLMAbsTolerance << std::endl;
-                    #else
-                        std::cout << "MIXED CONVERGENCE CHECK" << "\tSTEP: " << rModelPart.GetProcessInfo()[TIME_STEPS] << "\tNL ITERATION: " << rModelPart.GetProcessInfo()[NL_ITERATION_NUMBER] << std::endl << std::scientific;
-                        std::cout << "\tDISPLACEMENT: RATIO = " << residual_disp_ratio << " EXP.RATIO = " << mDispRatioTolerance << " ABS = " << residual_disp_abs << " EXP.ABS = " << mDispAbsTolerance << std::endl;
-                        std::cout << "\tLAGRANGE MUL: RATIO = " << lm_ratio << " EXP.RATIO = " << mLMRatioTolerance << " ABS = " << lm_abs << " EXP.ABS = " << mLMAbsTolerance << std::endl;
-                    #endif
                     }
                     else
                     {
@@ -297,11 +291,7 @@ public:
                         auto& table = mpTable->GetTable();
                         if (mPrintingOutput == false)
                         {
-                        #if !defined(_WIN32)
                             table << BOLDFONT(FGRN("       Achieved"));
-                        #else
-                            table << "Achieved";
-                        #endif
                         }
                         else
                         {
@@ -312,11 +302,7 @@ public:
                     {
                         if (mPrintingOutput == false)
                         {
-                        #if !defined(_WIN32)
                             std::cout << BOLDFONT("\tConvergence") << " is " << BOLDFONT(FGRN("achieved")) << std::endl;
-                        #else
-                            std::cout << "\tConvergence is achieved" << std::endl;
-                        #endif
                         }
                         else
                         {
@@ -335,11 +321,7 @@ public:
                         auto& table = mpTable->GetTable();
                         if (mPrintingOutput == false)
                         {
-                        #if !defined(_WIN32)
                             table << BOLDFONT(FRED("   Not achieved"));
-                        #else
-                            table << "Not achieved";
-                        #endif
                         }
                         else
                         {
@@ -350,11 +332,7 @@ public:
                     {
                         if (mPrintingOutput == false)
                         {
-                        #if !defined(_WIN32)
                             std::cout << BOLDFONT("\tConvergence") << " is " << BOLDFONT(FRED(" not achieved")) << std::endl;
-                        #else
-                            std::cout << "\tConvergence is not achieved" << std::endl;
-                        #endif
                         }
                         else
                         {

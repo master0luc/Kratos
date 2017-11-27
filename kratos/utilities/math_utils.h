@@ -25,8 +25,6 @@
 #include "includes/ublas_interface.h"
 #include "containers/array_1d.h"
 
-/* Project includes */
-
 
 namespace Kratos
 {
@@ -66,6 +64,8 @@ public:
 
     typedef Vector VectorType;
 
+    typedef std::size_t SizeType;
+    
     typedef unsigned int IndexType;
 
     ///@}
@@ -316,25 +316,36 @@ public:
         TDataType& InputMatrixDet
         )
     {
-        if (InputMatrix.size1() == InputMatrix.size2())
+        const unsigned int size_1 = InputMatrix.size1();
+        const unsigned int size_2 = InputMatrix.size2();
+        
+        if (size_1 == size_2)
         {
             InvertMatrix(InputMatrix, InvertedMatrix, InputMatrixDet);
         }
-        else if (InputMatrix.size1() < InputMatrix.size2()) // Right inverse
+        else if (size_1 < size_2) // Right inverse
         {
+            if (InvertedMatrix.size1() != size_2 || InvertedMatrix.size2() != size_1)
+            {
+                InvertedMatrix.resize(size_2, size_1, false);
+            }
             const Matrix aux = prod(InputMatrix, trans(InputMatrix));
             Matrix auxInv;
             InvertMatrix(aux, auxInv, InputMatrixDet);
 	    InputMatrixDet = std::sqrt(InputMatrixDet);
-            InvertedMatrix = prod(trans(InputMatrix), auxInv);
+            noalias(InvertedMatrix) = prod(trans(InputMatrix), auxInv);
         }
         else // Left inverse
         {
+            if (InvertedMatrix.size1() != size_2 || InvertedMatrix.size2() != size_1)
+            {
+                InvertedMatrix.resize(size_2, size_1, false);
+            }
             const Matrix aux = prod(trans(InputMatrix), InputMatrix);
             Matrix auxInv;
             InvertMatrix(aux, auxInv, InputMatrixDet);
 	    InputMatrixDet = std::sqrt(InputMatrixDet);
-            InvertedMatrix = prod(auxInv, trans(InputMatrix));
+            noalias(InvertedMatrix) = prod(auxInv, trans(InputMatrix));
         }
     }
     
@@ -385,7 +396,7 @@ public:
             
             int singular = 0;
             using namespace boost::numeric::ublas;
-            typedef permutation_matrix<std::size_t> pmatrix;
+            typedef permutation_matrix<SizeType> pmatrix;
             Matrix A(InputMatrix);
             pmatrix pm(A.size1());
             singular = lu_factorize(A,pm);
@@ -564,7 +575,7 @@ public:
         else
         {
             using namespace boost::numeric::ublas;
-            typedef permutation_matrix<std::size_t> pmatrix;
+            typedef permutation_matrix<SizeType> pmatrix;
             Matrix Aux(A);
             pmatrix pm(Aux.size1());
             bool singular = lu_factorize(Aux,pm);
@@ -594,19 +605,24 @@ public:
         
     static inline TDataType GeneralizedDet(const MatrixType& A)
     {
-        TDataType Determinant;
+        TDataType determinant;
         
         if (A.size1() == A.size2())
         {
-            Determinant = Det(A);
+            determinant = Det(A);
         }
-        else 
+        else if (A.size1() < A.size2()) // Right determinant
+        {
+            Matrix AAT = prod( A, trans(A) );
+            determinant = std::sqrt(Det(AAT));
+        }
+        else // Left determinant
         {
             Matrix ATA = prod( trans(A), A );
-            Determinant = std::sqrt(Det(ATA));
+            determinant = std::sqrt(Det(ATA));
         }
         
-        return Determinant;
+        return determinant;
     }
     
     /**
@@ -778,7 +794,10 @@ public:
         return c;
     }
 
-    static inline array_1d<double, 3> UnitCrossProduct(
+    //this function is deprecated since instead of giving back vec x Tuple it gives back Tuple x Vec ( = -Vec x Tuple)
+    //THAT IS -- THIS FUNCTION GIVES BACK THE OPPOSITE SIGN OF THE PRODUCT
+    //please use instead CrossProd(c,a,b) which is also in general more optimal since it never creates tmp on return
+    KRATOS_DEPRECATED static inline array_1d<double, 3> UnitCrossProduct(
         const array_1d<double, 3>& vec, 
         const array_1d<double, 3>& Tuple
         )
@@ -794,7 +813,10 @@ public:
         return cross;
     }
 
-    static inline array_1d<double, 3> CrossProduct(
+    //this function is deprecated since instead of giving back vec x Tuple it gives back Tuple x Vec ( = -Vec x Tuple)
+    //THAT IS -- THIS FUNCTION GIVES BACK THE OPPOSITE SIGN OF THE PRODUCT
+    //please use instead CrossProd(c,a,b) which is also in general more optimal since it never creates tmp on return
+    KRATOS_DEPRECATED static inline array_1d<double, 3> CrossProduct(
         const array_1d<double, 3>& vec, 
         const array_1d<double, 3>& Tuple
         )
@@ -824,6 +846,25 @@ public:
         c[0] = a[1]*b[2] - a[2]*b[1];
         c[1] = a[2]*b[0] - a[0]*b[2];
         c[2] = a[0]*b[1] - a[1]*b[0];
+    }
+    
+    //general version    
+    template< class T1, class T2, class T3 >
+    static inline void CrossProduct(T1& c, const T2& a, const T3& b ){
+        c[0] = a[1]*b[2] - a[2]*b[1];
+        c[1] = a[2]*b[0] - a[0]*b[2];
+        c[2] = a[0]*b[1] - a[1]*b[0];
+    }
+
+    template< class T1, class T2, class T3 >
+    static inline void UnitCrossProduct(T1& c, const T2& a, const T3& b ){
+        CrossProduct(c,a,b);
+        double norm = norm_2(c);
+#ifdef KRATOS_DEBUG
+        if(norm < 1000.0*std::numeric_limits<double>::epsilon())
+            KRATOS_ERROR << "norm is 0 when making the UnitCrossProduct of the vectors " << a << " and " << b << std::endl;
+#endif
+        c/=norm;
     }
     
     /**
@@ -1147,9 +1188,11 @@ public:
         KRATOS_CATCH("");
     }
     
-    //***********************************************************************
-    //***********************************************************************
-    /// sign function
+    /**
+     * Sign function
+     * @param ThisDataType: The value to extract the sign
+     * @return The sign of the value
+     */
     static inline int Sign(const TDataType& ThisDataType)
     {
         KRATOS_TRY;
@@ -1538,7 +1581,7 @@ public:
     
         return is_converged;
     }
-     
+    
     ///@}
     ///@name Access
     ///@{
