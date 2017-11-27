@@ -1275,7 +1275,7 @@ private:
 
     }
 
-    void BuildRHSNoDirichlet(
+    virtual void BuildRHSNoDirichlet(
         typename TSchemeType::Pointer pScheme,
         ModelPart& r_model_part,
         TSystemVectorType& b)
