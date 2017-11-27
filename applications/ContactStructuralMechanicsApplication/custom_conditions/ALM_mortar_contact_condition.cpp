@@ -683,7 +683,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
             }
         }
         
-        ++mPairIndex;
+        if (local_compute == false) ++mPairIndex;
     }
     
     // Reseting pair index 

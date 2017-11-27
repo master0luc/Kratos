@@ -151,13 +151,12 @@ public:
     
     ///@{
 
-    //**************************************************************************
-    //**************************************************************************
     void Build(
         typename TSchemeType::Pointer pScheme,
         ModelPart& rModelPart,
         TSystemMatrixType& A,
-        TSystemVectorType& b) override
+        TSystemVectorType& b
+        ) override
     {
         KRATOS_TRY
         
@@ -212,8 +211,7 @@ public:
                 }
 
             }
-
-            //#pragma omp parallel for firstprivate(nconditions, LHS_Contribution, RHS_Contribution, EquationId ) schedule(dynamic, 1024)
+            
             #pragma omp for  schedule(guided, 512)
             for (int k = 0; k < nconditions; k++)
             {
@@ -226,7 +224,7 @@ public:
 
                 if (condition_is_active)
                 {
-                    const unsigned int number_iters = ((*(it.base()))->Has(MAPPING_PAIRS) && (*(it.base()))->Is(SLAVE)) ? ((*(it.base()))->GetValue(MAPPING_PAIRS))->size() : 1;
+                    const unsigned int number_iters = (*(it.base()))->Has(MAPPING_PAIRS) ? ((*(it.base()))->GetValue(MAPPING_PAIRS))->size() : 1;
                     
                     for (unsigned int cond_iter = 0; cond_iter < number_iters; ++cond_iter)
                     {
@@ -304,6 +302,7 @@ public:
         {
             std::cout << "Initializing element loop" << std::endl;
         }
+        
         #pragma omp parallel firstprivate(nelements, ElementalDofList)
         {
             #pragma omp for schedule(guided, 512) nowait
@@ -328,7 +327,7 @@ public:
                 auto it = pConditions.begin() + i;
                 const unsigned int this_thread_id = OpenMPUtils::ThisThread();
 
-                const unsigned int number_iters = ((*(it.base()))->Has(MAPPING_PAIRS) && (*(it.base()))->Is(SLAVE)) ? ((*(it.base()))->GetValue(MAPPING_PAIRS))->size() : 1;
+                const unsigned int number_iters = (*(it.base()))->Has(MAPPING_PAIRS) ? ((*(it.base()))->GetValue(MAPPING_PAIRS))->size() : 1;
                     
                 for (unsigned int cond_iter = 0; cond_iter < number_iters; ++cond_iter)
                 {
@@ -622,7 +621,8 @@ private:
     void BuildRHSNoDirichlet(
         typename TSchemeType::Pointer pScheme,
         ModelPart& rModelPart,
-        TSystemVectorType& b)
+        TSystemVectorType& b
+        ) override
     {
         KRATOS_TRY
 
@@ -668,7 +668,7 @@ private:
 
             LHS_Contribution.resize(0, 0, false);
             RHS_Contribution.resize(0, false);
-
+            
             // Assemble all conditions
             const int nconditions = static_cast<int>(ConditionsArray.size());
 
@@ -683,7 +683,7 @@ private:
 
                 if(condition_is_active)
                 {
-                    const unsigned int number_iters = ((*(it.base()))->Has(MAPPING_PAIRS) && (*(it.base()))->Is(SLAVE)) ? ((*(it.base()))->GetValue(MAPPING_PAIRS))->size() : 1;
+                    const unsigned int number_iters = (*(it.base()))->Has(MAPPING_PAIRS) ? ((*(it.base()))->GetValue(MAPPING_PAIRS))->size() : 1;
                     
                     for (unsigned int cond_iter = 0; cond_iter < number_iters; ++cond_iter)
                     {
