@@ -94,13 +94,9 @@ public:
             for(int i = 0; i<nnodes; i++)
             {
                 ModelPart::NodesContainerType::iterator it = it_begin + i;
-                
-                if(mIsFixed)
-                {
-                    it->Fix(var);
-                }
-
+               
                 it->FastGetSolutionStepValue(var) = mrTable.GetValue(it->Id());
+
             }
         }
         
@@ -125,12 +121,7 @@ public:
             for(int i = 0; i<nnodes; i++)
             {
                 ModelPart::NodesContainerType::iterator it = it_begin + i;
-                
-                if(mIsFixed)
-                {
-                    it->Fix(var);
-                }
-                
+                                
                 it->FastGetSolutionStepValue(var) = mrTable.GetValue(it->Id());
             }
         }

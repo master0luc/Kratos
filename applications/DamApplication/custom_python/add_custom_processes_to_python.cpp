@@ -83,8 +83,6 @@ void  AddCustomProcessesToPython()
     class_< DamListTableNodalYoungModulusProcess, bases< Process >, boost::noncopyable > ( "DamListTableNodalYoungModulusProcess",
         init < ModelPart&, TableType&, Parameters&>());
 
-    // Construction Process     
-    class_< DamConstructionProcess, bases< Process >, boost::noncopyable > ( "DamConstructionProcess",
     // Chemo Mechanical Aging Young Modulus Process     
     class_< DamChemoMechanicalAgingYoungProcess, bases< Process >, boost::noncopyable > ( "DamChemoMechanicalAgingYoungProcess",
         init < ModelPart&, Parameters&>());
@@ -100,7 +98,6 @@ void  AddCustomProcessesToPython()
     //Apply force by spatial position     
         class_< DamApplyForceBySpatialPositionProcess, bases< Process >, boost::noncopyable > ( "DamApplyForceBySpatialPositionProcess",
         init < ModelPart&, Parameters&>());
-}
 
     // Heat Flux by t_sol_air      
     class_< DamTSolAirHeatFluxProcess, bases< Process >, boost::noncopyable > ( "DamTSolAirHeatFluxProcess",
@@ -115,7 +112,6 @@ void  AddCustomProcessesToPython()
     init < ModelPart&, Parameters&>());
 
     }
-
 }  // namespace Python.
 } // Namespace Kratos
 
