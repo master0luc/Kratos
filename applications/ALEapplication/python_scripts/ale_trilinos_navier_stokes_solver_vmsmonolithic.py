@@ -22,7 +22,7 @@ class ALETrilinosNavierStokesSolverVMSMonolithic(trilinos_navier_stokes_solver_v
         super(ALETrilinosNavierStokesSolverVMSMonolithic, self).__init__(model_part, navier_stokes_settings)
         # create ale solver
         ale_solver_type = custom_settings["ale_settings"]["solver_type"].GetString()
-        valid_ale_solver_types = ["trilinos_mesh_solver_structural_similarity"]
+        valid_ale_solver_types = ["trilinos_mesh_solver_structural_similarity",]
         if ale_solver_type not in valid_ale_solver_types:
             raise Exception("Invalid ALE solver_type: " + ale_solver_type)
         ale_solver_module = __import__(ale_solver_type)

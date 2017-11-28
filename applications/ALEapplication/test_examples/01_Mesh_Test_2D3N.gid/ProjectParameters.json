@@ -34,7 +34,7 @@
         "Restart_Step"     : 0
     },
     "solver_settings"                      : {
-            "solver_type"                  : "mesh_solver_structural_similarity",
+            "solver_type"                  : "mesh_solver_laplacian",
             "model_import_settings"        : {
             "input_type"     : "mdpa",
             "input_filename" : "01_Mesh_Test_2D3N"
@@ -42,7 +42,10 @@
         "ale_linear_solver_settings"        : {
         "solver_type" : "SkylineLUFactorizationSolver"
         },
-        "volume_model_part_name"       : "Parts_Fluid"
+        "volume_model_part_name"       : "Parts_Fluid",
+        "time_order" : 2,
+        "reform_dofs_each_step" : false,
+        "compute_reactions"     : false
 },
     "initial_conditions_process_list"  : [],
     "boundary_conditions_process_list" : []

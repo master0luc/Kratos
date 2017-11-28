@@ -198,7 +198,7 @@ class StructuralMeshMovingStrategy : public SolvingStrategy<TSparseSpace,
     double DeltaTime = BaseType::GetModelPart().GetProcessInfo()[DELTA_TIME];
 
     if (DeltaTime <= 0.0)
-    KRATOS_THROW_ERROR(std::logic_error, "Invalid DELTA_TIME.","");
+    KRATOS_ERROR << "Invalid DELTA_TIME."<< std::endl;
 
     double coeff = 1/DeltaTime;
     if( mvel_order == 1)  //mesh velocity calculated as (x(n+1)-x(n))/Dt

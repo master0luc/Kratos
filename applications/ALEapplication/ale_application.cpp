@@ -77,7 +77,8 @@ KratosALEApplication::KratosALEApplication():
     mStructuralMeshMovingElement3D4N( 0, Element::GeometryType::Pointer( new Tetrahedra3D4 <Node<3> >( Element::GeometryType::PointsArrayType( 4 ) ) ) ),
     mStructuralMeshMovingElement3D8N( 0, Element::GeometryType::Pointer( new Hexahedra3D8 <Node<3> >( Element::GeometryType::PointsArrayType( 8 ) ) ) ),
     mStructuralMeshMovingElement3D6N( 0, Element::GeometryType::Pointer( new Prism3D6 <Node<3> >( Element::GeometryType::PointsArrayType( 6 ) ) ) ),
-    mStructuralMeshMovingElement3D15N( 0, Element::GeometryType::Pointer( new Prism3D15 <Node<3> >( Element::GeometryType::PointsArrayType( 15 ) ) ) )
+    mStructuralMeshMovingElement3D15N( 0, Element::GeometryType::Pointer( new Prism3D15 <Node<3> >( Element::GeometryType::PointsArrayType( 15 ) ) ) ),
+    mLaplacianMeshMovingElement2D3N(0, Element::GeometryType::Pointer( new Triangle2D3 <Node<3> >( Element::GeometryType::PointsArrayType( 3 ) ) ) )
 {}
 
 
@@ -98,6 +99,7 @@ void KratosALEApplication::Register()
     KRATOS_REGISTER_ELEMENT("StructuralMeshMovingElement3D8N", mStructuralMeshMovingElement3D8N);
     KRATOS_REGISTER_ELEMENT("StructuralMeshMovingElement3D6N", mStructuralMeshMovingElement3D6N);
     KRATOS_REGISTER_ELEMENT("StructuralMeshMovingElement3D15N", mStructuralMeshMovingElement3D15N);
+    KRATOS_REGISTER_ELEMENT("LaplacianMeshMovingElement2D3N", mLaplacianMeshMovingElement2D3N);
 
 
     // variables moved to core

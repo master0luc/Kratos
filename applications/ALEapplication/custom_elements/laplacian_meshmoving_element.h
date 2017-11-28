@@ -43,32 +43,26 @@
  *  Projectname:         $KratosALEApplication
  *  Last Modified by:    $Author: A.Winterstein@tum.de $
  *  Date:                $Date: June 2016 $
- *  Revision:            $Revision: 1.5 $
+ *  Revision:            $Revision: 1.4 $
  * ***************************************************************************/
 
-
-#if !defined(KRATOS_ALE_APPLICATION_H_INCLUDED )
-#define  KRATOS_ALE_APPLICATION_H_INCLUDED
+#if !defined( KRATOS_LAPLACIAN_MESHMOVING_ELEMENT_INCLUDED )
+#define  KRATOS_LAPLACIAN_MESHMOVING_ELEMENT_INCLUDED
 
 
 
 // System includes
-#include <string>
-#include <iostream>
 
 
 // External includes
+#include "boost/smart_ptr.hpp"
 
 
 // Project includes
 #include "includes/define.h"
-#include "includes/kratos_application.h"
-
-#include "custom_elements/structural_meshmoving_element.h"
-#include "custom_elements/laplacian_meshmoving_element.h"
-
+#include "includes/element.h"
+#include "includes/ublas_interface.h"
 #include "includes/variables.h"
-#include "includes/ale_variables.h"
 
 
 namespace Kratos
@@ -76,9 +70,6 @@ namespace Kratos
 
 ///@name Kratos Globals
 ///@{
-
-// Variables definition
-
 
 ///@}
 ///@name Type Definitions
@@ -96,28 +87,38 @@ namespace Kratos
 ///@name Kratos Classes
 ///@{
 
-/// Short class definition.
-/** Detail class definition.
+/// This class implements a laplacian mesh-updating scheme in 2D
+/** This class solves the Laplace equation in order to update the mesh. It uses the L2 norm of the linear strain tensor
+    to distribute the motion of the structure into the fluid flow domain.
 */
-class KratosALEApplication : public KratosApplication
+template< unsigned int TDim >
+class LaplacianMeshMovingElement
+    : public Element
 {
 public:
     ///@name Type Definitions
     ///@{
 
-
-    /// Pointer definition of KratosALEApplication
-    KRATOS_CLASS_POINTER_DEFINITION(KratosALEApplication);
+    /// Counted pointer of LaplacianMeshMovingElement
+    KRATOS_CLASS_POINTER_DEFINITION(LaplacianMeshMovingElement);
 
     ///@}
     ///@name Life Cycle
     ///@{
 
     /// Default constructor.
-    KratosALEApplication();
+    LaplacianMeshMovingElement(IndexType NewId,
+                                            GeometryType::Pointer pGeometry)
+    {}
+    LaplacianMeshMovingElement(IndexType NewId,
+                                            GeometryType::Pointer pGeometry,
+                                            PropertiesType::Pointer pProperties):
+        Element(NewId, pGeometry, pProperties)
+    {}
 
     /// Destructor.
-    virtual ~KratosALEApplication() {}
+    virtual ~LaplacianMeshMovingElement()
+    {}
 
 
     ///@}
@@ -129,9 +130,13 @@ public:
     ///@name Operations
     ///@{
 
-    virtual void Register();
+    Element::Pointer Create(IndexType NewId, NodesArrayType const& ThisNodes,  PropertiesType::Pointer pProperties) const;
 
+    void CalculateLocalSystem(MatrixType& rLeftHandSideMatrix, VectorType& rRightHandSideVector, ProcessInfo& rCurrentProcessInfo);
 
+    void EquationIdVector(EquationIdVectorType& rResult, ProcessInfo& rCurrentProcessInfo);
+
+    void GetDofList(DofsVectorType& ElementalDofList,ProcessInfo& CurrentProcessInfo);
 
     ///@}
     ///@name Access
@@ -148,32 +153,13 @@ public:
     ///@{
 
     /// Turn back information as a string.
-    virtual std::string Info() const
-    {
-        return "KratosALEApplication";
-    }
+//      virtual String Info() const;
 
     /// Print information about this object.
-    virtual void PrintInfo(std::ostream& rOStream) const
-    {
-        rOStream << Info();
-        PrintData(rOStream);
-    }
+//      virtual void PrintInfo(std::ostream& rOStream) const;
 
-    ///// Print object's data.
-    virtual void PrintData(std::ostream& rOStream) const
-    {
-        KRATOS_WATCH("in my application");
-        KRATOS_WATCH(KratosComponents<VariableData>::GetComponents().size() );
-        rOStream << "Variables:" << std::endl;
-        KratosComponents<VariableData>().PrintData(rOStream);
-        rOStream << std::endl;
-        rOStream << "Elements:" << std::endl;
-        KratosComponents<Element>().PrintData(rOStream);
-        rOStream << std::endl;
-        rOStream << "Conditions:" << std::endl;
-        KratosComponents<Condition>().PrintData(rOStream);
-    }
+    /// Print object's data.
+//      virtual void PrintData(std::ostream& rOStream) const;
 
 
     ///@}
@@ -224,24 +210,22 @@ private:
     ///@name Static Member Variables
     ///@{
 
-
-
-    //       static const ApplicationCondition  msApplicationCondition;
-
     ///@}
     ///@name Member Variables
     ///@{
-    const StructuralMeshMovingElement mStructuralMeshMovingElement2D3N;
-    const StructuralMeshMovingElement mStructuralMeshMovingElement2D4N;
-    const StructuralMeshMovingElement mStructuralMeshMovingElement3D4N;
-    const StructuralMeshMovingElement mStructuralMeshMovingElement3D8N;
-    const StructuralMeshMovingElement mStructuralMeshMovingElement3D6N;
-    const StructuralMeshMovingElement mStructuralMeshMovingElement3D15N;
-    const LaplacianMeshMovingElement<2>mLaplacianMeshMovingElement2D3N;
+
+
+    ///@}
+    ///@name Serialization
+    ///@{
+
+    friend class Serializer;
+
+    LaplacianMeshMovingElement() {}
+
     ///@}
     ///@name Private Operators
     ///@{
-
 
     ///@}
     ///@name Private Operations
@@ -262,19 +246,19 @@ private:
     ///@name Un accessible methods
     ///@{
 
+
     /// Assignment operator.
-    KratosALEApplication& operator=(KratosALEApplication const& rOther);
+    //LaplacianMeshMovingElement& operator=(const LaplacianMeshMovingElement& rOther);
 
     /// Copy constructor.
-    KratosALEApplication(KratosALEApplication const& rOther);
+    //LaplacianMeshMovingElement(const LaplacianMeshMovingElement& rOther);
 
 
     ///@}
 
-}; // Class KratosALEApplication
+}; // Class LaplacianMeshMovingElement
 
 ///@}
-
 
 ///@name Type Definitions
 ///@{
@@ -284,9 +268,25 @@ private:
 ///@name Input and output
 ///@{
 
+
+/// input stream function
+/*  inline std::istream& operator >> (std::istream& rIStream,
+                    LaplacianMeshMovingElement& rThis);
+*/
+/// output stream function
+/*  inline std::ostream& operator << (std::ostream& rOStream,
+                    const LaplacianMeshMovingElement& rThis)
+    {
+      rThis.PrintInfo(rOStream);
+      rOStream << std::endl;
+      rThis.PrintData(rOStream);
+
+      return rOStream;
+    }*/
 ///@}
+
 
 
 }  // namespace Kratos.
 
-#endif // KRATOS_ALE_APPLICATION_H_INCLUDED  defined
+#endif // KRATOS_LAPLACIAN_MESHMOVING_ELEMENT_INCLUDED  defined

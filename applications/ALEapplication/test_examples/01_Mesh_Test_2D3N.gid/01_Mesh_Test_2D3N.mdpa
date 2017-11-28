@@ -1074,7 +1074,7 @@ Begin Nodes
 End Nodes
 
 
-Begin Elements StructuralMeshMovingElement2D3N// GUI group identifier: Fluid
+Begin Elements LaplacianMeshMovingElement2D3N// GUI group identifier: Fluid
          1          1        798        788        813 
          2          1        788        784        804 
          3          1        784        779        801 

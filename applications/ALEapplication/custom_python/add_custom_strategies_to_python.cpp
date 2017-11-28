@@ -58,6 +58,7 @@
 //strategies
 #include "solving_strategies/strategies/solving_strategy.h"
 #include "custom_strategies/strategies/structural_meshmoving_strategy.h"
+#include "custom_strategies/strategies/laplacian_meshmoving_strategy.h"
 
 //linear solvers
 #include "linear_solvers/linear_solver.h"
@@ -85,6 +86,11 @@ void  AddCustomStrategiesToPython()
              init<ModelPart&, LinearSolverType::Pointer, int, bool, bool >() )
             .def("UpdateReferenceMesh",&StructuralMeshMovingStrategy< SparseSpaceType, LocalSpaceType, LinearSolverType >::UpdateReferenceMesh)
             .def("CalculateMeshVelocities",&StructuralMeshMovingStrategy< SparseSpaceType, LocalSpaceType, LinearSolverType >::CalculateMeshVelocities)
+            ;
+    class_< LaplacianMeshMovingStrategy< SparseSpaceType, LocalSpaceType, LinearSolverType >,
+            bases< BaseSolvingStrategyType >,  boost::noncopyable >
+            ("LaplacianMeshMovingStrategy",
+             init<ModelPart&, LinearSolverType::Pointer, int, int, bool >() )
             ;
 
 }
