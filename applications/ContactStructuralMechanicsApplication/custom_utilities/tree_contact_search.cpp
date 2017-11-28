@@ -21,11 +21,11 @@
 
 namespace Kratos
 {
-TreeContactSearch::TreeContactSearch(
-        ModelPart & rMainModelPart,
-        Parameters ThisParameters
-        ):mrMainModelPart(rMainModelPart.GetSubModelPart("Contact")),
-        mDimension(rMainModelPart.GetProcessInfo()[DOMAIN_SIZE])
+TreeContactSearch::TreeContactSearch( 
+    ModelPart & rMainModelPart, 
+    Parameters ThisParameters 
+    ):mrMainModelPart(rMainModelPart.GetSubModelPart("Contact")), 
+        mThisParameters(ThisParameters)
 {        
     Parameters DefaultParameters = Parameters(R"(
     {
@@ -36,19 +36,27 @@ TreeContactSearch::TreeContactSearch(
         "dual_search_check"                    : false,
         "strict_search_check"                  : true,
         "use_exact_integration"                : true,
+        "condition_name"                       : "",  
+        "final_string"                         : "",  
         "inverted_search"                      : false
     })" );
     
-    ThisParameters.ValidateAndAssignDefaults(DefaultParameters);
-
-    mAllocationSize = ThisParameters["allocation_size"].GetInt();
-    mSearchFactor = ThisParameters["search_factor"].GetDouble();
-    mDualSearchCheck = ThisParameters["dual_search_check"].GetBool();
-    mStrictSearchCheck = ThisParameters["strict_search_check"].GetBool();
-    mUseExactIntegration = ThisParameters["use_exact_integration"].GetBool();
-    mInvertedSearch = ThisParameters["inverted_search"].GetBool();
-    mSearchTreeType = ConvertSearchTree(ThisParameters["type_search"].GetString());
-    mBucketSize = ThisParameters["bucket_size"].GetInt();
+    mThisParameters.ValidateAndAssignDefaults(DefaultParameters);
+    
+    mInvertedSearch = mThisParameters["inverted_search"].GetBool();
+    
+    // Updating the base condition
+    const GeometryType& auxiliar_geom = mrMainModelPart.Conditions().begin()->GetGeometry();
+    mGeometryType = auxiliar_geom.GetGeometryType();
+    
+    std::string condition_name = mThisParameters["condition_name"].GetString(); 
+    condition_name.append("Condition"); 
+    condition_name.append(std::to_string(auxiliar_geom.WorkingSpaceDimension()));
+    condition_name.append("D"); 
+    condition_name.append(std::to_string(auxiliar_geom.size())); 
+    condition_name.append("N"); 
+    condition_name.append(mThisParameters["final_string"].GetString());
+    mrCondition = KratosComponents<Condition>::Get(condition_name);
     
     NodesArrayType& nodes_array = mrMainModelPart.Nodes();
     const int num_nodes = static_cast<int>(nodes_array.size());
@@ -77,6 +85,9 @@ TreeContactSearch::TreeContactSearch(
 
 void TreeContactSearch::InitializeMortarConditions()
 {
+//     // The allocation size
+//     const unsigned int allocation_size = mThisParameters["allocation_size"].GetInt();
+    
     // Iterate in the conditions
     ConditionsArrayType& conditions_array = mrMainModelPart.Conditions();
     const int num_conditions = static_cast<int>(conditions_array.size());
@@ -87,7 +98,7 @@ void TreeContactSearch::InitializeMortarConditions()
         auto it_cond = conditions_array.begin() + i;
 
         if (it_cond->Has(MAPPING_PAIRS) == false) it_cond->SetValue(MAPPING_PAIRS, ConditionMap::Pointer(new ConditionMap)); 
-//             it_cond->GetValue(MAPPING_PAIRS)->reserve(mAllocationSize); 
+//             it_cond->GetValue(MAPPING_PAIRS)->reserve(allocation_size); 
     }
 }
 
@@ -241,7 +252,7 @@ void TreeContactSearch::CreatePointListMortar()
 
 void TreeContactSearch::UpdatePointListMortar()
 {
-    const double& delta_time = mrMainModelPart.GetProcessInfo()[DELTA_TIME];
+    const double delta_time = mrMainModelPart.GetProcessInfo()[DELTA_TIME];
     
     const int num_points = static_cast<int>(mPointListDestination.size());
     
@@ -260,24 +271,33 @@ void TreeContactSearch::UpdateMortarConditions()
     // Calculate the mean of the normal in all the nodes
     ContactUtilities::ComputeNodesMeanNormalModelPart(mrMainModelPart); 
     
-    const double& delta_time = mrMainModelPart.GetProcessInfo()[DELTA_TIME];
+    const double delta_time = mrMainModelPart.GetProcessInfo()[DELTA_TIME];
     
     // We check if we are in a dynamic or static case
     const bool dynamic = mrMainModelPart.NodesBegin()->SolutionStepsDataHas(VELOCITY_X) ;
     
     // Taking the ACTIVE_CHECK_FACTOR
-    const double& active_check_factor = mrMainModelPart.GetProcessInfo()[ACTIVE_CHECK_FACTOR];
+    const double active_check_factor = mrMainModelPart.GetProcessInfo()[ACTIVE_CHECK_FACTOR];
+    
+    // Some auxiliar values
+    const unsigned int allocation_size = mThisParameters["allocation_size"].GetInt();           // Allocation size for the vectors and max number of potential results 
+    const double search_factor = mThisParameters["search_factor"].GetDouble();                  // The search factor to be considered 
+    bool dual_search_check = mThisParameters["dual_search_check"].GetBool();                    // The search is done reciprocally
+    bool strict_search_check = mThisParameters["strict_search_check"].GetBool();                // The search is done requiring IsInside as true
+    bool use_exact_integration = mThisParameters["use_exact_integration"].GetBool();            // The search filter the results with the exact integration
+    SearchTreeType type_search = ConvertSearchTree(mThisParameters["type_search"].GetString()); // The search tree considered
+    unsigned int bucket_size = mThisParameters["bucket_size"].GetInt();                         // Bucket size for kd-tree
     
 //         #pragma omp parallel 
 //         {
         // Initialize values
-        PointVector points_found(mAllocationSize);
+        PointVector points_found(allocation_size);
         unsigned int number_points_found = 0;    
         
         // Create a tree
         // It will use a copy of mNodeList (a std::vector which contains pointers)
         // Copying the list is required because the tree will reorder it for efficiency
-        KDTree tree_points(mPointListDestination.begin(), mPointListDestination.end(), mBucketSize);
+        KDTree tree_points(mPointListDestination.begin(), mPointListDestination.end(), bucket_size);
         
         // Iterate in the conditions
         ConditionsArrayType& conditions_array = mrMainModelPart.Conditions();
@@ -290,19 +310,19 @@ void TreeContactSearch::UpdateMortarConditions()
             
             if (it_cond->Is(SLAVE) == !mInvertedSearch)
             {
-                if (mSearchTreeType == KdtreeInRadius)
+                if (type_search == KdtreeInRadius)
                 {
                     GeometryType& geometry = it_cond->GetGeometry();
                     const Point& center = dynamic ? ContactUtilities::GetHalfJumpCenter(geometry, delta_time) : geometry.Center(); // NOTE: Center in half delta time or real center
                     
-                    const double search_radius = mSearchFactor * Radius(it_cond->GetGeometry());
+                    const double search_radius = search_factor * Radius(it_cond->GetGeometry());
 
-                    number_points_found = tree_points.SearchInRadius(center, search_radius, points_found.begin(), mAllocationSize);
+                    number_points_found = tree_points.SearchInRadius(center, search_radius, points_found.begin(), allocation_size);
                 }
-                else if (mSearchTreeType == KdtreeInBox)
+                else if (type_search == KdtreeInBox)
                 {
                     // Auxiliar values
-                    const double length_search = mSearchFactor * it_cond->GetGeometry().Length();
+                    const double length_search = search_factor * it_cond->GetGeometry().Length();
                     
                     // Compute max/min points
                     Node<3> min_point, max_point;
@@ -322,11 +342,11 @@ void TreeContactSearch::UpdateMortarConditions()
                     ContactUtilities::ScaleNode<Node<3>>(min_point, normal_min, length_search);
                     ContactUtilities::ScaleNode<Node<3>>(max_point, normal_max, length_search);
                     
-                    number_points_found = tree_points.SearchInBox(min_point, max_point, points_found.begin(), mAllocationSize);
+                    number_points_found = tree_points.SearchInBox(min_point, max_point, points_found.begin(), allocation_size);
                 }
                 else
                 {
-                    KRATOS_ERROR << " The type search is not implemented yet does not exist!!!!. SearchTreeType = " << mSearchTreeType << std::endl;
+                    KRATOS_ERROR << " The type search is not implemented yet does not exist!!!!. SearchTreeType = " << type_search << std::endl;
                 }
                 
                 if (number_points_found > 0)
@@ -338,7 +358,7 @@ void TreeContactSearch::UpdateMortarConditions()
                     const double active_check_length = this_geometry.Length() *active_check_factor;
                     
                     // If not active we check if can be potentially in contact
-                    if (mUseExactIntegration == false) // LEGACY WAY
+                    if (use_exact_integration == false) // LEGACY WAY
                     {
                         for(unsigned int i_pair = 0; i_pair < number_points_found; ++i_pair)
                         {   
@@ -348,11 +368,11 @@ void TreeContactSearch::UpdateMortarConditions()
                             
                             if (condition_checked_right == OK)
                             {    
-                                SearchUtilities::ContactContainerFiller<true>(conditions_pointers_destination, p_cond_slave, p_cond_origin, contact_normal_origin, p_cond_origin->GetValue(NORMAL), active_check_length, mDualSearchCheck, mStrictSearchCheck); 
+                                SearchUtilities::ContactContainerFiller<true>(conditions_pointers_destination, p_cond_slave, p_cond_origin, contact_normal_origin, p_cond_origin->GetValue(NORMAL), active_check_length, dual_search_check, strict_search_check); 
                             }
                             else if (condition_checked_right == AlreadyInTheMap)
                             {
-                                SearchUtilities::ContactContainerFiller<false>(conditions_pointers_destination, p_cond_slave, p_cond_origin, contact_normal_origin, p_cond_origin->GetValue(NORMAL), active_check_length, mDualSearchCheck, mStrictSearchCheck); 
+                                SearchUtilities::ContactContainerFiller<false>(conditions_pointers_destination, p_cond_slave, p_cond_origin, contact_normal_origin, p_cond_origin->GetValue(NORMAL), active_check_length, dual_search_check, strict_search_check); 
                             }
                         }
                     }
@@ -475,8 +495,12 @@ void TreeContactSearch::CleanMortarConditions()
 {
     ConditionsArrayType& conditions_array = mrMainModelPart.Conditions();
     const int num_conditions = static_cast<int>(conditions_array.size());
-
-    const double& active_check_factor = mrMainModelPart.GetProcessInfo()[ACTIVE_CHECK_FACTOR];
+    
+    // Some auxiliar values
+    const double active_check_factor = mrMainModelPart.GetProcessInfo()[ACTIVE_CHECK_FACTOR];
+    const bool dual_search_check = mThisParameters["dual_search_check"].GetBool();                    // The search is done reciprocally
+    const bool strict_search_check = mThisParameters["strict_search_check"].GetBool();                // The search is done requiring IsInside as true
+    const bool use_exact_integration = mThisParameters["use_exact_integration"].GetBool();            // The search filter the results with the exact integration
     
     #pragma omp parallel for 
     for(int i = 0; i < num_conditions; ++i) 
@@ -491,11 +515,11 @@ void TreeContactSearch::CleanMortarConditions()
             const array_1d<double, 3>& contact_normal = it_cond->GetValue(NORMAL);
             const double active_check_length = this_geometry.Length() * active_check_factor;
             
-            if (mUseExactIntegration == false) // LEGACY WAY
+            if (use_exact_integration == false) // LEGACY WAY
             {
                 for (auto it_pair = conditions_pointers_destination->begin(); it_pair != conditions_pointers_destination->end(); ++it_pair )
                 {
-                    SearchUtilities::ContactContainerFiller<false>(conditions_pointers_destination, (*it_cond.base()), (it_pair->first), contact_normal, (it_pair->first)->GetValue(NORMAL), active_check_length, mDualSearchCheck, mStrictSearchCheck);
+                    SearchUtilities::ContactContainerFiller<false>(conditions_pointers_destination, (*it_cond.base()), (it_pair->first), contact_normal, (it_pair->first)->GetValue(NORMAL), active_check_length, dual_search_check, strict_search_check);
                 }
             }
             else
@@ -579,14 +603,6 @@ inline CheckResult TreeContactSearch::CheckCondition(
     if (pCond1 == pCond2) // Avoiding "auto self-contact"
     {
         return Fail;
-    }
-    
-    if (((pCond1->Has(ELEMENT_POINTER)) && (pCond2->Has(ELEMENT_POINTER))) == true)
-    {
-        if ((pCond1->GetValue(ELEMENT_POINTER) != pCond2->GetValue(ELEMENT_POINTER)) == false) // Avoiding "auto element contact"
-        {
-            return Fail;
-        }
     }
 
     // Avoid conditions oriented in the same direction
@@ -679,6 +695,30 @@ void TreeContactSearch::TotalResetContactOperators()
         if (condition_pointers != nullptr)  condition_pointers->clear();
     }   
 }
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+// Condition UpdateConditionType(
+// // std::string UpdateConditionType(
+//     const GeometryType& ThisGeometry,
+//     std::string& InitialString,
+//     std::string& FinalString
+//     )
+// {
+//     const unsigned int dimension = ThisGeometry.WorkingSpaceDimension();
+//     const unsigned int number_nodes = ThisGeometry.size();
+//     
+//     std::string condition_name = InitialString; 
+//     condition_name.append("Condition"); 
+//     condition_name.append(std::to_string(dimension));
+//     condition_name.append("D"); 
+//     condition_name.append(std::to_string(number_nodes)); 
+//     condition_name.append("N"); 
+//     condition_name.append(FinalString);
+//     return KratosComponents<Condition>::Get(condition_name);
+// //     return condition_name;  
+// }
 
 /***********************************************************************************/
 /***********************************************************************************/

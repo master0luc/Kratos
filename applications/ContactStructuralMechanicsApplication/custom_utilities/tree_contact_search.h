@@ -110,10 +110,7 @@ public:
      * InterfacePart = InterfaceMapper.GenerateInterfacePart(Complete_Model_Part)
      */
     
-    TreeContactSearch(
-        ModelPart & rMainModelPart,
-        Parameters ThisParameters =  Parameters(R"({})")
-        );
+    TreeContactSearch( ModelPart& rMainModelPart, Parameters ThisParameters =  Parameters(R"({})") ); 
     
     virtual ~TreeContactSearch()= default;;
 
@@ -319,17 +316,12 @@ private:
     ///@name Member Variables
     ///@{
   
-    ModelPart& mrMainModelPart;               // The main model part
-    unsigned int mDimension;                  // Dimension size of the space
-    unsigned int mAllocationSize;             // Allocation size for the vectors and max number of potential results
-    double mSearchFactor;                     // The search factor to be considered
-    bool mDualSearchCheck;                    // The search is done reciprocally
-    bool mStrictSearchCheck;                  // The search is done requiring IsInside as true
-    bool mUseExactIntegration;                // The search filter the results with the exact integration
-    bool mInvertedSearch;                     // The search will be done inverting the way master and slave/master is assigned
-    SearchTreeType mSearchTreeType;           // The search tree considered
-    unsigned int mBucketSize;                 // Bucket size for kd-tree
-    PointVector mPointListDestination;        // A list that contents the all the points (from nodes) from the modelpart 
+    ModelPart& mrMainModelPart;                      // The main model part
+    GeometryData::KratosGeometryType mGeometryType;  // The current size of the geometry considered
+    Parameters mThisParameters;                      // The configuration parameters
+    bool mInvertedSearch;                            // The search will be done inverting the way master and slave/master is assigned
+    Condition mrCondition;                           // The base condition used to create the new ones
+    PointVector mPointListDestination;               // A list that contents the all the points (from nodes) from the modelpart 
 
     ///@}
     ///@name Private Operators

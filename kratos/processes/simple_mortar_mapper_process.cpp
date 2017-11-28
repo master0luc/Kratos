@@ -248,7 +248,10 @@ inline bounded_matrix<double, TNumNodes, TNumNodes> SimpleMortarMapperProcess<TD
         }
     }
     
-    return Ae_data.CalculateAe();
+    bounded_matrix<double, TNumNodes, TNumNodes> Ae;
+    Ae_data.CalculateAe(Ae);
+    
+    return Ae;
 }
 
 /***********************************************************************************/

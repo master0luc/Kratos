@@ -84,7 +84,7 @@ namespace Kratos
 
         /**
         * It removes one particular condition from the map
-        * @param pCond: The condition to remove
+        * @param pCond The condition to remove
         */     
         void RemoveCondition(Condition::Pointer pCond)
         {
@@ -97,7 +97,7 @@ namespace Kratos
         
         /**
         * It adds one new condition
-        * @param pCond: The condition to set
+        * @param pCond The condition to set
         */
         void AddNewCondition(Condition::Pointer pCond)
         {
@@ -106,7 +106,7 @@ namespace Kratos
         
         /**
         * It adds one new condition, as active
-        * @param pCond: The condition to set
+        * @param pCond The condition to set
         */
         void AddNewActiveCondition(Condition::Pointer pCond)
         {
@@ -115,7 +115,7 @@ namespace Kratos
         
         /**
         * It adds one new condition, as inactive
-        * @param pCond: The condition to set
+        * @param pCond The condition to set
         */
         void AddNewInactiveCondition(Condition::Pointer pCond)
         {
@@ -124,8 +124,8 @@ namespace Kratos
         
         /**
         * It sets one particular condition as active or not
-        * @param pCond: The condition to set
-        * @param Active: The flag, true if active, false otherwise
+        * @param pCond The condition to set
+        * @param Active The flag, true if active, false otherwise
         */
         void SetActive(Condition::Pointer pCond, const bool Active = true)
         {
@@ -138,7 +138,7 @@ namespace Kratos
         
         /**
         * It checks if one particular condition is active
-        * @param pCond: The condition to check
+        * @param pCond The condition to check
         * @return True if it is active, false otherwise
         */
         bool IsActive(Condition::Pointer pCond) const 

@@ -106,7 +106,7 @@ public:
     
     typedef MortarOperator<NumNodes>                                      MortarConditionMatrices;
     
-    typedef ExactMortarIntegrationUtility<TDim, TNumNodes, false>              IntegrationUtility;
+    typedef ExactMortarIntegrationUtility<TDim, NumNodes, false>               IntegrationUtility;
          
     ///@}
     ///@name Life Cycle
@@ -406,7 +406,7 @@ protected:
             {
                 for (unsigned int i_node = 0; i_node < NumNodes; ++i_node)
                 {
-                    const double value = GeometryInput[i_node].FastGetSolutionStepvalue(TEMPERATURE);
+                    const double value = GeometryInput[i_node].FastGetSolutionStepValue(TEMPERATURE);
                     u2(i_node, 0) = value;
                 }
             }
@@ -414,7 +414,7 @@ protected:
             {
                 for (unsigned int i_node = 0; i_node < NumNodes; ++i_node)
                 {
-                    const array_1d<double, 3>& value = GeometryInput[i_node].FastGetSolutionStepvalue(DISPLACEMENT);
+                    const array_1d<double, 3>& value = GeometryInput[i_node].FastGetSolutionStepValue(DISPLACEMENT);
                     for (unsigned int i_dof = 0; i_dof < TTensor; ++i_dof)
                     {
                         u2(i_node, i_dof) = value[i_dof];

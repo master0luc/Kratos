@@ -777,14 +777,12 @@ public:
     
     /**
      * Updating the Master pair
-     * @param pCond The pointer of the current master
+     * @param MasterGeometry The geometry of the master
      */
     
-    void UpdateMasterPair(const Condition::Pointer& pCond) override
+    void UpdateMasterPair(const GeometryType& MasterGeometry) override
     {
-        BaseClassType::UpdateMasterPair(pCond);
-        
-        const GeometryType& MasterGeometry = pCond->GetGeometry();
+        BaseClassType::UpdateMasterPair(MasterGeometry);
         
         u2old = MortarUtilities::GetVariableMatrix<TDim,TNumNodes>(MasterGeometry, DISPLACEMENT, 1) - MortarUtilities::GetVariableMatrix<TDim,TNumNodes>(MasterGeometry, DISPLACEMENT, 2);
     }
