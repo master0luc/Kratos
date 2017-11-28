@@ -834,7 +834,7 @@ public:
      * Calculate Ae and DeltaAe matrices
      * @param SlaveGeometry The geometry of the slave side
      * @param SlaveNormal The normal of the slave side
-     * @param pMasterCondition The pointer to the master side
+     * @param MasterGeometry The master side geometry
      * @param rDerivativeData The derivatives container
      * @param rVariables The kinematic variables
      * @param ConsiderNormalVariation If consider the normal derivative
@@ -845,7 +845,7 @@ public:
     static inline bool CalculateAeAndDeltaAe(
         GeometryType& SlaveGeometry,
         const array_1d<double, 3>& SlaveNormal,
-        Condition::Pointer pMasterCondition,
+        GeometryType& MasterGeometry,
         DerivativeDataType& rDerivativeData,
         GeneralVariables& rVariables,
         const NormalDerivativesComputation ConsiderNormalVariation,
@@ -862,9 +862,6 @@ public:
 
         // Initialize general variables for the current master element
         rVariables.Initialize();
-        
-        // Master geometry
-        GeometryType& master_geometry = pMasterCondition->GetGeometry();
         
         for (unsigned int i_geom = 0; i_geom < ConditionsPointsSlave.size(); ++i_geom)
         {
@@ -918,23 +915,23 @@ public:
                     
                     GeometryType::CoordinatesArrayType slave_gp_global;
                     SlaveGeometry.GlobalCoordinates( slave_gp_global, local_point_parent );
-                    MortarUtilities::FastProjectDirection( master_geometry, slave_gp_global, projected_gp_global, SlaveNormal, -gp_normal ); // The opposite direction
+                    MortarUtilities::FastProjectDirection( MasterGeometry, slave_gp_global, projected_gp_global, SlaveNormal, -gp_normal ); // The opposite direction
                     
                     GeometryType::CoordinatesArrayType projected_gp_local;
-                    master_geometry.PointLocalCoordinates( projected_gp_local, projected_gp_global.Coordinates( ) ) ;
+                    MasterGeometry.PointLocalCoordinates( projected_gp_local, projected_gp_global.Coordinates( ) ) ;
 
-                    master_geometry.ShapeFunctionsValues( rVariables.NMaster,    projected_gp_local );         
-                    master_geometry.ShapeFunctionsLocalGradients( rVariables.DNDeMaster, projected_gp_local );
-                    rVariables.jMaster = master_geometry.Jacobian( rVariables.jMaster, projected_gp_local);
+                    MasterGeometry.ShapeFunctionsValues( rVariables.NMaster,    projected_gp_local );         
+                    MasterGeometry.ShapeFunctionsLocalGradients( rVariables.DNDeMaster, projected_gp_local );
+                    rVariables.jMaster = MasterGeometry.Jacobian( rVariables.jMaster, projected_gp_local);
                     
                     // Update the derivative of the integration vertex (just in 3D)
-                    if (TDim == 3) CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, ConsiderNormalVariation, SlaveGeometry, master_geometry, SlaveNormal);
+                    if (TDim == 3) CalculateDeltaCellVertex(rVariables, rDerivativeData, belong_array, ConsiderNormalVariation, SlaveGeometry, MasterGeometry, SlaveNormal);
                                     
                     // Update the derivative of DetJ
                     CalculateDeltaDetjSlave(decomp_geom, rVariables, rDerivativeData); 
                     
                     // Update the derivatives of the shape functions and the gap
-                    CalculateDeltaN1(rVariables, rDerivativeData, SlaveGeometry, master_geometry, SlaveNormal, decomp_geom, local_point_decomp, local_point_parent, ConsiderNormalVariation);
+                    CalculateDeltaN1(rVariables, rDerivativeData, SlaveGeometry, MasterGeometry, SlaveNormal, decomp_geom, local_point_decomp, local_point_parent, ConsiderNormalVariation);
                     
                     // Integrate
                     const double integration_weight = AxiSymCoeff * integration_points_slave[point_number].Weight();

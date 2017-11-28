@@ -135,9 +135,9 @@ public:
    
     /**
      * Creates a new element pointer from an arry of nodes
-     * @param NewId: the ID of the new element
-     * @param ThisNodes: the nodes of the new element
-     * @param pProperties: the properties assigned to the new element
+     * @param NewId the ID of the new element
+     * @param ThisNodes the nodes of the new element
+     * @param pProperties the properties assigned to the new element
      * @return a Pointer to the new element
      */
     
@@ -149,9 +149,9 @@ public:
     
     /**
      * Creates a new element pointer from an existing geometry
-     * @param NewId: the ID of the new element
-     * @param pGeom: the  geometry taken to create the condition
-     * @param pProperties: the properties assigned to the new element
+     * @param NewId the ID of the new element
+     * @param pGeom the  geometry taken to create the condition
+     * @param pProperties the properties assigned to the new element
      * @return a Pointer to the new element
      */
     
@@ -167,8 +167,8 @@ public:
 
     /**
      * Sets on rResult the ID's of the element degrees of freedom
-     * @return rResult: The result vector with the ID's of the DOF
-     * @param rCurrentProcessInfo: the current process info instance
+     * @return rResult The result vector with the ID's of the DOF
+     * @param rCurrentProcessInfo the current process info instance
      */
     
     void EquationIdVector( 
@@ -179,7 +179,7 @@ public:
     /**
      * Sets on ConditionalDofList the degrees of freedom of the considered element geometry
      * @return rConditionalDofList
-     * @param rCurrentProcessInfo: the current process info instance
+     * @param rCurrentProcessInfo the current process info instance
      */
     
     void GetDofList( 

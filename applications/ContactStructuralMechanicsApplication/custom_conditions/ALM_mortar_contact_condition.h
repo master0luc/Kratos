@@ -113,6 +113,10 @@ public:
     
     static constexpr unsigned int MatrixSize = TFrictional == true ? TDim * (TNumNodes + TNumNodes + TNumNodes) : TDim * (TNumNodes + TNumNodes) + TNumNodes;
     
+    typedef bounded_matrix<double, MatrixSize, MatrixSize>                                        LocalMatrixType;
+    
+    typedef array_1d<double, MatrixSize>                                                          LocalVectorType;
+    
     typedef MortarKinematicVariablesWithDerivatives<TDim, TNumNodes>                             GeneralVariables;
     
     typedef DualLagrangeMultiplierOperatorsWithDerivatives<TDim, TNumNodes, TFrictional, TNormalVariation> AeData;
@@ -429,10 +433,8 @@ protected:
     ///@{
 
     IntegrationMethod mThisIntegrationMethod;            // Integration order of the element
-    unsigned int mPairIndex;                             // The current index contact pair
-    unsigned int mPairSize;                              // The number of contact pairs
-    std::vector<Condition::Pointer> mThisMasterElements; // Vector which contains the pointers to the master elements
-    std::vector<bool> mThisMasterElementsActive;         // Vector which contains if the conditions are active or not
+    
+    GeometryType::Pointer mpMasterGeometry;              // The geometry of the pair "condition"
    
     unsigned int mIntegrationOrder;                      // The integration order to consider
     
@@ -497,13 +499,6 @@ protected:
         );
     
     /**
-     * This function loops over all conditions and calculates the overall number of DOFs
-     * total_dofs = SUM( master_u_dofs + 2 * slave_u_dofs) 
-     */
-    
-    const unsigned int CalculateConditionSize( );
-    
-    /**
      * Calculate condition kinematics
      */
     
@@ -511,37 +506,15 @@ protected:
         GeneralVariables& rVariables,
         const DerivativeDataType rDerivativeData,
         const array_1d<double, 3> MasterNormal,
-        const unsigned int PairIndex,
         const PointType& LocalPointDecomp,
         const PointType& LocalPointParent,
         GeometryPointType& GeometryDecomp,
-        const bool DualLM = true,
-        Matrix DeltaPosition = ZeroMatrix(TNumNodes, TDim)
+        const bool DualLM = true
         );
 
     /********************************************************************************/
     /**************** METHODS TO CALCULATE MORTAR CONDITION MATRICES ****************/
     /********************************************************************************/
-
-    /**
-     * Calculation and addition of the matrices of the LHS of a contact pair
-     */
-
-    void CalculateAndAddLHS( 
-        LocalSystem& rLocalSystem,
-        const bounded_matrix<double, MatrixSize, MatrixSize>& LHS_contact_pair, 
-        const unsigned int rPairIndex
-        );
-
-    /**
-     * Assembles the contact pair LHS block into the condition's LHS
-     */
-    
-    void AssembleContactPairLHSToConditionSystem( 
-        const bounded_matrix<double, MatrixSize, MatrixSize>& rPairLHS,
-        MatrixType& rConditionLHS,
-        const unsigned int rPairIndex
-        );
 
     /**
      * Calculates the local contibution of the LHS
@@ -551,26 +524,6 @@ protected:
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DerivativeDataType& rDerivativeData,
         const unsigned int rActiveInactive
-        );
-    
-    /**
-     * Calculation and addition fo the vectors of the RHS of a contact pair
-     */
-    
-    void CalculateAndAddRHS( 
-        LocalSystem& rLocalSystem,
-        const array_1d<double, MatrixSize>& RHS_contact_pair, 
-        const unsigned int rPairIndex
-        );
-    
-    /**
-     * Assembles the contact pair RHS block into the condition's RHS
-     */
-    
-    void AssembleContactPairRHSToConditionSystem( 
-        const array_1d<double, MatrixSize>& rPairRHS,
-        VectorType& rConditionRHS,
-        const unsigned int rPairIndex
         );
     
     /**
@@ -594,8 +547,7 @@ protected:
     void MasterShapeFunctionValue(
         GeneralVariables& rVariables,
         const array_1d<double, 3> MasterNormal,
-        const PointType& LocalPoint,
-        const unsigned int PairIndex
+        const PointType& LocalPoint
     );
     
     /******************************************************************/
@@ -617,7 +569,7 @@ protected:
      * It returns theintegration method considered
      */
     
-    IntegrationMethod GetIntegrationMethod() override
+    IntegrationMethod GetIntegrationMethod() override // TODO: Replace with a case
     {
         if (mIntegrationOrder == 1)
         {

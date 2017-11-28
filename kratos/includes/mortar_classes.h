@@ -624,10 +624,8 @@ public:
      * @param pCond The pointer of the current master
      */
     
-    virtual void UpdateMasterPair(const Condition::Pointer& pCond)
-    {
-        const GeometryType& MasterGeometry =  pCond->GetGeometry();
-        
+    virtual void UpdateMasterPair(const GeometryType& MasterGeometry)
+    {        
         NormalMaster = MortarUtilities::GetVariableMatrix<TDim,TNumNodes>(MasterGeometry,  NORMAL, 0);
         
         // Displacements, coordinates and normals of the master
