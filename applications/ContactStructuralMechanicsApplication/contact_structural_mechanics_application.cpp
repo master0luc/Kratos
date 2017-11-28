@@ -81,7 +81,6 @@ void KratosContactStructuralMechanicsApplication::Register()
     // VARIABLES
     /* Mortar method general variables */
     KRATOS_REGISTER_VARIABLE( INTEGRATION_ORDER_CONTACT )                       // The integration order computed in the contact
-    KRATOS_REGISTER_VARIABLE( ELEMENT_POINTER )                                 // A pointer to the element belonging to this condition
     KRATOS_REGISTER_VARIABLE( ACTIVE_CHECK_FACTOR )                             // The factor employed to serach an active/inactive node
     
     /* Weighted values */
@@ -96,7 +95,6 @@ void KratosContactStructuralMechanicsApplication::Register()
     KRATOS_REGISTER_VARIABLE( AUGMENTED_TANGENT_CONTACT_PRESSURE )              // The resultant augmented pressure in the tangent direction
     KRATOS_REGISTER_VARIABLE( TANGENT_FACTOR )                                  // The proportion between the tangent and normal penalty
     KRATOS_REGISTER_VARIABLE( CONSIDER_NORMAL_VARIATION )                       // A value used to check if consider normal variation or not
-    KRATOS_REGISTER_VARIABLE( CONSIDER_PAIR_VARIATION )                         // A value used to check if consider variation or not in the active inactive pairs
     KRATOS_REGISTER_VARIABLE( ADAPT_PENALTY )                                   // To set if the penalty is recalculated or not
     KRATOS_REGISTER_VARIABLE( MAX_GAP_FACTOR )                                  // The factor between the nodal H and the max gap considered to recalculate the penalty
     

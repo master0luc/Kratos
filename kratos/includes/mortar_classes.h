@@ -1348,7 +1348,7 @@ public:
      * Calculates the matrix Ae. To avoid problems in the inversion the matrix is normalized
      * Popp thesis page 70. Equation 3.65
      */
-    bounded_matrix<double, TNumNodes, TNumNodes> CalculateAe()
+    bool CalculateAe(bounded_matrix<double, TNumNodes, TNumNodes>& Ae)
     {        
         const double tolerance = std::numeric_limits<double>::epsilon(); 
         
@@ -1362,9 +1362,10 @@ public:
         double aux_det = MathUtils<double>::DetMat<TNumNodes>(normalized_Me); 
         if (std::abs(aux_det) >= tolerance) 
         { 
-            const bounded_matrix<double, TNumNodes, TNumNodes> normalized_inv_Me = MathUtils<double>::InvertMatrix<TNumNodes>(normalized_Me, aux_det, tolerance);  
+            const bounded_matrix<double, TNumNodes, TNumNodes>& normalized_inv_Me = MathUtils<double>::InvertMatrix<TNumNodes>(normalized_Me, aux_det, tolerance);  
              
-            return (1.0/norm_me) * prod(De, normalized_inv_Me); 
+            noalias(Ae) = (1.0/norm_me) * prod(De, normalized_inv_Me); 
+            return true;
         } 
     #ifdef KRATOS_DEBUG
         else
@@ -1374,7 +1375,8 @@ public:
         }
     #endif
         
-        return IdentityMatrix(TNumNodes);  
+        noalias(Ae) = IdentityMatrix(TNumNodes);  
+        return false;
     }   
     
     /**

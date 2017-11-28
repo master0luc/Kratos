@@ -569,31 +569,16 @@ protected:
      * It returns theintegration method considered
      */
     
-    IntegrationMethod GetIntegrationMethod() override // TODO: Replace with a case
-    {
-        if (mIntegrationOrder == 1)
-        {
-            return GeometryData::GI_GAUSS_1;
-        }
-        else if (mIntegrationOrder == 2)
-        {
-            return GeometryData::GI_GAUSS_2;
-        }
-        else if (mIntegrationOrder == 3)
-        {
-            return GeometryData::GI_GAUSS_3;
-        }
-        else if (mIntegrationOrder == 4)
-        {
-            return GeometryData::GI_GAUSS_4;
-        }
-        else if (mIntegrationOrder == 5)
-        {
-            return GeometryData::GI_GAUSS_5;
-        }
-        else
-        {
-            return GeometryData::GI_GAUSS_2;
+    IntegrationMethod GetIntegrationMethod() override
+    {        
+        // Setting the auxiliar integration points
+        switch (mIntegrationOrder) {
+        case 1: return GeometryData::GI_GAUSS_1;
+        case 2: return GeometryData::GI_GAUSS_2;
+        case 3: return GeometryData::GI_GAUSS_3;
+        case 4: return GeometryData::GI_GAUSS_4;
+        case 5: return GeometryData::GI_GAUSS_5;
+        default: return GeometryData::GI_GAUSS_2;
         }
     }
     

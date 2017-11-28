@@ -927,29 +927,13 @@ template< unsigned int TDim, unsigned int TNumNodes, bool TBelong>
 GeometryNodeType::IntegrationPointsArrayType ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::GetIntegrationTriangle()
 {
     // Setting the auxiliar integration points
-    if (mIntegrationOrder == 1)
-    {
-        return Quadrature<TriangleGaussLegendreIntegrationPoints1, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-    }
-    else if (mIntegrationOrder == 2)
-    {
-        return Quadrature<TriangleGaussLegendreIntegrationPoints2, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-    }
-    else if (mIntegrationOrder == 3)
-    {
-        return Quadrature<TriangleGaussLegendreIntegrationPoints3, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-    }
-    else if (mIntegrationOrder == 4)
-    {
-        return Quadrature<TriangleGaussLegendreIntegrationPoints4, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-    }
-    else if (mIntegrationOrder == 5)
-    {
-        return Quadrature<TriangleGaussLegendreIntegrationPoints5, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-    }
-    else
-    {
-        return Quadrature<TriangleGaussLegendreIntegrationPoints2, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+    switch (mIntegrationOrder) {
+    case 1: return Quadrature<TriangleGaussLegendreIntegrationPoints1, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+    case 2: return Quadrature<TriangleGaussLegendreIntegrationPoints2, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+    case 3: return Quadrature<TriangleGaussLegendreIntegrationPoints3, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+    case 4: return Quadrature<TriangleGaussLegendreIntegrationPoints4, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+    case 5: return Quadrature<TriangleGaussLegendreIntegrationPoints5, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+    default: return Quadrature<TriangleGaussLegendreIntegrationPoints2, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
     }
 }
 
