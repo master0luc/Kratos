@@ -19,6 +19,17 @@
 
 // Project includes
 #include "includes/define.h"
+<<<<<<< HEAD
+=======
+#include "includes/ublas_interface.h"
+#include "containers/data_value_container.h"
+//#include "containers/hash_data_value_container.h"
+#include "containers/variables_list_data_value_container.h"
+#include "containers/vector_component_adaptor.h"
+#include "containers/flags.h"
+//#include "containers/all_variables_data_value_container.h"
+// #include "includes/kratos_flags.h"
+>>>>>>> master
 #include "includes/deprecated_variables.h"
 
 namespace Kratos

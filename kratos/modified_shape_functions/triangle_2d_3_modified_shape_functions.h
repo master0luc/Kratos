@@ -18,6 +18,7 @@
 // External includes
 
 // Project includes
+#include "utilities/divide_triangle_2d_3.h"
 #include "modified_shape_functions/modified_shape_functions.h"
 
 namespace Kratos
@@ -48,18 +49,18 @@ public:
     KRATOS_CLASS_POINTER_DEFINITION(Triangle2D3ModifiedShapeFunctions);
 
     // General type definitions
-    typedef ModifiedShapeFunctions                                      BaseType;
-    typedef typename BaseType::GeometryType                             GeometryType;
-    typedef typename BaseType::GeometryPointerType                             GeometryPointerType;
-    typedef typename BaseType::IntegrationMethodType                    IntegrationMethodType;
-    typedef typename BaseType::ShapeFunctionsGradientsType              ShapeFunctionsGradientsType;
+    typedef ModifiedShapeFunctions                             BaseType;
+    typedef BaseType::GeometryType                             GeometryType;
+    typedef BaseType::GeometryPointerType                      GeometryPointerType;
+    typedef BaseType::IntegrationMethodType                    IntegrationMethodType;
+    typedef BaseType::ShapeFunctionsGradientsType              ShapeFunctionsGradientsType;
 
-    typedef typename BaseType::IndexedPointGeometryType                 IndexedPointGeometryType;
-    typedef typename BaseType::IndexedPointGeometryPointerType          IndexedPointGeometryPointerType;
+    typedef BaseType::IndexedPointGeometryType                 IndexedPointGeometryType;
+    typedef BaseType::IndexedPointGeometryPointerType          IndexedPointGeometryPointerType;
 
-    typedef typename BaseType::IntegrationPointType                     IntegrationPointType;
-    typedef typename BaseType::IntegrationPointsArrayType               IntegrationPointsArrayType;
-    typedef typename BaseType::IntegrationPointsContainerType           IntegrationPointsContainerType;
+    typedef BaseType::IntegrationPointType                     IntegrationPointType;
+    typedef BaseType::IntegrationPointsArrayType               IntegrationPointsArrayType;
+    typedef BaseType::IntegrationPointsContainerType           IntegrationPointsContainerType;
 
     ///@}
     ///@name Life Cycle
@@ -155,21 +156,21 @@ public:
         const IntegrationMethodType IntegrationMethod) override;
 
     /**
-    * Returns the positive side outwards unit normal vector values for the Gauss pts. of given quadrature.
-    * @return rPositiveSideInterfaceUnitNormal: Outwards unit normal vector list.
+    * Returns the positive side outwards area normal vector values for the Gauss pts. of given quadrature.
+    * @return rPositiveSideInterfaceAreaNormal: Outwards area normal vector list.
     * @param IntegrationMethod: Desired integration quadrature.
     */
-    void ComputePositiveSideInterfaceUnitNormals(
-        std::vector<Vector> &rPositiveSideInterfaceUnitNormal,
+    void ComputePositiveSideInterfaceAreaNormals(
+        std::vector<Vector> &rPositiveSideInterfaceAreaNormal,
         const IntegrationMethodType IntegrationMethod) override;
 
     /**
-    * Returns the positive side outwards unit normal vector values for the Gauss pts. of given quadrature.
-    * @return rNegativeSideInterfaceUnitNormal: Outwards unit normal vector list.
+    * Returns the positive side outwards area normal vector values for the Gauss pts. of given quadrature.
+    * @return rNegativeSideInterfaceAreaNormal: Outwards area normal vector list.
     * @param IntegrationMethod: Desired integration quadrature.
     */
-    void ComputeNegativeSideInterfaceUnitNormals(
-        std::vector<Vector> &rNegativeSideInterfaceUnitNormal,
+    void ComputeNegativeSideInterfaceAreaNormals(
+        std::vector<Vector> &rNegativeSideInterfaceAreaNormal,
         const IntegrationMethodType IntegrationMethod) override;
 
     /**

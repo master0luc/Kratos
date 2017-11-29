@@ -22,7 +22,6 @@
 #include "containers/data_value_container.h"
 //#include "containers/hash_data_value_container.h"
 #include "containers/variables_list_data_value_container.h"
-#include "containers/fix_data_value_container.h"
 #include "containers/vector_component_adaptor.h"
 #include "containers/flags.h"
 //#include "containers/all_variables_data_value_container.h"
@@ -368,12 +367,11 @@ void  AddContainersToPython()
     AddCFDVariablesToPython(); ///@TODO: move variables to CFD application
     AddALEVariablesToPython(); ///@TODO: move variables to ALE application
     AddFSIVariablesToPython(); ///@TODO: move variables to FSI application
-    AddMATVariablesToPython(); ///@TODO: move variables to CFD application
-    AddALEVariablesToPython(); ///@TODO: move variables to ALE application
     AddMappingVariablesToPython(); ///@TODO: move variables to Mapping application
     AddMATVariablesToPython(); ///@TODO: move variables to CL application
     AddLegacyStructuralAppVarsToPython();
 
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE( SPACE_DIMENSION )
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( DOMAIN_SIZE )
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( IS_RESTARTED )
     KRATOS_REGISTER_IN_PYTHON_VARIABLE(COMPUTE_LUMPED_MASS_MATRIX )

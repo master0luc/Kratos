@@ -56,7 +56,9 @@ KratosStructuralMechanicsApplication::KratosStructuralMechanicsApplication():
     // Adding the beam element
     mCrBeamElement3D2N(0, Element::GeometryType::Pointer(new Line3D2 <Node<3> >(Element::GeometryType::PointsArrayType(2))), false),
     mCrLinearBeamElement3D2N(0, Element::GeometryType::Pointer(new Line3D2 <Node<3> >(Element::GeometryType::PointsArrayType(2))), true),
-    // Adding the shells elements
+    mCrBeamElement2D2N(0, Element::GeometryType::Pointer(new Line2D2 <Node<3> >(Element::GeometryType::PointsArrayType(2))), false),
+    mCrLinearBeamElement2D2N(0, Element::GeometryType::Pointer(new Line2D2 <Node<3> >(Element::GeometryType::PointsArrayType(2))), true),
+   // Adding the shells elements
     mIsotropicShellElement3D3N( 0, Element::GeometryType::Pointer( new Triangle3D3 <Node<3> >( Element::GeometryType::PointsArrayType( 3 ) ) ) ),
     mShellThickElement3D4N( 0, Element::GeometryType::Pointer( new Quadrilateral3D4 <Node<3> >( Element::GeometryType::PointsArrayType( 4 ) ) ), false ),
     mShellThickCorotationalElement3D4N( 0, Element::GeometryType::Pointer( new Quadrilateral3D4 <Node<3> >( Element::GeometryType::PointsArrayType( 4 ) ) ), true ),
@@ -136,6 +138,8 @@ KratosStructuralMechanicsApplication::KratosStructuralMechanicsApplication():
     // Adding point load conditions
     mPointLoadCondition2D1N(  0, Condition::GeometryType::Pointer( new Point2D <Node<3> >( Condition::GeometryType::PointsArrayType( 1 ) ) ) ),
     mPointLoadCondition3D1N(  0, Condition::GeometryType::Pointer( new Point3D <Node<3> >( Condition::GeometryType::PointsArrayType( 1 ) ) ) ),
+    mPointContactCondition2D1N(  0, Condition::GeometryType::Pointer( new Point2D <Node<3> >( Condition::GeometryType::PointsArrayType( 1 ) ) ) ),
+    mPointContactCondition3D1N(  0, Condition::GeometryType::Pointer( new Point3D <Node<3> >( Condition::GeometryType::PointsArrayType( 1 ) ) ) ),
     mAxisymPointLoadCondition2D1N(  0, Condition::GeometryType::Pointer( new Point2D <Node<3> >( Condition::GeometryType::PointsArrayType( 1 ) ) ) ),
     // Adding line load conditions
     mLineLoadCondition2D2N( 0, Condition::GeometryType::Pointer( new Line2D2 <Node<3> >( Condition::GeometryType::PointsArrayType( 2 ) ) ) ),
@@ -195,7 +199,9 @@ void KratosStructuralMechanicsApplication::Register()
     KRATOS_REGISTER_VARIABLE(INERTIA_ROT_Z)
     KRATOS_REGISTER_VARIABLE(LUMPED_MASS_MATRIX)
     KRATOS_REGISTER_VARIABLE(LOCAL_AXES_VECTOR)
-    KRATOS_REGISTER_VARIABLE(LOCAL_INERTIA_VECTOR)
+    KRATOS_REGISTER_VARIABLE(TORSIONAL_INERTIA)
+    KRATOS_REGISTER_VARIABLE(I22)
+    KRATOS_REGISTER_VARIABLE(I33)
 
     //  Shell generalized variables
     KRATOS_REGISTER_VARIABLE( SHELL_STRAIN )
@@ -277,6 +283,7 @@ void KratosStructuralMechanicsApplication::Register()
     // Rayleigh variables
     KRATOS_REGISTER_VARIABLE( RAYLEIGH_ALPHA )
     KRATOS_REGISTER_VARIABLE( RAYLEIGH_BETA )
+    KRATOS_REGISTER_VARIABLE( SYSTEM_DAMPING_RATIO )
 
     // Nodal load variables
     KRATOS_REGISTER_3D_VARIABLE_WITH_COMPONENTS( POINT_LOAD )
@@ -297,6 +304,9 @@ void KratosStructuralMechanicsApplication::Register()
     // Register the beam element
     KRATOS_REGISTER_ELEMENT( "CrBeamElement3D2N", mCrBeamElement3D2N)
     KRATOS_REGISTER_ELEMENT( "CrLinearBeamElement3D2N", mCrLinearBeamElement3D2N)
+    KRATOS_REGISTER_ELEMENT( "CrBeamElement2D2N", mCrBeamElement2D2N)
+    KRATOS_REGISTER_ELEMENT( "CrLinearBeamElement2D2N", mCrLinearBeamElement2D2N)
+
 
     //Register the shells elements
     KRATOS_REGISTER_ELEMENT( "IsotropicShellElement3D3N", mIsotropicShellElement3D3N )
@@ -390,6 +400,8 @@ void KratosStructuralMechanicsApplication::Register()
     // Point loads
     KRATOS_REGISTER_CONDITION( "PointLoadCondition2D1N", mPointLoadCondition2D1N )
     KRATOS_REGISTER_CONDITION( "PointLoadCondition3D1N", mPointLoadCondition3D1N )
+    KRATOS_REGISTER_CONDITION( "PointContactCondition2D1N", mPointContactCondition2D1N )
+    KRATOS_REGISTER_CONDITION( "PointContactCondition3D1N", mPointContactCondition3D1N )
     
     KRATOS_REGISTER_CONDITION( "AxisymPointLoadCondition2D1N", mAxisymPointLoadCondition2D1N )
     

@@ -20,6 +20,17 @@
 
 // Project includes
 #include "includes/define.h"
+<<<<<<< HEAD
+=======
+#include "includes/ublas_interface.h"
+#include "containers/data_value_container.h"
+//#include "containers/hash_data_value_container.h"
+// #include "containers/variables_list_data_value_container.h"
+// #include "containers/vector_component_adaptor.h"
+#include "containers/flags.h"
+//#include "containers/all_variables_data_value_container.h"
+// #include "includes/kratos_flags.h"
+>>>>>>> master
 #include "includes/dem_variables.h"
 
 namespace Kratos
@@ -41,7 +52,8 @@ void  AddDEMVariablesToPython()
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( PARTICLE_MATERIAL )
 
     //variables for the neighbour search
-    KRATOS_REGISTER_IN_PYTHON_VARIABLE( SEARCH_TOLERANCE )
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE( SEARCH_RADIUS_INCREMENT )
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE( SEARCH_RADIUS_INCREMENT_FOR_WALLS )
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( AMPLIFIED_CONTINUUM_SEARCH_RADIUS_EXTENSION )
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( OLD_NEIGHBOURS_IDS)
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( INI_NEIGHBOURS_IDS)
