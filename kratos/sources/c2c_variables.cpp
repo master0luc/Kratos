@@ -12,18 +12,13 @@
 
 // System includes
 #include <string>
-#include <iostream>
-#include <vector>
 
 // External includes
 
 // Project includes
 #include "includes/define.h"
 #include "includes/c2c_variables.h"
-#include "includes/kernel.h"
-#include "includes/node.h"
-
-#include "includes/kratos_flags.h"
+#include "includes/kratos_application.h"
 
 namespace Kratos
 {
@@ -101,6 +96,7 @@ namespace Kratos
 	KRATOS_CREATE_VARIABLE(double, COLD_SHUTS)
     KRATOS_CREATE_VARIABLE(double, NIYAMA)
     KRATOS_CREATE_3D_VARIABLE_WITH_COMPONENTS (TEMPERATURE_GRADIENT)
+
   void KratosApplication::RegisterC2CVariables()
   {
         KRATOS_REGISTER_VARIABLE(  SOLID_TEMPERATURE )
