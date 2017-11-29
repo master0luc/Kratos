@@ -64,8 +64,7 @@ class TestMortarMapping(KratosUnittest.TestCase):
             
         Preprocess = ContactStructuralMechanicsApplication.InterfacePreprocessCondition(self.main_model_part)
 
-        interface_parameters = KratosMultiphysics.Parameters("""{"condition_name": "", "final_string": "", "simplify_geometry": false}""")
-        interface_parameters["condition_name"].SetString("ALMFrictionlessMortarContact")
+        interface_parameters = KratosMultiphysics.Parameters("""{"simplify_geometry": false}""")
         Preprocess.GenerateInterfacePart3D(self.main_model_part, self.mapping_model_part, interface_parameters)
             
         # We copy the conditions to the ContactSubModelPart
@@ -85,10 +84,10 @@ class TestMortarMapping(KratosUnittest.TestCase):
             "search_factor"               : 3.5,
             "allocation_size"             : 1000,
             "type_search"                 : "InRadius",
-            "use_exact_integration"       : true
+            "condition_name"              : "ALMFrictionlessMortarContact"
         }
         """)
-        contact_search = ContactStructuralMechanicsApplication.TreeContactSearch(self.main_model_part, search_parameters)
+        contact_search = ContactStructuralMechanicsApplication.TreeContactSearch3D(self.main_model_part, search_parameters)
         
         # We initialize the search utility
         contact_search.CreatePointListMortar()

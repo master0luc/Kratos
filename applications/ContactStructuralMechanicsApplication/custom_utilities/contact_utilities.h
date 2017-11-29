@@ -169,6 +169,7 @@ public:
             // Aux coordinates
             CoordinatesArrayType aux_coords;
             aux_coords = this_geometry.PointLocalCoordinates(aux_coords, this_geometry.Center());
+            
             it_cond->SetValue(NORMAL, this_geometry.UnitNormal(aux_coords));
             
             const unsigned int number_nodes = this_geometry.PointsNumber();
@@ -194,87 +195,6 @@ public:
 
             array_1d<double, 3>& normal = it_node->FastGetSolutionStepValue(NORMAL);
             const double norm_normal = norm_2(normal);
-            if (norm_normal > tolerance) normal /= norm_normal;
-            else KRATOS_ERROR << "WARNING:: ZERO NORM NORMAL IN NODE: " << it_node->Id() << std::endl;
-        }
-    }
-    
-    /**
-     * It computes the mean of the normal in the condition in all the nodes using the area to weight it
-     * @param rModelPart The model part to compute
-     */
-    
-    static inline void ComputeNodesMeanNormalAreaWeightedModelPart(ModelPart& rModelPart) 
-    {
-        // Tolerance
-        const double& tolerance = std::numeric_limits<double>::epsilon();
-
-        // Initialize normal vectors
-        const array_1d<double,3> zero_vect = ZeroVector(3);
-        
-        NodesArrayType& nodes_array = rModelPart.Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size()); 
-        
-        #pragma omp parallel for
-        for(int i = 0; i < num_nodes; ++i) 
-        {
-            auto it_node = nodes_array.begin() + i;
-            it_node->SetValue(NODAL_AREA, 0.0);
-            it_node->FastGetSolutionStepValue(NORMAL) = zero_vect;
-        }
-        
-        // Aux coordinates
-        CoordinatesArrayType aux_coords;
-        aux_coords.clear();
-        
-        // Sum all the nodes normals
-        ConditionsArrayType& conditions_array = rModelPart.Conditions();
-        const int num_conditions = static_cast<int>(conditions_array.size());
-        
-        #pragma omp parallel for
-        for(int i = 0; i < num_conditions; ++i) 
-        {
-            auto it_cond = conditions_array.begin() + i;
-            GeometryType& this_geometry = it_cond->GetGeometry();
-            
-            aux_coords = this_geometry.PointLocalCoordinates(aux_coords, this_geometry.Center());
-            it_cond->SetValue(NORMAL, this_geometry.UnitNormal(aux_coords));
-            const array_1d<double, 3>& normal = it_cond->GetValue(NORMAL);
-            
-            const unsigned int number_nodes = this_geometry.PointsNumber();
-            const double & rArea = this_geometry.Area()/number_nodes;
-            
-            for (unsigned int i = 0; i < number_nodes; ++i)
-            {
-                auto& this_node = this_geometry[i];
-                double& nodal_area = this_node.GetValue(NODAL_AREA);
-                #pragma omp atomic
-                nodal_area += rArea;
-                auto& aux_normal = this_node.FastGetSolutionStepValue(NORMAL);
-                for (unsigned int index = 0; index < 3; ++index)
-                {
-                    #pragma omp atomic
-                    aux_normal[index] += normal[index];
-                }
-            }
-        }
-        
-        #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; ++i) 
-        {
-            auto it_node = nodes_array.begin() + i;
-            const double& total_area = it_node->GetValue(NODAL_AREA);
-            if (total_area > tolerance) it_node->FastGetSolutionStepValue(NORMAL) /= total_area;
-        }
-
-        #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; ++i) 
-        {
-            auto it_node = nodes_array.begin() + i;
-
-            array_1d<double, 3>& normal = it_node->FastGetSolutionStepValue(NORMAL);
-            const double norm_normal = norm_2(normal);
-            
             if (norm_normal > tolerance) normal /= norm_normal;
             else KRATOS_ERROR << "WARNING:: ZERO NORM NORMAL IN NODE: " << it_node->Id() << std::endl;
         }

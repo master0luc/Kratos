@@ -131,7 +131,7 @@ void InterfacePreprocessCondition::GenerateInterfacePart<3>(
 
 void InterfacePreprocessCondition::CreateNewCondition(
         Properties::Pointer pThisProperties,
-        const GeometryType& rGeometry,
+        GeometryType& rGeometry,
         const unsigned int CondId,
         Condition const& rCondition
         )
@@ -194,7 +194,7 @@ unsigned int InterfacePreprocessCondition::ReorderConditions()
 inline void InterfacePreprocessCondition::GenerateEdgeCondition(
     ModelPart& rInterfacePart,
     Properties::Pointer pThisProperties,
-    const GeometryType& EdgeGeometry,
+    GeometryType& EdgeGeometry,
     const bool SimplestGeometry,
     unsigned int& CondCounter,
     unsigned int& CondId
@@ -268,7 +268,7 @@ inline void InterfacePreprocessCondition::GenerateEdgeCondition(
 inline void InterfacePreprocessCondition::GenerateFaceCondition(
     ModelPart& rInterfacePart,
     Properties::Pointer pThisProperties,
-    const GeometryType& FaceGeometry,
+    GeometryType& FaceGeometry,
     const bool SimplestGeometry,
     unsigned int& CondCounter,
     unsigned int& CondId
@@ -284,7 +284,7 @@ inline void InterfacePreprocessCondition::GenerateFaceCondition(
         }
     }
     
-    const std::string condition_name = (number_of_points == 3 || SimplestGeometry) ? "Condition3D3N" : (number_of_points == 4) ? "Condition3D4N" : (number_of_points == 6) ? "Condition3D6N" : (number_of_points == 8) ? "Condition3D8N" : "Condition3D9N";
+    const std::string condition_name = (number_of_points == 3 || SimplestGeometry) ? "Condition3D" : (number_of_points == 4) ? "Condition3D4N" : (number_of_points == 6) ? "Condition3D6N" : (number_of_points == 8) ? "Condition3D8N" : "Condition3D9N";
  
     Condition const& r_condition =  KratosComponents<Condition>::Get(condition_name);
     

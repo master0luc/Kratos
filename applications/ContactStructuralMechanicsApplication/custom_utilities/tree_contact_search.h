@@ -301,7 +301,7 @@ protected:
         // Some initial parameters
         const double active_check_factor = mrMainModelPart.GetProcessInfo()[ACTIVE_CHECK_FACTOR];
         const array_1d<double, 3>& contact_normal_origin = pCondSlave->GetValue(NORMAL);
-        const GeometryType& this_geometry = pCondSlave->GetGeometry();
+        GeometryType& this_geometry = pCondSlave->GetGeometry();
         const double active_check_length = this_geometry.Length() * active_check_factor;
         Properties::Pointer pThisProperties = pCondSlave->pGetProperties();
         

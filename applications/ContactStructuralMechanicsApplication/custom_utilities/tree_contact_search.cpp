@@ -28,6 +28,8 @@ TreeContactSearch<TDim>::TreeContactSearch(
     ):mrMainModelPart(rMainModelPart), 
       mThisParameters(ThisParameters)
 {        
+    KRATOS_ERROR_IF(mrMainModelPart.HasSubModelPart("Contact") == false) << "WARNING:: Please add the contact submodelpart to your modelpart list" << std::endl;
+    
     Parameters DefaultParameters = Parameters(R"(
     {
         "allocation_size"                      : 1000, 

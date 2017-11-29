@@ -156,7 +156,7 @@ private:
 
     /**
      * Creates a new condition with a giving name
-     * @param rThisProperties The pointer to the element
+     * @param prThisProperties The pointer to the element
      * @param rGeometry The  geometry considered
      * @param CondId The Id of the condition
      * @param rCondition The base condition
@@ -164,7 +164,7 @@ private:
 
     void CreateNewCondition(
             Properties::Pointer prThisProperties,
-            const GeometryType& rGeometry,
+            GeometryType& rGeometry,
             const unsigned int CondId,
             Condition const& rCondition
             );
@@ -190,7 +190,7 @@ private:
     /**
      * This method creates the conditions for the edges
      * @param rInterfacePart The model part of the interface
-     * @param rThisProperties The properties of the base element
+     * @param prThisProperties The properties of the base element
      * @param EdgeGeometry Geometry considered
      * @param SimplestGeometry If consider or not the simplest geometry
      * @param CondCounter The counter of conditions
@@ -200,7 +200,7 @@ private:
     inline void GenerateEdgeCondition(
         ModelPart& rInterfacePart,
         Properties::Pointer prThisProperties,
-        const GeometryType& EdgeGeometry,
+        GeometryType& EdgeGeometry,
         const bool SimplestGeometry,
         unsigned int& CondCounter,
         unsigned int& CondId
@@ -219,7 +219,7 @@ private:
     inline void GenerateFaceCondition(
         ModelPart& rInterfacePart,
         Properties::Pointer prThisProperties,
-        const GeometryType& FaceGeometry,
+        GeometryType& FaceGeometry,
         const bool SimplestGeometry,
         unsigned int& CondCounter,
         unsigned int& CondId
