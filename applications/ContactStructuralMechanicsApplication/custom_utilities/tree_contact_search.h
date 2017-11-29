@@ -61,7 +61,7 @@ namespace Kratos
  * The conditions that can be created are Mortar conditions (or segment to segment) conditions: The created conditions will be between two segments
  * The utility employs the projection.h from MeshingApplication, which works internally using a kd-tree 
  */
-
+template<unsigned int TDim>
 class TreeContactSearch
 {
 public:
@@ -269,11 +269,137 @@ protected:
      */
     
     static inline CheckResult CheckCondition(
-        ConditionMap::Pointer& ConditionPointers1,
-        const Condition::Pointer& pCond1,
-        const Condition::Pointer& pCond2,
+        IndexMap::Pointer IndexesMap,
+        const Condition::Pointer pCond1,
+        const Condition::Pointer pCond2,
         const bool InvertedSearch = false
         );
+    
+    /**
+     * This method checks the potential pairing between two conditions/geometries
+     */
+    inline void CheckPotentialPairing(
+        ModelPart& ComputingModelPart,
+        std::size_t& ConditionId,
+        Condition::Pointer pCondSlave,
+        const PointVector& PointsFound,
+        IndexMap::Pointer IndexesMap
+        );
+    
+    /**
+     * This method checks the potential pairing between two conditions/geometries
+     */
+    template<unsigned int TNumNodes>
+    inline void AuxiliarCheckPotentialPairing(
+        ModelPart& ComputingModelPart,
+        std::size_t& ConditionId,
+        Condition::Pointer pCondSlave,
+        const PointVector& PointsFound,
+        IndexMap::Pointer IndexesMap
+        )
+    {
+        // Some initial parameters
+        const double active_check_factor = mrMainModelPart.GetProcessInfo()[ACTIVE_CHECK_FACTOR];
+        const array_1d<double, 3>& contact_normal_origin = pCondSlave->GetValue(NORMAL);
+        const GeometryType& this_geometry = pCondSlave->GetGeometry();
+        const double active_check_length = this_geometry.Length() * active_check_factor;
+        Properties::Pointer pThisProperties = pCondSlave->pGetProperties();
+        
+        // We update the base condition
+        if (this_geometry.GetGeometryType() != mGeometryType)
+        {
+            std::string condition_name = mThisParameters["condition_name"].GetString(); 
+            condition_name.append("Condition"); 
+            condition_name.append(std::to_string(TDim));
+            condition_name.append("D"); 
+            condition_name.append(std::to_string(TNumNodes)); 
+            condition_name.append("N"); 
+            condition_name.append(mThisParameters["final_string"].GetString());
+            mrCondition = KratosComponents<Condition>::Get(condition_name);   
+        }
+        
+        MortarKinematicVariables<TNumNodes> rVariables;
+        MortarOperator<TNumNodes> rThisMortarConditionMatrices;
+        ExactMortarIntegrationUtility<TDim, TNumNodes> integration_utility = ExactMortarIntegrationUtility<TDim, TNumNodes>(TDim);
+        
+        for(unsigned int i_pair = 0; i_pair < PointsFound.size(); ++i_pair)
+        {   
+            bool condition_is_active = false;
+                                        
+            Condition::Pointer p_cond_master = PointsFound[i_pair]->GetCondition(); // MASTER
+            const array_1d<double, 3>& master_normal = p_cond_master->GetValue(NORMAL); 
+                                
+            const CheckResult condition_checked_right = CheckCondition(IndexesMap, pCondSlave, p_cond_master, mInvertedSearch);
+            
+            if (condition_checked_right == OK)
+            {   
+                condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, true>(rVariables, rThisMortarConditionMatrices, integration_utility, pCondSlave->GetGeometry(), p_cond_master->GetGeometry(), contact_normal_origin, master_normal, active_check_length);
+                
+                // If condition is active we add
+                if (condition_is_active) 
+                {
+                    ++ConditionId;
+                    IndexesMap->AddNewPair(p_cond_master->Id(), ConditionId);
+                    Condition::Pointer p_cond = Condition::Pointer(mrCondition.Create(ConditionId, this_geometry, pThisProperties));
+                    ComputingModelPart.AddCondition(p_cond);
+                }
+            }
+            else if (condition_checked_right == AlreadyInTheMap)
+            {
+                condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, false>(rVariables, rThisMortarConditionMatrices, integration_utility, pCondSlave->GetGeometry(), p_cond_master->GetGeometry(), contact_normal_origin, master_normal, active_check_length);
+                
+                if (condition_is_active == false) 
+                {
+                    const std::size_t index_slave = p_cond_master->Id();
+                    const std::size_t index_master = IndexesMap->GetAuxiliarIndex(index_slave);
+                    IndexesMap->RemoveId(p_cond_master->Id());
+                    ComputingModelPart.pGetCondition(index_master)->Set(TO_ERASE, true);
+                }
+            }
+        }
+    }
+    
+    /**
+     * This method checks the current pairing between two conditions/geometries
+     */
+    inline void CheckCurrentPairing(
+        Condition::Pointer pCondSlave,
+        IndexMap::Pointer IndexesMap
+        );
+    
+    /**
+     * This method checks the current pairing between two conditions/geometries
+     */
+    template<unsigned int TNumNodes>
+    inline void AuxiliarCheckCurrentPairing(
+        Condition::Pointer pCondSlave,
+        IndexMap::Pointer IndexesMap
+        )
+    {
+        // Some initial parameters
+        const double active_check_factor = mrMainModelPart.GetProcessInfo()[ACTIVE_CHECK_FACTOR];
+        const array_1d<double, 3>& contact_normal_origin = pCondSlave->GetValue(NORMAL);
+        const GeometryType& this_geometry = pCondSlave->GetGeometry();
+        const double active_check_length = this_geometry.Length() * active_check_factor;
+        
+        MortarKinematicVariables<TNumNodes> rVariables;
+        MortarOperator<TNumNodes> rThisMortarConditionMatrices;
+        ExactMortarIntegrationUtility<TDim, TNumNodes> integration_utility = ExactMortarIntegrationUtility<TDim, TNumNodes>(TDim);
+        
+        for (auto it_pair = IndexesMap->begin(); it_pair != IndexesMap->end(); ++it_pair )
+        {                                   
+            Condition::Pointer p_cond_master = mrMainModelPart.pGetCondition(it_pair->first);
+            const array_1d<double, 3>& master_normal = p_cond_master->GetValue(NORMAL); 
+
+            const bool condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, false>(rVariables, rThisMortarConditionMatrices, integration_utility, pCondSlave->GetGeometry(), p_cond_master->GetGeometry(), contact_normal_origin, master_normal, active_check_length);
+            
+            if (condition_is_active == false) 
+            {
+                IndexesMap->RemoveId(p_cond_master->Id());
+                mrMainModelPart.pGetCondition(it_pair->second)->Set(TO_ERASE, true);
+            }
+        }
+    }
     
     /**  
      * Calculates the minimal distance between one node and its center 
@@ -357,22 +483,22 @@ private:
 ///@name Input and output
 ///@{
 
-/****************************** INPUT STREAM FUNCTION ******************************/
-/***********************************************************************************/
-
-template<class TPointType, class TPointerType>
-inline std::istream& operator >> (std::istream& rIStream,
-                                  TreeContactSearch& rThis);
-
-/***************************** OUTPUT STREAM FUNCTION ******************************/
-/***********************************************************************************/
-
-template<class TPointType, class TPointerType>
-inline std::ostream& operator << (std::ostream& rOStream,
-                                  const TreeContactSearch& rThis)
-{
-    return rOStream;
-}
+// /****************************** INPUT STREAM FUNCTION ******************************/
+// /***********************************************************************************/
+// 
+// template<class TPointType, class TPointerType>
+// inline std::istream& operator >> (std::istream& rIStream,
+//                                   TreeContactSearch& rThis);
+// 
+// /***************************** OUTPUT STREAM FUNCTION ******************************/
+// /***********************************************************************************/
+// 
+// template<class TPointType, class TPointerType>
+// inline std::ostream& operator << (std::ostream& rOStream,
+//                                   const TreeContactSearch& rThis)
+// {
+//     return rOStream;
+// }
 
 ///@}
 

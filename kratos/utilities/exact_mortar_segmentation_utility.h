@@ -120,12 +120,8 @@ public:
      * @param IntegrationOrder The integration order to consider
      */
     
-    ExactMortarIntegrationUtility(
-        const unsigned int IntegrationOrder = 0,
-        const bool DebugGeometries = false
-        )
-    :mIntegrationOrder(IntegrationOrder),
-     mDebugGeometries(DebugGeometries)
+    ExactMortarIntegrationUtility(const unsigned int IntegrationOrder = 0)
+    :mIntegrationOrder(IntegrationOrder)
     {
         GetIntegrationMethod();
     }
@@ -227,7 +223,10 @@ public:
      * @return The total area integrated
      */
     
-    double TestGetExactAreaIntegration(Condition::Pointer& SlaveCond);
+    double TestGetExactAreaIntegration(    
+        ModelPart& rMainModelPart,
+        Condition::Pointer& SlaveCond
+        );
     
     /**
     * This method is used for debugging purposes
@@ -663,9 +662,6 @@ private:
 
     const unsigned int mIntegrationOrder;    // The integration order to consider
     IntegrationMethod mAuxIntegrationMethod; // The auxiliar list of Gauss Points taken from the geometry
-    
-    // NOTE: Just for debug
-    const bool mDebugGeometries;             // If the geometry is debugged or not
     
     ///@}
     ///@name Private Operators

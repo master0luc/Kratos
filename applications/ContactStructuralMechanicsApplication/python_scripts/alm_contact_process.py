@@ -30,8 +30,6 @@ class ALMContactProcess(python_process.PythonProcess):
             "frictional_law"              : "Coulomb",
             "search_factor"               : 2.0,
             "active_check_factor"         : 0.01,
-            "dual_search_check"           : false,
-            "strict_search_check"         : true,
             "max_number_results"          : 1000,
             "bucket_size"                 : 4,
             "normal_variation"            : "NODERIVATIVESCOMPUTATION",
@@ -44,7 +42,6 @@ class ALMContactProcess(python_process.PythonProcess):
             "scale_factor"                : 1.0e0,
             "tangent_factor"              : 0.1,
             "type_search"                 : "InRadius",
-            "use_exact_integration"       : true,
             "hard_clear_after_step"       : false,
             "database_step_update"        : 1,
             "integration_order"           : 3,
@@ -334,10 +331,10 @@ class ALMContactProcess(python_process.PythonProcess):
         search_parameters.AddValue("allocation_size",self.params["max_number_results"])
         search_parameters.AddValue("bucket_size",self.params["bucket_size"])
         search_parameters.AddValue("search_factor",self.params["search_factor"])
-        search_parameters.AddValue("dual_search_check",self.params["dual_search_check"])
-        search_parameters.AddValue("strict_search_check",self.params["strict_search_check"])
-        search_parameters.AddValue("use_exact_integration",self.params["use_exact_integration"])
-        self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch(computing_model_part, search_parameters)
+        if (self.dimension == 2):
+            self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch2D(computing_model_part, search_parameters)
+        else:
+            self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch3D(computing_model_part, search_parameters)
     
     def _transfer_slave_to_master(self):
     

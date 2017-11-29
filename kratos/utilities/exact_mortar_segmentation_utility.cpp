@@ -759,21 +759,6 @@ void ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::GetTotalArea(
         }
         
         DecompositionType decomp_geom( points_array );
-    #ifdef KRATOS_DEBUG
-        if (mDebugGeometries == true)
-        {
-            std::cout << "\nGraphics3D[{Opacity[.3],Triangle[{{"; 
-            
-            for (unsigned int i = 0; i < 3; ++i)
-            {
-                std::cout << std::setprecision(16) << decomp_geom[i].X() << "," << decomp_geom[i].Y() << "," << decomp_geom[i].Z();
-                
-                if (i < 2) std::cout << "},{";
-            }
-            
-            std::cout << "}}]}],";// << std::endl;
-        }
-    #endif
         
         rArea += decomp_geom.Area();
     }
@@ -795,21 +780,8 @@ bool ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::TestGetExactIntegr
     
     CustomSolution.resize(integration_points_slave.size(), TDim, false);
     
-#ifdef KRATOS_DEBUG
-    if (mDebugGeometries == true)
-    {
-        std::cout << "The Gauss Points obtained are: " << std::endl;
-    }
-#endif
     for (unsigned int GP = 0; GP < integration_points_slave.size(); GP++)
     {
-    #ifdef KRATOS_DEBUG
-        if (mDebugGeometries == true)
-        {
-            KRATOS_WATCH(integration_points_slave[GP]);
-        }
-    #endif
-        
         // Solution save:
         CustomSolution(GP, 0) = integration_points_slave[GP].Coordinate(1);
         if (TDim == 2)
@@ -830,59 +802,20 @@ bool ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::TestGetExactIntegr
 /***********************************************************************************/
 
 template< unsigned int TDim, unsigned int TNumNodes, bool TBelong>
-double ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::TestGetExactAreaIntegration(Condition::Pointer& SlaveCond)
+double ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::TestGetExactAreaIntegration(
+    ModelPart& rMainModelPart,
+    Condition::Pointer& SlaveCond
+    )
 {        
     // Initalize values
     double area = 0.0;
-    ConditionMap::Pointer& all_conditions_maps = SlaveCond->GetValue( MAPPING_PAIRS );
+    IndexMap::Pointer indexes_map = SlaveCond->GetValue( INDEX_MAP );
     
-#ifdef KRATOS_DEBUG
-    if (mDebugGeometries == true)
+    for (auto it_pair = indexes_map->begin(); it_pair != indexes_map->end(); ++it_pair )
     {
-        auto this_geom = SlaveCond->GetGeometry();
-        
-//             std::cout << "\n\nID: " << SlaveCond->Id() << std::endl;
-        std::cout << "\nGraphics3D[{EdgeForm[{Thick,Dashed,Red}],FaceForm[],Polygon[{{";
-        
-        for (unsigned int i = 0; i < TNumNodes; ++i)
-        {
-            std::cout << this_geom[i].X() << "," << this_geom[i].Y() << "," << this_geom[i].Z();
-            
-                if (i < TNumNodes - 1) std::cout << "},{";
-        }
-        std::cout << "}}],Text[Style["<< SlaveCond->Id() <<", Tiny],{"<< this_geom.Center().X() << "," << this_geom.Center().Y() << ","<< this_geom.Center().Z() << "}]}],";// << std::endl;
+        Condition::Pointer p_master_cond = rMainModelPart.pGetCondition(it_pair->first);
+        GetExactAreaIntegration(SlaveCond->GetGeometry(), SlaveCond->GetValue(NORMAL), p_master_cond->GetGeometry(), p_master_cond->GetValue(NORMAL), area);
     }
-#endif
-    
-    for (auto it_pair = all_conditions_maps->begin(); it_pair != all_conditions_maps->end(); ++it_pair )
-    {
-    #ifdef KRATOS_DEBUG
-        if (mDebugGeometries == true)
-        {
-//                 std::cout << "\n\nID MASTER: " << (it_pair->first)->Id() << std::endl;
-            if ((it_pair->first)->Is(VISITED) == false || (it_pair->first)->IsDefined(VISITED) == false)
-            {
-                auto this_geom = (it_pair->first)->GetGeometry();
-                
-                std::cout << "\nGraphics3D[{EdgeForm[{Thick,Dashed,Blue}],FaceForm[],Polygon[{{";
-                for (unsigned int i = 0; i < TNumNodes; ++i)
-                {
-                    std::cout << this_geom[i].X() << "," << this_geom[i].Y() << "," << this_geom[i].Z();
-                    
-                    if (i < TNumNodes - 1) std::cout << "},{";
-                }
-                std::cout << "}}],Text[Style["<< (it_pair->first)->Id() <<", Tiny],{"<< this_geom.Center().X() << "," << this_geom.Center().Y() << ","<< this_geom.Center().Z() << "}]}],";// << std::endl;
-                
-                (it_pair->first)->Set(VISITED, true);
-            }
-        }
-    #endif
-        
-        GetExactAreaIntegration(SlaveCond->GetGeometry(), SlaveCond->GetValue(NORMAL), (it_pair->first)->GetGeometry(), (it_pair->first)->GetValue(NORMAL), area);
-    }
-    
-//     // DEBUG
-//     std::cout << "\nTOTAL AREA: " << area << "\tORIGINAL AREA: " << SlaveCond->GetGeometry().Area() << std::endl;
     
     return area;
 }

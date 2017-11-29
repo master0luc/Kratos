@@ -3980,12 +3980,12 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateOnIntegratio
 
     const GeometryType::IntegrationPointsArrayType &integration_points = GetGeometry().IntegrationPoints();
         
-    if ( rOutput.size() != GetGeometry().IntegrationPoints(  ).size() )
+    if ( rOutput.size() != integration_points.size() )
     {
-        rOutput.resize( GetGeometry().IntegrationPoints(  ).size() );
+        rOutput.resize( integration_points.size() );
     }
     
-    for (unsigned int point_number = 0; point_number < GetGeometry().IntegrationPoints(  ).size(); ++point_number)
+    for (unsigned int point_number = 0; point_number < integration_points.size(); ++point_number)
     {
         rOutput[point_number] = 0.0;
     }
@@ -4007,12 +4007,12 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateOnIntegratio
                                                                                             
     const GeometryType::IntegrationPointsArrayType &integration_points = GetGeometry().IntegrationPoints();
         
-    if ( rOutput.size() != GetGeometry().IntegrationPoints(  ).size() )
+    if ( rOutput.size() != integration_points.size() )
     {
-        rOutput.resize( GetGeometry().IntegrationPoints(  ).size() );
+        rOutput.resize( integration_points.size() );
     }
     
-    for (unsigned int point_number = 0; point_number < GetGeometry().IntegrationPoints(  ).size(); ++point_number)
+    for (unsigned int point_number = 0; point_number < integration_points.size(); ++point_number)
     {
         rOutput[point_number] = ZeroVector(3);
     }
@@ -4034,12 +4034,12 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateOnIntegratio
     
     const GeometryType::IntegrationPointsArrayType &integration_points = GetGeometry().IntegrationPoints();
         
-    if ( rOutput.size() != GetGeometry().IntegrationPoints(  ).size() )
+    if ( rOutput.size() != integration_points.size() )
     {
-        rOutput.resize( GetGeometry().IntegrationPoints(  ).size() );
+        rOutput.resize( integration_points.size() );
     }
     
-    for (unsigned int point_number = 0; point_number < GetGeometry().IntegrationPoints(  ).size(); ++point_number)
+    for (unsigned int point_number = 0; point_number < integration_points.size(); ++point_number)
     {
         rOutput[point_number] = ZeroVector(3);
     }

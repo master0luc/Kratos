@@ -32,7 +32,6 @@ class MeshTyingProcess(python_process.PythonProcess):
             "active_check_factor"         : 0.01,
             "max_number_results"          : 1000,
             "bucket_size"                 : 4,
-            "use_exact_integration"       : true,
             "type_search"                 : "InRadius",
             "integration_order"           : 2
         }
@@ -113,8 +112,10 @@ class MeshTyingProcess(python_process.PythonProcess):
         search_parameters.AddValue("allocation_size",self.params["max_number_results"])
         search_parameters.AddValue("bucket_size",self.params["bucket_size"])
         search_parameters.AddValue("search_factor",self.params["search_factor"])
-        search_parameters.AddValue("use_exact_integration",self.params["use_exact_integration"])
-        self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch(computing_model_part, search_parameters)
+        if (self.dimension == 2):
+            self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch2D(computing_model_part, search_parameters)
+        else:
+            self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch3D(computing_model_part, search_parameters)
         
         ZeroVector = KratosMultiphysics.Vector(3) 
         ZeroVector[0] = 0.0

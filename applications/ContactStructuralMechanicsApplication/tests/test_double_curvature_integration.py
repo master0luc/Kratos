@@ -110,7 +110,7 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
             if cond.Is(KratosMultiphysics.SLAVE):
                 to_test = (cond.Id in list_of_border_cond)
                 if (to_test == False):
-                    area = self.exact_integration.TestGetExactAreaIntegration(cond)
+                    area = self.exact_integration.TestGetExactAreaIntegration(self.contact_model_part, cond)
                     condition_area = cond.GetArea() 
                     check_value = abs((area - condition_area)/condition_area)
                     if (check_value >  tolerance):
@@ -145,7 +145,7 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
             tolerance = 1.0e-5
             for cond in self.contact_model_part.Conditions:
                 if cond.Is(KratosMultiphysics.SLAVE):
-                    area = self.exact_integration.TestGetExactAreaIntegration(cond)
+                    area = self.exact_integration.TestGetExactAreaIntegration(self.contact_model_part, cond)
                     condition_area = cond.GetArea() 
                     check_value = abs((area - condition_area)/condition_area)
                     if (check_value >  tolerance):

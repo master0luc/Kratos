@@ -557,11 +557,11 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteExplici
                 const array_1d<double, 3>& slave_normal = it_cond->GetValue(NORMAL);
                 GeometryType& slave_geometry = it_cond->GetGeometry();
                 
-                ConditionMap::Pointer& all_conditions_maps = it_cond->GetValue( MAPPING_PAIRS ); // These are the master conditions
+                IndexMap::Pointer& indexes_map = it_cond->GetValue( INDEX_MAP ); // These are the master conditions
                 
-                for (auto it_pair = all_conditions_maps->begin(); it_pair != all_conditions_maps->end(); ++it_pair )
+                for (auto it_pair = indexes_map->begin(); it_pair != indexes_map->end(); ++it_pair )
                 {
-                    Condition::Pointer p_cond_master = (it_pair->first); // MASTER
+                    Condition::Pointer p_cond_master = mrThisModelPart.pGetCondition(it_pair->first); // MASTER
                     const array_1d<double, 3>& master_normal = p_cond_master->GetValue(NORMAL); 
                     GeometryType& master_geometry = p_cond_master->GetGeometry();
                     
@@ -733,11 +733,11 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteImplici
                 const array_1d<double, 3>& slave_normal = it_cond->GetValue(NORMAL);
                 GeometryType& slave_geometry = it_cond->GetGeometry();
                 
-                ConditionMap::Pointer& all_conditions_maps = it_cond->GetValue( MAPPING_PAIRS ); // These are the master conditions
+                IndexMap::Pointer& indexes_map = it_cond->GetValue( INDEX_MAP ); // These are the master conditions
                 
-                for (auto it_pair = all_conditions_maps->begin(); it_pair != all_conditions_maps->end(); ++it_pair )
+                for (auto it_pair = indexes_map->begin(); it_pair != indexes_map->end(); ++it_pair )
                 {
-                    Condition::Pointer p_cond_master = (it_pair->first); // MASTER
+                    Condition::Pointer p_cond_master = mrThisModelPart.pGetCondition(it_pair->first); // MASTER
                     const array_1d<double, 3>& master_normal = p_cond_master->GetValue(NORMAL); 
                     GeometryType& master_geometry = p_cond_master->GetGeometry();
                     

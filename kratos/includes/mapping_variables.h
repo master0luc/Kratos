@@ -39,6 +39,8 @@ namespace Kratos
 ///@name Type Definitions
 ///@{
 
+    typedef std::size_t IndexType;
+    
 ///@}
 ///@name  Enum's
 ///@{
@@ -50,45 +52,54 @@ namespace Kratos
 ///@}
 ///@name Kratos Classes
 ///@{
-
+    
     /** @brief Custom Point container to be used by the mapper
     */
-    class ConditionMap : public std::unordered_map<Condition::Pointer, bool, SharedPointerHasher<Condition::Pointer>, SharedPointerComparator<Condition::Pointer> >
+    class IndexMap : public std::unordered_map<IndexType, IndexType>
     {
     public:
 
         ///@name Type Definitions
         ///@{
-        /// Counted pointer of ConditionMap
-        KRATOS_CLASS_POINTER_DEFINITION( ConditionMap );
+        /// Counted pointer of IndexMap
+        KRATOS_CLASS_POINTER_DEFINITION( IndexMap );
 
-        typedef std::unordered_map<Condition::Pointer, bool, SharedPointerHasher<Condition::Pointer>, SharedPointerComparator<Condition::Pointer> > BaseType;
+        typedef std::unordered_map<IndexType, IndexType> BaseType;
         
         ///@}
         ///@name Life Cycle
         ///@{
 
         /// Default constructors
-        ConditionMap(){}
+        IndexMap(){}
 
         /// Destructor
-        virtual ~ConditionMap(){}
+        virtual ~IndexMap(){}
 
         ///@}
         ///@name Operators
         ///@{
-
+        
         ///@}
         ///@name Operations
         ///@{
-
+        
         /**
-        * It removes one particular condition from the map
-        * @param pCond The condition to remove
+        * It adds a new ID to the map
+        * @param IndexOrigin The condition ID to remove
         */     
-        void RemoveCondition(Condition::Pointer pCond)
+        void AddId(const IndexType IndexOrigin)
         {
-            BaseType::iterator set = find(pCond);
+            insert({IndexOrigin, 0});
+        }
+        
+        /**
+        * It removes one particular pair from the map
+        * @param IndexOrigin The condition ID to remove
+        */     
+        void RemoveId(const IndexType IndexOrigin)
+        {
+            BaseType::iterator set = find(IndexOrigin);
             if(set != end())
             {
                 erase(set);
@@ -96,87 +107,59 @@ namespace Kratos
         }
         
         /**
-        * It adds one new condition
-        * @param pCond The condition to set
+        * It adds one new pair
+        * @param IndexOrigin The ID of the paired condition in the base model part
+        * @param IndexDestiny The ID of the paired condition in the auxiliar model part
         */
-        void AddNewCondition(Condition::Pointer pCond)
+        void AddNewPair(
+            const IndexType IndexOrigin, 
+            const IndexType IndexDestiny
+            )
         {
-            insert({pCond, true}); // True by default when adding a new one
+            insert({IndexOrigin, IndexDestiny});
         }
         
         /**
-        * It adds one new condition, as active
-        * @param pCond The condition to set
+        * It set updates the auxiliar condition index
+        * @param IndexOrigin The ID of the paired condition in the base model part
+        * @param IndexDestiny The ID of the paired condition in the auxiliar model part
         */
-        void AddNewActiveCondition(Condition::Pointer pCond)
+        void SetNewAuxiliarIndex(
+            const IndexType IndexOrigin, 
+            const IndexType IndexDestiny
+            )
         {
-            insert({pCond, true});
-        }
-        
-        /**
-        * It adds one new condition, as inactive
-        * @param pCond The condition to set
-        */
-        void AddNewInactiveCondition(Condition::Pointer pCond)
-        {
-            insert({pCond, false});
-        }
-        
-        /**
-        * It sets one particular condition as active or not
-        * @param pCond The condition to set
-        * @param Active The flag, true if active, false otherwise
-        */
-        void SetActive(Condition::Pointer pCond, const bool Active = true)
-        {
-            BaseType::iterator set = find(pCond);
+            BaseType::iterator set = find(IndexOrigin);
             if(set != end())
             {
-                set->second = Active;
+                set->second = IndexDestiny;
             }
         }
         
         /**
         * It checks if one particular condition is active
-        * @param pCond The condition to check
-        * @return True if it is active, false otherwise
+        * @param IndexOrigin The ID of the paired condition in the base model part
+        * @return  The ID of the paired condition in the auxiliar model part
         */
-        bool IsActive(Condition::Pointer pCond) const 
+        IndexType GetAuxiliarIndex(const IndexType IndexOrigin) const 
         {
-            BaseType::const_iterator set = find(pCond);
+            BaseType::const_iterator set = find(IndexOrigin);
             return (set->second);
         }
-        
-        /**
-        * It checks if at least one pair is active
-        * @return True if at least one pair is active, false otherwise
-        */
-        bool AtLeastOnePairActive()
-        {
-            for ( auto it = begin(); it != end(); ++it )
-            {
-                if (it->second == true)
-                {
-                    return true;
-                }
-            }
-            
-            return false;
-        }
-        
-        /**
-        * Print the map information
-        */
-        void print()
-        {
-            for ( auto it = begin(); it != end(); ++it )
-            {
-                std::cout << "The condition " << (it->first)->Id() << " is ACTIVE: " << it->second;
-                
-                KRATOS_WATCH((it->first)->GetGeometry());
-            }
-        }
 
+        /**
+         * Turn back information as a string.
+         */
+        std::string Info() const //override
+        {
+            std::stringstream buffer;
+            for ( auto it = begin(); it != end(); ++it )
+            {
+                buffer << "The condition " << (it->first) << " is paired with: " << it->second;
+            }
+            return buffer.str();
+        }
+        
         void save( Serializer& rSerializer ) const
         {
             // TODO: Fill if necessary
@@ -195,7 +178,7 @@ namespace Kratos
         ///@}
         ///@name Protected member Variables
         ///@{
-
+        
         ///@}
         ///@name Protected Operators
         ///@{
@@ -224,8 +207,6 @@ namespace Kratos
         ///@name Member Variables
         ///@{
 
-            
-
         ///@}
         ///@name Private Operators
         ///@{
@@ -250,9 +231,9 @@ namespace Kratos
         ///@name Unaccessible methods
         ///@{
         ///@}
-    }; // Class ConditionMap 
+    }; // Class IndexMap 
     
-    KRATOS_DEFINE_VARIABLE( ConditionMap::Pointer, MAPPING_PAIRS ) // An unordened map of which contains the structure
+    KRATOS_DEFINE_VARIABLE( IndexMap::Pointer, INDEX_MAP )         // An unordened map of which contains the indexes with the paired 
     KRATOS_DEFINE_VARIABLE( double, TANGENT_FACTOR )               // The factor between the tangent and normal behaviour
 
 } // namespace Kratos
