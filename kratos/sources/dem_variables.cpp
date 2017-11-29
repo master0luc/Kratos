@@ -20,10 +20,7 @@
 // Project includes
 #include "includes/define.h"
 #include "includes/dem_variables.h"
-#include "includes/kernel.h"
-#include "includes/node.h"
-
-#include "includes/kratos_flags.h"
+#include "includes/kratos_application.h"
 
 namespace Kratos
 {
