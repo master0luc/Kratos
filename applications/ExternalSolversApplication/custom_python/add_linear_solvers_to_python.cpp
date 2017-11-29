@@ -20,7 +20,6 @@
 // Project includes
 #include "includes/define.h"
 #include "includes/kratos_parameters.h"
-#include "python/add_equation_systems_to_python.h"
 #include "spaces/ublas_space.h"
 
 #include "linear_solvers/direct_solver.h"
