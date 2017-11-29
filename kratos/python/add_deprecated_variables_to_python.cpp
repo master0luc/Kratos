@@ -20,6 +20,7 @@
 // Project includes
 #include "includes/define.h"
 #include "includes/deprecated_variables.h"
+#include "python/add_deprecated_variables_to_python.h"
 
 namespace Kratos
 {
