@@ -28,7 +28,7 @@ TreeContactSearch<TDim>::TreeContactSearch(
     ):mrMainModelPart(rMainModelPart), 
       mThisParameters(ThisParameters)
 {        
-    KRATOS_ERROR_IF(mrMainModelPart.HasSubModelPart("Contact") == false) << "WARNING:: Please add the contact submodelpart to your modelpart list" << std::endl;
+    KRATOS_ERROR_IF(mrMainModelPart.HasSubModelPart("Contact") == false) << "WARNING:: Please add the Contact submodelpart to your modelpart list" << std::endl;
     
     Parameters DefaultParameters = Parameters(R"(
     {
@@ -71,13 +71,19 @@ TreeContactSearch<TDim>::TreeContactSearch(
     // Updating the base condition
     GeometryType& auxiliar_geom = mrMainModelPart.GetSubModelPart("Contact").Conditions().begin()->GetGeometry();
     mGeometryType = auxiliar_geom.GetGeometryType();
-    mConditionName = mThisParameters["condition_name"].GetString(); 
-    mConditionName.append("Condition"); 
-    mConditionName.append(std::to_string(TDim));
-    mConditionName.append("D"); 
-    mConditionName.append(std::to_string(auxiliar_geom.size())); 
-    mConditionName.append("N"); 
-    mConditionName.append(mThisParameters["final_string"].GetString());
+    mConditionName = mThisParameters["condition_name"].GetString();
+    if (mConditionName == "") 
+        mCreateAuxiliarConditions = false;
+    else 
+    {
+        mCreateAuxiliarConditions = true;
+        mConditionName.append("Condition"); 
+        mConditionName.append(std::to_string(TDim));
+        mConditionName.append("D"); 
+        mConditionName.append(std::to_string(auxiliar_geom.size())); 
+        mConditionName.append("N"); 
+        mConditionName.append(mThisParameters["final_string"].GetString());
+    }
     
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
     const int num_nodes = static_cast<int>(nodes_array.size());

@@ -708,7 +708,7 @@ bool ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::GetExactIntegratio
             
             const double det_J = decomp_geom.DeterminantOfJacobian( local_point_decomp ) * (TDim == 2 ? 2.0 : 1.0);
             
-            IntegrationPointsSlave.push_back( IntegrationPointType( local_point_parent.Coordinate(1), local_point_parent.Coordinate(2), weight * det_J )); // TODO: Change push_back for a fix opoeration
+            IntegrationPointsSlave.push_back( IntegrationPointType( local_point_parent.Coordinate(1), local_point_parent.Coordinate(2), weight * det_J )); // TODO: Change push_back for a fix operation
         }
     }
     
@@ -731,7 +731,7 @@ bool ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::GetExactAreaIntegr
     
     const bool is_inside = GetExactIntegration(OriginalSlaveGeometry, SlaveNormal, OriginalMasterGeometry, MasterNormal, conditions_points_slave);
     
-    GetTotalArea(OriginalSlaveGeometry, conditions_points_slave, rArea);
+    if (is_inside) GetTotalArea(OriginalSlaveGeometry, conditions_points_slave, rArea);
     
     return is_inside;
 }
@@ -812,9 +812,11 @@ double ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::TestGetExactArea
     IndexMap::Pointer indexes_map = SlaveCond->GetValue( INDEX_MAP );
     
     for (auto it_pair = indexes_map->begin(); it_pair != indexes_map->end(); ++it_pair )
-    {
+    {        
+        double local_area = 0.0;
         Condition::Pointer p_master_cond = rMainModelPart.pGetCondition(it_pair->first);
-        GetExactAreaIntegration(SlaveCond->GetGeometry(), SlaveCond->GetValue(NORMAL), p_master_cond->GetGeometry(), p_master_cond->GetValue(NORMAL), area);
+        const bool is_inside = GetExactAreaIntegration(SlaveCond->GetGeometry(), SlaveCond->GetValue(NORMAL), p_master_cond->GetGeometry(), p_master_cond->GetValue(NORMAL), local_area);
+        if (is_inside) area += local_area;
     }
     
     return area;

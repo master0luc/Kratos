@@ -306,7 +306,7 @@ protected:
         Properties::Pointer pThisProperties = pCondSlave->pGetProperties();
         
         // We update the base condition
-        if (slave_geometry.GetGeometryType() != mGeometryType)
+        if (mCreateAuxiliarConditions && slave_geometry.GetGeometryType() != mGeometryType)
         {
             mConditionName = mThisParameters["mConditionName"].GetString(); 
             mConditionName.append("Condition"); 
@@ -337,9 +337,13 @@ protected:
                 // If condition is active we add
                 if (condition_is_active) 
                 {
-                    ++ConditionId;
-                    IndexesMap->AddNewPair(p_cond_master->Id(), ConditionId);
-                    ComputingModelPart.CreateNewCondition(mConditionName, ConditionId, slave_geometry, pThisProperties);
+                    if (mCreateAuxiliarConditions)
+                    {
+                        IndexesMap->AddNewPair(p_cond_master->Id(), ++ConditionId);
+                        ComputingModelPart.CreateNewCondition(mConditionName, ConditionId, slave_geometry, pThisProperties);
+                    }
+                    else
+                        IndexesMap->AddNewPair(p_cond_master->Id(), 0);
                 }
             }
             else if (condition_checked_right == AlreadyInTheMap)
@@ -351,7 +355,7 @@ protected:
                     const std::size_t index_slave = p_cond_master->Id();
                     const std::size_t index_master = IndexesMap->GetAuxiliarIndex(index_slave);
                     IndexesMap->RemoveId(p_cond_master->Id());
-                    ComputingModelPart.pGetCondition(index_master)->Set(TO_ERASE, true);
+                    if (mCreateAuxiliarConditions) ComputingModelPart.pGetCondition(index_master)->Set(TO_ERASE, true);
                 }
             }
         }
@@ -445,6 +449,7 @@ private:
     Parameters mThisParameters;                      // The configuration parameters
     bool mInvertedSearch;                            // The search will be done inverting the way master and slave/master is assigned
     std::string mConditionName;                      // The name of the condition to be created
+    bool mCreateAuxiliarConditions;                  // If the auxiliar conditions are created or not
     PointVector mPointListDestination;               // A list that contents the all the points (from nodes) from the modelpart 
 
     ///@}
