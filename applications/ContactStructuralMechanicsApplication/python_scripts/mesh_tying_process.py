@@ -76,15 +76,11 @@ class MeshTyingProcess(python_process.PythonProcess):
         
         self.Preprocess = ContactStructuralMechanicsApplication.InterfacePreprocessCondition(self.main_model_part)
         
-        condition_name = "MeshTyingMortar"
-        
         #print("MODEL PART BEFORE CREATING INTERFACE")
         #print(self.main_model_part) 
         
         # It should create the conditions automatically
-        interface_parameters = KratosMultiphysics.Parameters("""{"condition_name": "", "final_string": "", "simplify_geometry": false}""")
-        interface_parameters["condition_name"].SetString(condition_name)
-        interface_parameters["final_string"].SetString(self.geometry_element + self.type_variable)
+        interface_parameters = KratosMultiphysics.Parameters("""{"simplify_geometry": false}""")
         if (self.dimension == 2):
             self.Preprocess.GenerateInterfacePart2D(computing_model_part, self.mesh_tying_model_part, interface_parameters) 
         else:
@@ -107,11 +103,14 @@ class MeshTyingProcess(python_process.PythonProcess):
         del(node)
         
         # Creating the search
-        search_parameters = KratosMultiphysics.Parameters("""{}""")
+        condition_name = "MeshTyingMortar"
+        search_parameters = KratosMultiphysics.Parameters("""{"condition_name": "", "final_string": ""}""")
         search_parameters.AddValue("type_search",self.params["type_search"])
         search_parameters.AddValue("allocation_size",self.params["max_number_results"])
         search_parameters.AddValue("bucket_size",self.params["bucket_size"])
         search_parameters.AddValue("search_factor",self.params["search_factor"])
+        search_parameters["condition_name"].SetString(condition_name)
+        search_parameters["final_string"].SetString(self.geometry_element + self.type_variable)
         if (self.dimension == 2):
             self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch2D(computing_model_part, search_parameters)
         else:
