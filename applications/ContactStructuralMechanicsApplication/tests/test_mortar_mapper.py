@@ -83,8 +83,7 @@ class TestMortarMapping(KratosUnittest.TestCase):
         {
             "search_factor"               : 3.5,
             "allocation_size"             : 1000,
-            "type_search"                 : "InRadius",
-            "condition_name"              : "ALMFrictionlessMortarContact"
+            "type_search"                 : "InRadius"
         }
         """)
         contact_search = ContactStructuralMechanicsApplication.TreeContactSearch3D(self.main_model_part, search_parameters)

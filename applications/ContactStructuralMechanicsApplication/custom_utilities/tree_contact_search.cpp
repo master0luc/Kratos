@@ -368,7 +368,7 @@ void TreeContactSearch<TDim>::UpdateMortarConditions()
     const int num_conditions = static_cast<int>(conditions_array.size());
 
 // #ifdef _OPENMP
-//     #pragma omp parallel for firstprivate(tree_points)
+//     #pragma omp parallel for firstprivate(tree_points) // FIXME: Make me parallel!!! 
 // #endif
     for(int i = 0; i < num_conditions; ++i) 
     {
