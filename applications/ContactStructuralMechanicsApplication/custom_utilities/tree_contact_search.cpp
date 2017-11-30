@@ -50,7 +50,7 @@ TreeContactSearch<TDim>::TreeContactSearch(
     {
         mrMainModelPart.CreateSubModelPart("ComputingContact");
     }
-    else // We claean the existing modelpart
+    else // We clean the existing modelpart
     {
         ModelPart& computing_contact_model_part = mrMainModelPart.GetSubModelPart("ComputingContact"); 
         ConditionsArrayType& conditions_array = computing_contact_model_part.Conditions();
@@ -67,16 +67,15 @@ TreeContactSearch<TDim>::TreeContactSearch(
     }
     
     // Updating the base condition
-    const GeometryType& auxiliar_geom = mrMainModelPart.GetSubModelPart("Contact").Conditions().begin()->GetGeometry();
+    GeometryType& auxiliar_geom = mrMainModelPart.GetSubModelPart("Contact").Conditions().begin()->GetGeometry();
     mGeometryType = auxiliar_geom.GetGeometryType();
-    std::string condition_name = mThisParameters["condition_name"].GetString(); 
-    condition_name.append("Condition"); 
-    condition_name.append(std::to_string(TDim));
-    condition_name.append("D"); 
-    condition_name.append(std::to_string(auxiliar_geom.size())); 
-    condition_name.append("N"); 
-    condition_name.append(mThisParameters["final_string"].GetString());
-    mrCondition = KratosComponents<Condition>::Get(condition_name);
+    mConditionName = mThisParameters["condition_name"].GetString(); 
+    mConditionName.append("Condition"); 
+    mConditionName.append(std::to_string(TDim));
+    mConditionName.append("D"); 
+    mConditionName.append(std::to_string(auxiliar_geom.size())); 
+    mConditionName.append("N"); 
+    mConditionName.append(mThisParameters["final_string"].GetString());
     
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
     const int num_nodes = static_cast<int>(nodes_array.size());
@@ -379,7 +378,7 @@ void TreeContactSearch<TDim>::UpdateMortarConditions()
                 
                 if (number_points_found > 0)
                 {                           
-                    IndexMap::Pointer& indexes_map = it_cond->GetValue(INDEX_MAP);
+                    IndexMap::Pointer indexes_map = it_cond->GetValue(INDEX_MAP);
                     Condition::Pointer p_cond_slave = (*it_cond.base()); // MASTER
                     
                     // If not active we check if can be potentially in contact
@@ -514,7 +513,7 @@ inline void TreeContactSearch<2>::CheckPotentialPairing(
     ModelPart& ComputingModelPart,
     std::size_t& ConditionId,
     Condition::Pointer pCondSlave,
-    const PointVector& PointsFound,
+    PointVector& PointsFound,
     IndexMap::Pointer IndexesMap
     )
 {
@@ -539,7 +538,7 @@ inline void TreeContactSearch<3>::CheckPotentialPairing(
     ModelPart& ComputingModelPart,
     std::size_t& ConditionId,
     Condition::Pointer pCondSlave,
-    const PointVector& PointsFound,
+    PointVector& PointsFound,
     IndexMap::Pointer IndexesMap
     )
 {    

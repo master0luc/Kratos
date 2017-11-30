@@ -282,7 +282,7 @@ protected:
         ModelPart& ComputingModelPart,
         std::size_t& ConditionId,
         Condition::Pointer pCondSlave,
-        const PointVector& PointsFound,
+        PointVector& PointsFound,
         IndexMap::Pointer IndexesMap
         );
     
@@ -294,28 +294,27 @@ protected:
         ModelPart& ComputingModelPart,
         std::size_t& ConditionId,
         Condition::Pointer pCondSlave,
-        const PointVector& PointsFound,
+        PointVector& PointsFound,
         IndexMap::Pointer IndexesMap
         )
-    {
+    {        
         // Some initial parameters
         const double active_check_factor = mrMainModelPart.GetProcessInfo()[ACTIVE_CHECK_FACTOR];
         const array_1d<double, 3>& contact_normal_origin = pCondSlave->GetValue(NORMAL);
-        GeometryType& this_geometry = pCondSlave->GetGeometry();
-        const double active_check_length = this_geometry.Length() * active_check_factor;
+        GeometryType& slave_geometry = pCondSlave->GetGeometry();
+        const double active_check_length = slave_geometry.Length() * active_check_factor;
         Properties::Pointer pThisProperties = pCondSlave->pGetProperties();
         
         // We update the base condition
-        if (this_geometry.GetGeometryType() != mGeometryType)
+        if (slave_geometry.GetGeometryType() != mGeometryType)
         {
-            std::string condition_name = mThisParameters["condition_name"].GetString(); 
-            condition_name.append("Condition"); 
-            condition_name.append(std::to_string(TDim));
-            condition_name.append("D"); 
-            condition_name.append(std::to_string(TNumNodes)); 
-            condition_name.append("N"); 
-            condition_name.append(mThisParameters["final_string"].GetString());
-            mrCondition = KratosComponents<Condition>::Get(condition_name);   
+            mConditionName = mThisParameters["mConditionName"].GetString(); 
+            mConditionName.append("Condition"); 
+            mConditionName.append(std::to_string(TDim));
+            mConditionName.append("D"); 
+            mConditionName.append(std::to_string(TNumNodes)); 
+            mConditionName.append("N"); 
+            mConditionName.append(mThisParameters["final_string"].GetString());
         }
         
         MortarKinematicVariables<TNumNodes> rVariables;
@@ -325,7 +324,7 @@ protected:
         for(unsigned int i_pair = 0; i_pair < PointsFound.size(); ++i_pair)
         {   
             bool condition_is_active = false;
-                                        
+            
             Condition::Pointer p_cond_master = PointsFound[i_pair]->GetCondition(); // MASTER
             const array_1d<double, 3>& master_normal = p_cond_master->GetValue(NORMAL); 
                                 
@@ -333,15 +332,14 @@ protected:
             
             if (condition_checked_right == OK)
             {   
-                condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, true>(rVariables, rThisMortarConditionMatrices, integration_utility, pCondSlave->GetGeometry(), p_cond_master->GetGeometry(), contact_normal_origin, master_normal, active_check_length);
+                condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, true>(rVariables, rThisMortarConditionMatrices, integration_utility, slave_geometry, p_cond_master->GetGeometry(), contact_normal_origin, master_normal, active_check_length);
                 
                 // If condition is active we add
                 if (condition_is_active) 
                 {
                     ++ConditionId;
                     IndexesMap->AddNewPair(p_cond_master->Id(), ConditionId);
-                    Condition::Pointer p_cond = Condition::Pointer(mrCondition.Create(ConditionId, this_geometry, pThisProperties));
-                    ComputingModelPart.AddCondition(p_cond);
+                    ComputingModelPart.CreateNewCondition(mConditionName, ConditionId, slave_geometry, pThisProperties);
                 }
             }
             else if (condition_checked_right == AlreadyInTheMap)
@@ -446,7 +444,7 @@ private:
     GeometryData::KratosGeometryType mGeometryType;  // The current size of the geometry considered
     Parameters mThisParameters;                      // The configuration parameters
     bool mInvertedSearch;                            // The search will be done inverting the way master and slave/master is assigned
-    Condition mrCondition;                           // The base condition used to create the new ones
+    std::string mConditionName;                      // The name of the condition to be created
     PointVector mPointListDestination;               // A list that contents the all the points (from nodes) from the modelpart 
 
     ///@}

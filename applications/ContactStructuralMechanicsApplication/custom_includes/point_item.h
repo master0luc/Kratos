@@ -61,11 +61,13 @@ public:
 
     /// Default constructors
     PointItem():
-        Point()
+        Point(),
+        mpOriginCond(nullptr)
     {}
 
-    PointItem(const array_1d<double, 3> Coords):
-        Point(Coords)
+    PointItem(const array_1d<double, 3>& Coords)
+        :Point(Coords),
+         mpOriginCond(nullptr)
     {}
     
     PointItem(Condition::Pointer pCond):
@@ -75,7 +77,7 @@ public:
     }
     
     PointItem(
-        const array_1d<double, 3> Coords,
+        const array_1d<double, 3>& Coords,
         Condition::Pointer pCond
     ):
         Point(Coords),
@@ -132,11 +134,14 @@ public:
     
     /**
      * Returns the condition associated to the point
-     * @return mpOriginCond: The pointer to the condition associated to the point
+     * @return mpOriginCond The pointer to the condition associated to the point
      */
 
     Condition::Pointer GetCondition()
     {
+    #ifdef KRATOS_DEBUG
+        KRATOS_ERROR_IF(mpOriginCond == nullptr) << "Condition no itialized in the PointItem class" << std::endl;
+    #endif
         return mpOriginCond;
     }
     
@@ -145,7 +150,7 @@ public:
      * @param DeltaTime The increment in the time scheme
      */
 
-    void UpdatePoint(const double& DeltaTime)
+    void UpdatePoint(const double DeltaTime)
     {        
         bool update_coordinates = false;
         if (mpOriginCond->GetGeometry()[0].SolutionStepsDataHas(VELOCITY_X) == true && DeltaTime > 0.0)
