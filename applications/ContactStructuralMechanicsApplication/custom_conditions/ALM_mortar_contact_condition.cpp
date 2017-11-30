@@ -409,7 +409,9 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
                                 
                 double& weighted_gap = slave_geometry[i_node].FastGetSolutionStepValue(WEIGHTED_GAP);
                 
+            #ifdef _OPENMP
                 #pragma omp atomic
+            #endif
                 weighted_gap += inner_prod(aux_array, - subrange(normal, 0, TDim)); 
             }
             
@@ -435,7 +437,9 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
                                 
                     double& weighted_slip = slave_geometry[i_node].FastGetSolutionStepValue(WEIGHTED_SLIP);
 
+                #ifdef _OPENMP
                     #pragma omp atomic
+                #endif
                     weighted_slip += inner_prod(aux_array, tangent); 
                 }
             }

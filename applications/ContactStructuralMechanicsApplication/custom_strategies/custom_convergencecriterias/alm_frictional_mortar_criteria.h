@@ -49,7 +49,8 @@ namespace Kratos
 /** @brief Custom convergence criteria for the mortar condition 
  */
 template<class TSparseSpace, class TDenseSpace>
-class ALMFrictionalMortarConvergenceCriteria : public virtual  BaseMortarConvergenceCriteria< TSparseSpace, TDenseSpace >
+class ALMFrictionalMortarConvergenceCriteria 
+    : public virtual  BaseMortarConvergenceCriteria< TSparseSpace, TDenseSpace >
 {
 public:
     ///@name Type Definitions
@@ -167,8 +168,10 @@ public:
         NodesArrayType& nodes_array = rModelPart.GetSubModelPart("Contact").Nodes();
         const int num_nodes = static_cast<int>(nodes_array.size());
 
+    #ifdef _OPENMP
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+    #endif
+        for(int i = 0; i < num_nodes; ++i) 
         {
             auto it_node = nodes_array.begin() + i;
             
@@ -196,7 +199,9 @@ public:
                     if (it_node->Is(ACTIVE) == false )
                     {
                         it_node->Set(ACTIVE, true);
+                    #ifdef _OPENMP
                         #pragma omp atomic
+                    #endif
                         is_converged_active += 1;
                     }
                     
@@ -227,7 +232,9 @@ public:
                         if (it_node->Is(SLIP) == false )
                         {
                             it_node->Set(SLIP, true);
+                        #ifdef _OPENMP
                             #pragma omp atomic
+                        #endif
                             is_converged_slip += 1;
                         }
                     }   
@@ -237,7 +244,9 @@ public:
                     if (it_node->Is(ACTIVE) == true )
                     {
                         it_node->Set(ACTIVE, false);
+                    #ifdef _OPENMP
                         #pragma omp atomic
+                    #endif
                         is_converged_active += 1;
                     }
                 }
@@ -252,46 +261,30 @@ public:
                 if (is_converged_active == 0)
                 {
                     if (mPrintingOutput == false)
-                    {
                         table << BOLDFONT(FGRN("       Achieved"));
-                    }
                     else
-                    {
                         table << "Achieved";
-                    }
                 }
                 else
                 {
                     if (mPrintingOutput == false)
-                    {
                         table << BOLDFONT(FRED("   Not achieved"));
-                    }
                     else
-                    {
                         table << "Not achieved";
-                    }
                 }
                 if (is_converged_slip == 0)
                 {
                     if (mPrintingOutput == false)
-                    {
                         table << BOLDFONT(FGRN("       Achieved"));
-                    }
                     else
-                    {
                         table << "Achieved";
-                    }
                 }
                 else
                 {
                     if (mPrintingOutput == false)
-                    {
                         table << BOLDFONT(FRED("   Not achieved"));
-                    }
                     else
-                    {
                         table << "Not achieved";
-                    }
                 }
             }
             else
@@ -299,47 +292,31 @@ public:
                 if (is_converged_active == 0)
                 {
                     if (mPrintingOutput == false)
-                    {
                         std::cout << BOLDFONT("\tActive set") << " convergence is " << BOLDFONT(FGRN("achieved")) << std::endl;
-                    }
                     else
-                    {
                         std::cout << "\tActive set convergence is achieved" << std::endl;
-                    }
                 }
                 else
                 {
                     if (mPrintingOutput == false)
-                    {
                         std::cout << BOLDFONT("\tActive set") << " convergence is " << BOLDFONT(FRED("not achieved")) << std::endl;
-                    }
                     else
-                    {
                         std::cout << "\tActive set convergence is not achieved" << std::endl;
-                    }
                 }
                 
                 if (is_converged_slip == 0)
                 {
                     if (mPrintingOutput == false)
-                    {
                         std::cout << BOLDFONT("\tSlip/stick set") << " convergence is " << BOLDFONT(FGRN("achieved")) << std::endl;
-                    }
                     else
-                    {
                         std::cout << "\tSlip/stick set convergence is achieved" << std::endl;
-                    }
                 }
                 else
                 {
                     if (mPrintingOutput == false)
-                    {
                         std::cout << BOLDFONT("\tSlip/stick set") << " convergence is " << BOLDFONT(FRED("not achieved")) << std::endl;
-                    }
                     else
-                    {
                         std::cout << "\tSlip/stick set  convergence is not achieved" << std::endl;
-                    }
                 }
             }
         }
@@ -386,63 +363,6 @@ public:
         ContactUtilities::ComputeNodesMeanNormalModelPart( rModelPart.GetSubModelPart("Contact") );  
     }
     
-    /**
-     * This function finalizes the solution step
-     * @param rModelPart Reference to the ModelPart containing the contact problem.
-     * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
-     * @param A System matrix (unused)
-     * @param Dx Vector of results (variations on nodal variables)
-     * @param b RHS vector (residual)
-     */
-    
-    void FinalizeSolutionStep(
-        ModelPart& rModelPart,
-        DofsArrayType& rDofSet,
-        const TSystemMatrixType& A,
-        const TSystemVectorType& Dx,
-        const TSystemVectorType& b
-        ) override
-    {
-    }
-
-    /**
-     * This function initializes the non linear iteration
-     * @param rModelPart Reference to the ModelPart containing the contact problem.
-     * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
-     * @param A System matrix (unused)
-     * @param Dx Vector of results (variations on nodal variables)
-     * @param b RHS vector (residual)
-     */
-    
-    void InitializeNonLinearIteration(
-        ModelPart& rModelPart,
-        DofsArrayType& rDofSet,
-        const TSystemMatrixType& A,
-        const TSystemVectorType& Dx,
-        const TSystemVectorType& b
-        ) override
-    {
-    }
-    
-    /**
-     * This function finalizes the non linear iteration
-     * @param rModelPart Reference to the ModelPart containing the contact problem.
-     * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
-     * @param A System matrix (unused)
-     * @param Dx Vector of results (variations on nodal variables)
-     * @param b RHS vector (residual)
-     */
-    
-    void FinalizeNonLinearIteration(
-        ModelPart& rModelPart,
-        DofsArrayType& rDofSet,
-        const TSystemMatrixType& A,
-        const TSystemVectorType& Dx,
-        const TSystemVectorType& b
-        ) override
-    {
-    }
-    
     ///@}
     ///@name Operations
     ///@{
@@ -486,8 +406,10 @@ protected:
         NodesArrayType& nodes_array = rModelPart.GetSubModelPart("Contact").Nodes();
         const int num_nodes = static_cast<int>(nodes_array.size());
 
+    #ifdef _OPENMP
         #pragma omp parallel for 
-        for(int i = 0; i < num_nodes; i++) 
+    #endif
+        for(int i = 0; i < num_nodes; ++i) 
         {
             auto it_node = nodes_array.begin() + i;
             

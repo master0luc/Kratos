@@ -56,7 +56,9 @@ TreeContactSearch<TDim>::TreeContactSearch(
         ConditionsArrayType& conditions_array = computing_contact_model_part.Conditions();
         const int num_conditions = static_cast<int>(conditions_array.size());
 
+    #ifdef _OPENMP
         #pragma omp parallel for 
+    #endif
         for(int i = 0; i < num_conditions; ++i) 
         {
             auto it_cond = conditions_array.begin() + i;
@@ -80,7 +82,9 @@ TreeContactSearch<TDim>::TreeContactSearch(
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
     const int num_nodes = static_cast<int>(nodes_array.size());
     
+#ifdef _OPENMP
     #pragma omp parallel for 
+#endif
     for(int i = 0; i < num_nodes; ++i) 
     {
         auto it_node = nodes_array.begin() + i;
@@ -91,7 +95,9 @@ TreeContactSearch<TDim>::TreeContactSearch(
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
     const int num_conditions = static_cast<int>(conditions_array.size());
 
+#ifdef _OPENMP
     #pragma omp parallel for 
+#endif
     for(int i = 0; i < num_conditions; ++i) 
     {
         auto it_cond = conditions_array.begin() + i;
@@ -112,7 +118,9 @@ void TreeContactSearch<TDim>::InitializeMortarConditions()
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
     const int num_conditions = static_cast<int>(conditions_array.size());
 
+#ifdef _OPENMP
     #pragma omp parallel for 
+#endif
     for(int i = 0; i < num_conditions; ++i) 
     {
         auto it_cond = conditions_array.begin() + i;
@@ -133,7 +141,9 @@ void TreeContactSearch<TDim>::TotalClearScalarMortarConditions()
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
     const int num_nodes = static_cast<int>(nodes_array.size());
     
+#ifdef _OPENMP
     #pragma omp parallel for 
+#endif
     for(int i = 0; i < num_nodes; ++i) 
     {
         auto it_node = nodes_array.begin() + i;
@@ -152,7 +162,9 @@ void TreeContactSearch<TDim>::TotalClearComponentsMortarConditions()
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
     const int num_nodes = static_cast<int>(nodes_array.size());
     
+#ifdef _OPENMP
     #pragma omp parallel for 
+#endif
     for(int i = 0; i < num_nodes; ++i) 
     {
         auto it_node = nodes_array.begin() + i;
@@ -171,7 +183,9 @@ void TreeContactSearch<TDim>::TotalClearALMFrictionlessMortarConditions()
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
     const int num_nodes = static_cast<int>(nodes_array.size());
     
+#ifdef _OPENMP
     #pragma omp parallel for 
+#endif
     for(int i = 0; i < num_nodes; ++i) 
     {
         auto it_node = nodes_array.begin() + i;
@@ -188,7 +202,9 @@ void TreeContactSearch<TDim>::PartialClearScalarMortarConditions()
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
     const int num_nodes = static_cast<int>(nodes_array.size());
     
+#ifdef _OPENMP
     #pragma omp parallel for 
+#endif
     for(int i = 0; i < num_nodes; ++i) 
     {
         auto it_node = nodes_array.begin() + i;
@@ -205,7 +221,9 @@ void TreeContactSearch<TDim>::PartialClearComponentsMortarConditions()
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
     const int num_nodes = static_cast<int>(nodes_array.size());
     
+#ifdef _OPENMP
     #pragma omp parallel for 
+#endif
     for(int i = 0; i < num_nodes; ++i) 
     {
         auto it_node = nodes_array.begin() + i;
@@ -222,7 +240,9 @@ void TreeContactSearch<TDim>::PartialClearALMFrictionlessMortarConditions()
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
     const int num_nodes = static_cast<int>(nodes_array.size());
     
+#ifdef _OPENMP
     #pragma omp parallel for 
+#endif
     for(int i = 0; i < num_nodes; ++i) 
     {
         auto it_node = nodes_array.begin() + i;
@@ -247,11 +267,15 @@ void TreeContactSearch<TDim>::CreatePointListMortar()
     const int num_threads = OpenMPUtils::GetNumThreads();
     std::vector<PointVector> points_buffer(num_threads);
 
+#ifdef _OPENMP
     #pragma omp parallel
     {
+#endif
         const int thread_id = OpenMPUtils::ThisThread();
 
+    #ifdef _OPENMP
         #pragma omp for
+    #endif
         for(int i = 0; i < num_conditions; ++i) 
         {
             auto it_cond = conditions_array.begin() + i;
@@ -271,7 +295,9 @@ void TreeContactSearch<TDim>::CreatePointListMortar()
                 std::move(point_buffer.begin(),point_buffer.end(),back_inserter(mPointListDestination));
             }
         }
+#ifdef _OPENMP
     }
+#endif
     
 #ifdef KRATOS_DEBUG
     // NOTE: We check the list
@@ -293,7 +319,9 @@ void TreeContactSearch<TDim>::UpdatePointListMortar()
     
     const int num_points = static_cast<int>(mPointListDestination.size());
     
+#ifdef _OPENMP
     #pragma omp parallel for 
+#endif
     for(int i = 0; i < num_points; ++i) mPointListDestination[i]->UpdatePoint(delta_time);
 }
 
@@ -421,7 +449,9 @@ void TreeContactSearch<TDim>::CleanMortarConditions()
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
     const int num_conditions = static_cast<int>(conditions_array.size());
     
+#ifdef _OPENMP
     #pragma omp parallel for 
+#endif
     for(int i = 0; i < num_conditions; ++i) 
     {
         auto it_cond = conditions_array.begin() + i;
@@ -656,7 +686,9 @@ void TreeContactSearch<TDim>::ResetContactOperators()
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
     const int num_conditions = static_cast<int>(conditions_array.size());
     
+#ifdef _OPENMP
     #pragma omp parallel for 
+#endif
     for(int i = 0; i < num_conditions; ++i) 
     {
         auto it_cond = conditions_array.begin() + i;
@@ -682,7 +714,9 @@ void TreeContactSearch<TDim>::TotalResetContactOperators()
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
     const int num_conditions = static_cast<int>(conditions_array.size());
     
+#ifdef _OPENMP
     #pragma omp parallel for 
+#endif
     for(int i = 0; i < num_conditions; ++i) 
     {
         auto it_cond = conditions_array.begin() + i;

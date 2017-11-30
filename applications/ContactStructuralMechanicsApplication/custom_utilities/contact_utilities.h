@@ -149,7 +149,9 @@ public:
         NodesArrayType& nodes_array = rModelPart.Nodes();
         const int num_nodes = static_cast<int>(nodes_array.size()); 
         
+    #ifdef _OPENMP
         #pragma omp parallel for
+    #endif
         for(int i = 0; i < num_nodes; ++i) 
         {
             auto it_node = nodes_array.begin() + i;
@@ -160,7 +162,9 @@ public:
         ConditionsArrayType& conditions_array = rModelPart.Conditions();
         const int num_conditions = static_cast<int>(conditions_array.size());
         
+    #ifdef _OPENMP
         #pragma omp parallel for
+    #endif
         for(int i = 0; i < num_conditions; ++i) 
         {
             auto it_cond = conditions_array.begin() + i;
@@ -182,13 +186,17 @@ public:
                 auto& aux_normal = this_node.FastGetSolutionStepValue(NORMAL);
                 for (unsigned int index = 0; index < 3; ++index)
                 {
+                #ifdef _OPENMP
                     #pragma omp atomic
+                #endif
                     aux_normal[index] += normal[index];
                 }
             }
         }
 
+    #ifdef _OPENMP
         #pragma omp parallel for 
+    #endif
         for(int i = 0; i < num_nodes; ++i) 
         {
             auto it_node = nodes_array.begin() + i;

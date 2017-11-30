@@ -49,7 +49,8 @@ namespace Kratos
 /** @brief Custom convergence criteria for the mortar condition 
  */
 template<class TSparseSpace, class TDenseSpace>
-class BaseMortarConvergenceCriteria : public virtual  ConvergenceCriteria< TSparseSpace, TDenseSpace >
+class BaseMortarConvergenceCriteria 
+    : public virtual  ConvergenceCriteria< TSparseSpace, TDenseSpace >
 {
 public:
     ///@name Type Definitions
@@ -155,7 +156,9 @@ public:
         ConditionsArrayType& conditions_array = rModelPart.GetSubModelPart("Contact").Conditions();
         const int num_conditions = static_cast<int>(conditions_array.size());
 
+    #ifdef _OPENMP
         #pragma omp parallel for 
+    #endif
         for(int i = 0; i < num_conditions; i++) 
         {
             auto it_cond = conditions_array.begin() + i;
@@ -174,82 +177,6 @@ public:
     void Initialize(ModelPart& rModelPart) override
     {
         KRATOS_ERROR << "WARNING:: YOUR ARE CALLING THE BASE MORTAR CRITERIA" << std::endl;
-    }
-    
-    /**
-     * This function initializes the solution step
-     * @param rModelPart Reference to the ModelPart containing the contact problem.
-     * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
-     * @param A System matrix (unused)
-     * @param Dx Vector of results (variations on nodal variables)
-     * @param b RHS vector (residual)
-     */
-    
-    void InitializeSolutionStep(
-        ModelPart& rModelPart,
-        DofsArrayType& rDofSet,
-        const TSystemMatrixType& A,
-        const TSystemVectorType& Dx,
-        const TSystemVectorType& b
-        ) override
-    {
-    }
-    
-    /**
-     * This function finalizes the solution step
-     * @param rModelPart Reference to the ModelPart containing the contact problem.
-     * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
-     * @param A System matrix (unused)
-     * @param Dx Vector of results (variations on nodal variables)
-     * @param b RHS vector (residual)
-     */
-    
-    void FinalizeSolutionStep(
-        ModelPart& rModelPart,
-        DofsArrayType& rDofSet,
-        const TSystemMatrixType& A,
-        const TSystemVectorType& Dx,
-        const TSystemVectorType& b
-        ) override 
-    {
-    }
-
-    /**
-     * This function initializes the non linear iteration
-     * @param rModelPart Reference to the ModelPart containing the contact problem.
-     * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
-     * @param A System matrix (unused)
-     * @param Dx Vector of results (variations on nodal variables)
-     * @param b RHS vector (residual)
-     */
-    
-    void InitializeNonLinearIteration(
-        ModelPart& rModelPart,
-        DofsArrayType& rDofSet,
-        const TSystemMatrixType& A,
-        const TSystemVectorType& Dx,
-        const TSystemVectorType& b
-        ) override
-    {
-    }
-    
-    /**
-     * This function finalizes the non linear iteration
-     * @param rModelPart Reference to the ModelPart containing the contact problem.
-     * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
-     * @param A System matrix (unused)
-     * @param Dx Vector of results (variations on nodal variables)
-     * @param b RHS vector (residual)
-     */
-    
-    void FinalizeNonLinearIteration(
-        ModelPart& rModelPart,
-        DofsArrayType& rDofSet,
-        const TSystemMatrixType& A,
-        const TSystemVectorType& Dx,
-        const TSystemVectorType& b
-        ) override
-    {
     }
     
     ///@}
@@ -295,7 +222,9 @@ protected:
         NodesArrayType& nodes_array = rModelPart.GetSubModelPart("Contact").Nodes();
         const int num_nodes = static_cast<int>(nodes_array.size());
 
+    #ifdef _OPENMP
         #pragma omp parallel for 
+    #endif
         for(int i = 0; i < num_nodes; i++) 
         {
             auto it_node = nodes_array.begin() + i;

@@ -293,7 +293,9 @@ public:
                         NodesArrayType& nodes_array = StrategyBaseType::GetModelPart().Nodes();
                         const int num_nodes = static_cast<int>(nodes_array.size());
                         
+                    #ifdef _OPENMP
                         #pragma omp parallel for
+                    #endif
                         for(int i = 0; i < num_nodes; i++)  
                         {
                             auto it_node = nodes_array.begin() + i;
@@ -311,7 +313,9 @@ public:
                         NodesArrayType& nodes_array = StrategyBaseType::GetModelPart().Nodes();
                         const int num_nodes = static_cast<int>(nodes_array.size());
                         
+                    #ifdef _OPENMP
                         #pragma omp parallel for
+                    #endif
                         for(int i = 0; i < num_nodes; i++)  
                         {
                             auto it_node = nodes_array.begin() + i;
@@ -655,7 +659,9 @@ protected:
         NodesArrayType& nodes_array = StrategyBaseType::GetModelPart().Nodes();
         const int num_nodes = static_cast<int>(nodes_array.size());
 
+    #ifdef _OPENMP
         #pragma omp parallel for
+    #endif
         for(int i = 0; i < num_nodes; i++)  
         {
             auto it_node = nodes_array.begin() + i;

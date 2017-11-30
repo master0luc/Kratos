@@ -208,9 +208,10 @@ public:
                     {
                         for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
                         {
-                            if (SlaveGeometry[i_node].Is(ACTIVE) == false)
+                            auto& this_node = SlaveGeometry[i_node];
+                            if (this_node.Is(ACTIVE) == false)
                             {
-                                const array_1d<double, 3> delta_disp = SlaveGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT, 0) - SlaveGeometry[i_node].FastGetSolutionStepValue(DISPLACEMENT, 1);
+                                const array_1d<double, 3>& delta_disp = this_node.FastGetSolutionStepValue(DISPLACEMENT, 0) - this_node.FastGetSolutionStepValue(DISPLACEMENT, 1);
                                 
                                 // We check if the movement is in the direction of the normal
                                 const bool moving_gap_direction = norm_2(delta_disp) > 0.0 ? (inner_prod(delta_disp, SlaveNormal) > 0 ) : true;
@@ -220,8 +221,14 @@ public:
                                 const double nodal_gap = inner_prod(aux_array, - aux_slave_normal); 
                                 
                                 if ((nodal_gap < ActiveCheckLength) && (moving_gap_direction == true))
-                                {                                    
-                                    SlaveGeometry[i_node].Set(ACTIVE, true);
+                                {       
+                                #ifdef _OPENMP
+                                    this_node.SetLock();
+                                #endif
+                                    this_node.Set(ACTIVE, true);
+                                #ifdef _OPENMP
+                                    this_node.UnSetLock();
+                                #endif
                                     condition_is_active = true;
                                 }
                             }

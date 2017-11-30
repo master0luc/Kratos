@@ -72,7 +72,8 @@ Detail class definition.
 template<class TSparseSpace,
          class TDenseSpace
          >
-class MortarAndConvergenceCriteria : public And_Criteria< TSparseSpace, TDenseSpace >
+class MortarAndConvergenceCriteria 
+    : public And_Criteria< TSparseSpace, TDenseSpace >
 {
 public:
     ///@name Type Definitions
@@ -102,7 +103,7 @@ public:
 
     typedef typename BaseType::TSystemVectorType        TSystemVectorType;
     
-    typedef boost::shared_ptr<TableStreamUtility> TablePrinterPointerType;
+    typedef TableStreamUtility::Pointer           TablePrinterPointerType;
 
     ///@}
     ///@name Life Cycle
@@ -190,22 +191,16 @@ public:
             else
             {
                 if (mPrintingOutput == false)
-                {
                     std::cout << "\n" << BOLDFONT("CONDITION NUMBER:") << "\t " << std::scientific << condition_number << std::endl;
-                }
                 else
-                {
                     std::cout << "\n" << "CONDITION NUMBER:" << "\t" << std::scientific << condition_number << std::endl;
-                }
             }
         }
         
         if (criterion_result == true && rModelPart.GetCommunicator().MyPID() == 0 && this->GetEchoLevel() > 0)
         {
             if (mpTable != nullptr)
-            {
                 mpTable->PrintFooter();
-            }
         }
         
         return criterion_result;
@@ -264,9 +259,7 @@ public:
             }
                 
             if (mpTable != nullptr)
-            {
                 mpTable->PrintHeader();
-            }
         }
         
         BaseType::InitializeSolutionStep(rModelPart,rDofSet,A,Dx,b);
