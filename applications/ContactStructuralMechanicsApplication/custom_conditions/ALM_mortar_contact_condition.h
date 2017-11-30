@@ -135,9 +135,7 @@ public:
     AugmentedLagrangianMethodMortarContactCondition()
         : PairedCondition(),
           mIntegrationOrder(2)
-    {
-        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE AugmentedLagrangianMethodMortarContactCondition" << std::endl;
-    }
+    {}
     
     // Constructor 1
     AugmentedLagrangianMethodMortarContactCondition(
@@ -145,9 +143,7 @@ public:
         GeometryType::Pointer pGeometry
         ) :PairedCondition(NewId, pGeometry),
            mIntegrationOrder(2)
-    {
-        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE AugmentedLagrangianMethodMortarContactCondition" << std::endl;
-    }
+    {}
     
     // Constructor 2
     AugmentedLagrangianMethodMortarContactCondition(
@@ -156,9 +152,7 @@ public:
         PropertiesType::Pointer pProperties
         ) :PairedCondition( NewId, pGeometry, pProperties ),
            mIntegrationOrder(2)
-    {
-        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE AugmentedLagrangianMethodMortarContactCondition" << std::endl;
-    }
+    {}
     
     // Constructor 3
     AugmentedLagrangianMethodMortarContactCondition(
@@ -169,9 +163,7 @@ public:
         )
         :PairedCondition( NewId, pGeometry, pProperties, pMasterGeometry),
          mIntegrationOrder(2)
-    {
-        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE AugmentedLagrangianMethodMortarContactCondition" << std::endl;
-    }
+    {}
 
     ///Copy constructor
     AugmentedLagrangianMethodMortarContactCondition( AugmentedLagrangianMethodMortarContactCondition const& rOther){}
@@ -412,7 +404,7 @@ public:
      * It is designed to be called only once (or anyway, not often) typically at the beginning
      * of the calculations, so to verify that nothing is missing from the input
      * or that no common error is found.
-     * @param rCurrentProcessInfo
+     * @param rCurrentProcessInfo The current process information
      */
     int Check( const ProcessInfo& rCurrentProcessInfo ) override;
         

@@ -79,9 +79,7 @@ public:
     PairedCondition()
         : Condition(),
           mpPairedGeometry(nullptr)
-    {
-        KRATOS_ERROR_IF(mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE PairedCondition" << std::endl;
-    }
+    {}
     
     // Constructor 1
     PairedCondition(
@@ -89,9 +87,7 @@ public:
         GeometryType::Pointer pGeometry
         ) :Condition(NewId, pGeometry),
            mpPairedGeometry(nullptr)
-    {
-        KRATOS_ERROR_IF(mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE PairedCondition" << std::endl;
-    }
+    {}
     
     // Constructor 2
     PairedCondition(
@@ -100,9 +96,7 @@ public:
         PropertiesType::Pointer pProperties
         ) :Condition( NewId, pGeometry, pProperties ),
            mpPairedGeometry(nullptr)
-    {
-        KRATOS_ERROR_IF(mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE PairedCondition" << std::endl;
-    }
+    {}
     
     // Constructor 3
     PairedCondition(
@@ -113,9 +107,7 @@ public:
         )
         :Condition( NewId, pGeometry, pProperties ),
          mpPairedGeometry(pPairedGeometry)
-    {
-        KRATOS_ERROR_IF(mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE PairedCondition" << std::endl;
-    }
+    {}
 
     ///Copy constructor
     PairedCondition( PairedCondition const& rOther){}

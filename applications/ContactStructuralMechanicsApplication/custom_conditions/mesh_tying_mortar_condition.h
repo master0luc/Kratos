@@ -116,9 +116,7 @@ public:
     MeshTyingMortarCondition()
         : PairedCondition(),
           mIntegrationOrder(2)
-    {
-        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
-    }
+    {}
     
     // Constructor 1
     MeshTyingMortarCondition(
@@ -126,9 +124,7 @@ public:
         GeometryType::Pointer pGeometry
         ) :PairedCondition(NewId, pGeometry),
            mIntegrationOrder(2)
-    {
-        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
-    }
+    {}
     
     // Constructor 2
     MeshTyingMortarCondition(
@@ -137,9 +133,7 @@ public:
         PropertiesType::Pointer pProperties
         ) :PairedCondition( NewId, pGeometry, pProperties ),
            mIntegrationOrder(2)
-    {
-        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
-    }
+    {}
     
     // Constructor 3
     MeshTyingMortarCondition(
@@ -150,9 +144,7 @@ public:
         )
         :PairedCondition( NewId, pGeometry, pProperties, pMasterGeometry),
          mIntegrationOrder(2)
-    {
-        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
-    }
+    {}
 
     ///Copy constructor
     MeshTyingMortarCondition( MeshTyingMortarCondition const& rOther){}
@@ -345,6 +337,15 @@ public:
         const ProcessInfo& rCurrentProcessInfo
         ) override;
 
+    /**
+     * This function provides the place to perform checks on the completeness of the input.
+     * It is designed to be called only once (or anyway, not often) typically at the beginning
+     * of the calculations, so to verify that nothing is missing from the input
+     * or that no common error is found.
+     * @param rCurrentProcessInfo The current process information
+     */
+    int Check( const ProcessInfo& rCurrentProcessInfo ) override;
+        
     ///@}
     ///@name Access
     ///@{

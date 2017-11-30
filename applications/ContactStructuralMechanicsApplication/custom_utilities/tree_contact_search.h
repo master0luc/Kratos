@@ -23,6 +23,7 @@
 
 /* Custom includes*/
 #include "custom_includes/point_item.h"
+#include "custom_conditions/paired_condition.h"
 
 /* Custom utilities*/
 #include "custom_utilities/search_utilities.h"
@@ -301,12 +302,15 @@ protected:
         // Some initial parameters
         const double active_check_factor = mrMainModelPart.GetProcessInfo()[ACTIVE_CHECK_FACTOR];
         const array_1d<double, 3>& contact_normal_origin = pCondSlave->GetValue(NORMAL);
-        GeometryType& slave_geometry = pCondSlave->GetGeometry();
-        const double active_check_length = slave_geometry.Length() * active_check_factor;
+//         GeometryType& slave_geometry = pCondSlave->GetGeometry();
+        GeometryType::Pointer p_slave_geometry = GeometryType::Pointer(new GeometryType(pCondSlave->GetGeometry()));
+        const double active_check_length = p_slave_geometry->Length() * active_check_factor;
+//         const double active_check_length = slave_geometry.Length() * active_check_factor;
         Properties::Pointer pThisProperties = pCondSlave->pGetProperties();
         
         // We update the base condition
-        if (mCreateAuxiliarConditions && slave_geometry.GetGeometryType() != mGeometryType)
+        if (mCreateAuxiliarConditions && p_slave_geometry->GetGeometryType() != mGeometryType)
+//         if (mCreateAuxiliarConditions && slave_geometry.GetGeometryType() != mGeometryType)
         {
             mConditionName = mThisParameters["mConditionName"].GetString(); 
             mConditionName.append("Condition"); 
@@ -326,13 +330,16 @@ protected:
             bool condition_is_active = false;
             
             Condition::Pointer p_cond_master = PointsFound[i_pair]->GetCondition(); // MASTER
+//             GeometryType& master_geometry = p_cond_master->GetGeometry();
+            GeometryType::Pointer p_master_geometry = GeometryType::Pointer(new GeometryType(p_cond_master->GetGeometry()));
             const array_1d<double, 3>& master_normal = p_cond_master->GetValue(NORMAL); 
                                 
             const CheckResult condition_checked_right = CheckCondition(IndexesMap, pCondSlave, p_cond_master, mInvertedSearch);
             
             if (condition_checked_right == OK)
             {   
-                condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, true>(rVariables, rThisMortarConditionMatrices, integration_utility, slave_geometry, p_cond_master->GetGeometry(), contact_normal_origin, master_normal, active_check_length);
+                condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, true>(rVariables, rThisMortarConditionMatrices, integration_utility, *p_slave_geometry, *p_master_geometry, contact_normal_origin, master_normal, active_check_length);
+//                 condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, true>(rVariables, rThisMortarConditionMatrices, integration_utility, slave_geometry, p_cond_master->GetGeometry(), contact_normal_origin, master_normal, active_check_length);
                 
                 // If condition is active we add
                 if (condition_is_active) 
@@ -340,7 +347,10 @@ protected:
                     if (mCreateAuxiliarConditions)
                     {
                         IndexesMap->AddNewPair(p_cond_master->Id(), ++ConditionId);
-                        ComputingModelPart.CreateNewCondition(mConditionName, ConditionId, slave_geometry, pThisProperties);
+//                         ComputingModelPart.CreateNewCondition(mConditionName, ConditionId, slave_geometry, pThisProperties);
+                        const PairedCondition& r_condition =  dynamic_cast<const PairedCondition&>(KratosComponents<Condition>::Get(mConditionName));
+                        Condition::Pointer p_auxiliar_condition = Condition::Pointer(r_condition.Create(ConditionId, p_slave_geometry, pThisProperties, p_master_geometry));
+                        ComputingModelPart.AddCondition(p_auxiliar_condition);
                     }
                     else
                         IndexesMap->AddNewPair(p_cond_master->Id(), 0);
@@ -348,7 +358,8 @@ protected:
             }
             else if (condition_checked_right == AlreadyInTheMap)
             {
-                condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, false>(rVariables, rThisMortarConditionMatrices, integration_utility, pCondSlave->GetGeometry(), p_cond_master->GetGeometry(), contact_normal_origin, master_normal, active_check_length);
+                condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, false>(rVariables, rThisMortarConditionMatrices, integration_utility, *p_slave_geometry, *p_master_geometry, contact_normal_origin, master_normal, active_check_length);
+//                 condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, false>(rVariables, rThisMortarConditionMatrices, integration_utility, slave_geometry, p_cond_master->GetGeometry(), contact_normal_origin, master_normal, active_check_length);
                 
                 if (condition_is_active == false) 
                 {

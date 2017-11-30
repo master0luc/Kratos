@@ -1203,6 +1203,8 @@ int AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, 
     int ierr = Condition::Check(rCurrentProcessInfo);
     if(ierr != 0) return ierr;
 
+    KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE AugmentedLagrangianMethodMortarContactCondition" << std::endl;
+    
     // Check that all required variables have been registered
     KRATOS_CHECK_VARIABLE_KEY(DISPLACEMENT)
     KRATOS_CHECK_VARIABLE_KEY(WEIGHTED_GAP)

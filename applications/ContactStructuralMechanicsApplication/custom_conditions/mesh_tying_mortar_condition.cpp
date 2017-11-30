@@ -3777,8 +3777,6 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::EquationIdVector(
 {
     KRATOS_TRY;  
     
-    // Calculates the size of the system
-    
     if (rResult.size() != MatrixSize)
     {
         rResult.resize( MatrixSize, false );
@@ -3795,7 +3793,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::EquationIdVector(
         for ( unsigned int i_master = 0; i_master < NumNodes; ++i_master ) 
         {
             NodeType& master_node = current_master[i_master];
-            rResult[index++] = master_node.GetDof( TEMPERATURE ).EquationId( );
+            rResult[++index] = master_node.GetDof( TEMPERATURE ).EquationId( );
         }
     }
     else
@@ -3803,11 +3801,11 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::EquationIdVector(
         for ( unsigned int i_master = 0; i_master < NumNodes; ++i_master ) 
         {
             NodeType& master_node = current_master[i_master];
-            rResult[index++] = master_node.GetDof( DISPLACEMENT_X ).EquationId( );
-            rResult[index++] = master_node.GetDof( DISPLACEMENT_Y ).EquationId( );
+            rResult[++index] = master_node.GetDof( DISPLACEMENT_X ).EquationId( );
+            rResult[++index] = master_node.GetDof( DISPLACEMENT_Y ).EquationId( );
             if (TDim == 3)
             {
-                rResult[index++] = master_node.GetDof( DISPLACEMENT_Z ).EquationId( );
+                rResult[++index] = master_node.GetDof( DISPLACEMENT_Z ).EquationId( );
             }
         }
     }
@@ -3818,7 +3816,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::EquationIdVector(
         for ( unsigned int i_slave = 0; i_slave < NumNodes; ++i_slave ) 
         {
             NodeType& slave_node = this->GetGeometry()[i_slave];
-            rResult[index++] = slave_node.GetDof( TEMPERATURE ).EquationId( );
+            rResult[++index] = slave_node.GetDof( TEMPERATURE ).EquationId( );
         }
     }
     else
@@ -3826,9 +3824,9 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::EquationIdVector(
         for ( unsigned int i_slave = 0; i_slave < NumNodes; ++i_slave ) 
         {
             NodeType& slave_node = this->GetGeometry()[i_slave];
-            rResult[index++] = slave_node.GetDof( DISPLACEMENT_X ).EquationId( );
-            rResult[index++] = slave_node.GetDof( DISPLACEMENT_Y ).EquationId( );
-            if (TDim == 3) rResult[index++] = slave_node.GetDof( DISPLACEMENT_Z ).EquationId( );
+            rResult[++index] = slave_node.GetDof( DISPLACEMENT_X ).EquationId( );
+            rResult[++index] = slave_node.GetDof( DISPLACEMENT_Y ).EquationId( );
+            if (TDim == 3) rResult[++index] = slave_node.GetDof( DISPLACEMENT_Z ).EquationId( );
         }
     }
     
@@ -3838,7 +3836,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::EquationIdVector(
         for ( unsigned int i_slave = 0; i_slave < NumNodes; ++i_slave ) 
         {
             NodeType& slave_node = this->GetGeometry()[i_slave];
-            rResult[index++] = slave_node.GetDof( SCALAR_LAGRANGE_MULTIPLIER ).EquationId( );
+            rResult[++index] = slave_node.GetDof( SCALAR_LAGRANGE_MULTIPLIER ).EquationId( );
         }
     }
     else
@@ -3846,9 +3844,9 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::EquationIdVector(
         for ( unsigned int i_slave = 0; i_slave < NumNodes; ++i_slave ) 
         {
             NodeType& slave_node = this->GetGeometry()[i_slave];
-            rResult[index++] = slave_node.GetDof( VECTOR_LAGRANGE_MULTIPLIER_X ).EquationId( );
-            rResult[index++] = slave_node.GetDof( VECTOR_LAGRANGE_MULTIPLIER_Y ).EquationId( );
-            if (TDim == 3) rResult[index++] = slave_node.GetDof( VECTOR_LAGRANGE_MULTIPLIER_Z ).EquationId( );
+            rResult[++index] = slave_node.GetDof( VECTOR_LAGRANGE_MULTIPLIER_X ).EquationId( );
+            rResult[++index] = slave_node.GetDof( VECTOR_LAGRANGE_MULTIPLIER_Y ).EquationId( );
+            if (TDim == 3) rResult[++index] = slave_node.GetDof( VECTOR_LAGRANGE_MULTIPLIER_Z ).EquationId( );
         }
     }
     
@@ -3882,7 +3880,7 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::GetDofList(
         for ( unsigned int i_master = 0; i_master < NumNodes; ++i_master ) 
         {
             NodeType& master_node = current_master[i_master];
-            rConditionalDofList[index++] = master_node.pGetDof( TEMPERATURE );
+            rConditionalDofList[++index] = master_node.pGetDof( TEMPERATURE );
         }
     }
     else
@@ -3890,9 +3888,9 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::GetDofList(
         for ( unsigned int i_master = 0; i_master < NumNodes; ++i_master ) 
         {
             NodeType& master_node = current_master[i_master];
-            rConditionalDofList[index++] = master_node.pGetDof( DISPLACEMENT_X );
-            rConditionalDofList[index++] = master_node.pGetDof( DISPLACEMENT_Y );
-            if (TDim == 3) rConditionalDofList[index++] = master_node.pGetDof( DISPLACEMENT_Z );
+            rConditionalDofList[++index] = master_node.pGetDof( DISPLACEMENT_X );
+            rConditionalDofList[++index] = master_node.pGetDof( DISPLACEMENT_Y );
+            if (TDim == 3) rConditionalDofList[++index] = master_node.pGetDof( DISPLACEMENT_Z );
         }
     }
     
@@ -3902,7 +3900,7 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::GetDofList(
         for ( unsigned int i_slave = 0; i_slave < NumNodes; ++i_slave ) 
         {
             NodeType& slave_node = this->GetGeometry()[i_slave];
-            rConditionalDofList[index++] = slave_node.pGetDof( TEMPERATURE );
+            rConditionalDofList[++index] = slave_node.pGetDof( TEMPERATURE );
         }
     }
     else
@@ -3910,9 +3908,9 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::GetDofList(
         for ( unsigned int i_slave = 0; i_slave < NumNodes; ++i_slave ) 
         {
             NodeType& slave_node = this->GetGeometry()[i_slave];
-            rConditionalDofList[index++] = slave_node.pGetDof( DISPLACEMENT_X );
-            rConditionalDofList[index++] = slave_node.pGetDof( DISPLACEMENT_Y );
-            if (TDim == 3) rConditionalDofList[index++] = slave_node.pGetDof( DISPLACEMENT_Z );
+            rConditionalDofList[++index] = slave_node.pGetDof( DISPLACEMENT_X );
+            rConditionalDofList[++index] = slave_node.pGetDof( DISPLACEMENT_Y );
+            if (TDim == 3) rConditionalDofList[++index] = slave_node.pGetDof( DISPLACEMENT_Z );
         }
     }
     
@@ -3922,7 +3920,7 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::GetDofList(
         for ( unsigned int i_slave = 0; i_slave < NumNodes; ++i_slave ) 
         {
             NodeType& slave_node = this->GetGeometry()[i_slave];
-            rConditionalDofList[index++] = slave_node.pGetDof( SCALAR_LAGRANGE_MULTIPLIER );
+            rConditionalDofList[++index] = slave_node.pGetDof( SCALAR_LAGRANGE_MULTIPLIER );
         }
     }
     else
@@ -3930,9 +3928,9 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::GetDofList(
         for ( unsigned int i_slave = 0; i_slave < NumNodes; ++i_slave ) 
         {
             NodeType& slave_node = this->GetGeometry()[i_slave];
-            rConditionalDofList[index++] = slave_node.pGetDof( VECTOR_LAGRANGE_MULTIPLIER_X );
-            rConditionalDofList[index++] = slave_node.pGetDof( VECTOR_LAGRANGE_MULTIPLIER_Y );
-            if (TDim == 3) rConditionalDofList[index++] = slave_node.pGetDof( VECTOR_LAGRANGE_MULTIPLIER_Z );
+            rConditionalDofList[++index] = slave_node.pGetDof( VECTOR_LAGRANGE_MULTIPLIER_X );
+            rConditionalDofList[++index] = slave_node.pGetDof( VECTOR_LAGRANGE_MULTIPLIER_Y );
+            if (TDim == 3) rConditionalDofList[++index] = slave_node.pGetDof( VECTOR_LAGRANGE_MULTIPLIER_Z );
         }
     }
     
@@ -4058,6 +4056,25 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateOnIntegratio
     }
     
     KRATOS_CATCH( "" );
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
+int MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Check( const ProcessInfo& rCurrentProcessInfo )
+{
+    KRATOS_TRY
+
+    // Base class checks for positive Jacobian and Id > 0
+    int ierr = Condition::Check(rCurrentProcessInfo);
+    if(ierr != 0) return ierr;
+
+    KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
+
+    return ierr;
+
+    KRATOS_CATCH("")
 }
 
 /***********************************************************************************/
