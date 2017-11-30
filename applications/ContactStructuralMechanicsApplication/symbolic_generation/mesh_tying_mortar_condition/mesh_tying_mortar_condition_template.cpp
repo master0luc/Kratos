@@ -128,7 +128,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
             {
                 PointType global_point;
                 slave_geometry.GlobalCoordinates(global_point, conditions_points_slave[i_geom][i_node]);
-                points_array[i_node] = boost::make_shared<PointType>(global_point);
+                points_array[i_node] = PointType::Pointer( new PointType (global_point) );
             }
             
             DecompositionType decomp_geom( points_array );
@@ -439,7 +439,7 @@ bool MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateAe(
         {
             PointType global_point;
             slave_geometry.GlobalCoordinates(global_point, ConditionsPointsSlave[i_geom][i_node]);
-            points_array[i_node] = boost::make_shared<PointType>(global_point);
+            points_array[i_node] = PointType::Pointer( new PointType(global_point) );
         }
         
         DecompositionType decomp_geom( points_array );

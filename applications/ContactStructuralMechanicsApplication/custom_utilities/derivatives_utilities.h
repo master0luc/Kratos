@@ -871,7 +871,7 @@ public:
             {
                 PointType global_point;
                 SlaveGeometry.GlobalCoordinates(global_point, ConditionsPointsSlave[i_geom][i_node]);
-                points_array[i_node] = boost::make_shared<PointType>(global_point);
+                points_array[i_node] = PointType::Pointer( new PointType(global_point) );
                 belong_array[i_node] = ConditionsPointsSlave[i_geom][i_node].GetBelong();
             }
             

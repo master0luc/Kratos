@@ -333,7 +333,9 @@ void TreeContactSearch<TDim>::UpdateMortarConditions()
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
     const int num_conditions = static_cast<int>(conditions_array.size());
 
+// #ifdef _OPENMP
 //     #pragma omp parallel for firstprivate(tree_points)
+// #endif
     for(int i = 0; i < num_conditions; ++i) 
     {
         auto it_cond = conditions_array.begin() + i;

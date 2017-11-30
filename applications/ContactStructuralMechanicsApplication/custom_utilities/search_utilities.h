@@ -52,7 +52,7 @@ public:
     ///@name Type Definitions
     ///@{
     
-    typedef Point                                     PointType;
+    typedef Point                                        PointType;
     typedef Node<3>                                       NodeType;
     typedef Geometry<NodeType>                        GeometryType;
     typedef Geometry<PointType>                  GeometryPointType;
@@ -105,7 +105,7 @@ public:
      * @param SlaveNormal The normals of the slave
      * @param MasterNormal The normals of the master
      * @param ActiveCheckLength The threshold distance to check the potential contact
-     * @return condition_is_active: True if at least one node is active, false otherwise
+     * @return condition_is_active True if at least one node is active, false otherwise
      */
     template< const unsigned int TDim, const unsigned int TNumNodes, const bool TFill>
     static inline bool CheckExactIntegration(
@@ -135,14 +135,14 @@ public:
             // Initialize the mortar operators
             rThisMortarConditionMatrices.Initialize();
             
-            for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); i_geom++)
+            for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
             {
                 std::vector<PointType::Pointer> points_array (TDim); // The points are stored as local coordinates, we calculate the global coordinates of this points
-                for (unsigned int i_node = 0; i_node < TDim; i_node++)
+                for (unsigned int i_node = 0; i_node < TDim; ++i_node)
                 {
                     PointType global_point;
                     SlaveGeometry.GlobalCoordinates(global_point, conditions_points_slave[i_geom][i_node]);
-                    points_array[i_node] = boost::make_shared<PointType>(global_point);
+                    points_array[i_node] = PointType::Pointer( new PointType(global_point) );
                 }
                 
                 typename std::conditional<TDim == 2, LineType, TriangleType >::type decomp_geom( points_array );
@@ -154,7 +154,7 @@ public:
                     const GeometryType::IntegrationPointsArrayType& integration_points_slave = decomp_geom.IntegrationPoints( this_integration_method );
                     
                     // Integrating the mortar operators
-                    for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); point_number++ )
+                    for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); ++point_number )
                     {
                         const PointType local_point_decomp = integration_points_slave[point_number].Coordinates();
                         PointType local_point_parent;
@@ -199,14 +199,14 @@ public:
                     const bounded_matrix<double, TNumNodes, TDim> Dx1Mx2 = prod(rThisMortarConditionMatrices.DOperator, x1) - prod(rThisMortarConditionMatrices.MOperator, x2); 
                     
                     array_1d<double, TDim> aux_slave_normal;
-                    for (unsigned int i_dim = 0; i_dim < TDim; i_dim++)
+                    for (unsigned int i_dim = 0; i_dim < TDim; ++i_dim)
                     {
                         aux_slave_normal[i_dim] = SlaveNormal[i_dim];
                     }
                     
                     if (TFill == true)
                     {
-                        for (unsigned int i_node = 0; i_node < TNumNodes; i_node++)
+                        for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
                         {
                             if (SlaveGeometry[i_node].Is(ACTIVE) == false)
                             {
@@ -233,7 +233,7 @@ public:
                     }
                     else
                     {
-                        for (unsigned int i_node = 0; i_node < TNumNodes; i_node++)
+                        for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
                         {
                             const array_1d<double, TDim> aux_array = row(Dx1Mx2, i_node);
                             
