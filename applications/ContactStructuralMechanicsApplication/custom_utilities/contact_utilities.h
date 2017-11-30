@@ -111,7 +111,7 @@ public:
     static inline void ScaleNode(
         TPointType& PointToScale,
         const array_1d<double, 3>& Normal,
-        const double& LengthSearch
+        const double LengthSearch
         )
     {        
         PointToScale.Coordinates() = PointToScale.Coordinates() + Normal * LengthSearch;
@@ -141,7 +141,7 @@ public:
     static inline void ComputeNodesMeanNormalModelPart(ModelPart& rModelPart) 
     {
         // Tolerance
-        const double& tolerance = std::numeric_limits<double>::epsilon();
+        const double tolerance = std::numeric_limits<double>::epsilon();
 
         // Initialize normal vectors
         const array_1d<double,3> zero_vect = ZeroVector(3);
@@ -209,7 +209,7 @@ public:
     
     static inline array_1d<double, 3> GetHalfJumpCenter(
         GeometryType& ThisGeometry,
-        const double& DeltaTime
+        const double DeltaTime
         )
     {
         PointType center = ThisGeometry.Center();

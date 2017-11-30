@@ -52,6 +52,9 @@ public:
 
     ///@name Type Definitions
     ///@{
+    
+    typedef Point BaseType; 
+    
     /// Counted pointer of PointItem
     KRATOS_CLASS_POINTER_DEFINITION( PointItem );
 
@@ -61,12 +64,12 @@ public:
 
     /// Default constructors
     PointItem():
-        Point(),
+        BaseType(),
         mpOriginCond(nullptr)
     {}
 
     PointItem(const array_1d<double, 3>& Coords)
-        :Point(Coords),
+        :BaseType(Coords),
          mpOriginCond(nullptr)
     {}
     
@@ -80,13 +83,13 @@ public:
         const array_1d<double, 3>& Coords,
         Condition::Pointer pCond
     ):
-        Point(Coords),
+        BaseType(Coords),
         mpOriginCond(pCond)
     {}
 
     ///Copy constructor  (not really required)
     PointItem(const PointItem& rhs):
-        Point(rhs),
+        BaseType(rhs),
         mpOriginCond(rhs.mpOriginCond)
     {
     }
@@ -106,9 +109,9 @@ public:
      * Returns the point
      * @return The point
      */
-    Point GetPoint()
+    BaseType GetPoint()
     {
-        Point Point(this->Coordinates());
+        BaseType Point(this->Coordinates());
         
         return Point;
     }
@@ -117,7 +120,7 @@ public:
      * Set the point
      * @param Point The point
      */
-    void SetPoint(const Point Point)
+    void SetPoint(const BaseType Point)
     {
         this->Coordinates() = Point.Coordinates();
     }
@@ -140,9 +143,24 @@ public:
     Condition::Pointer GetCondition()
     {
     #ifdef KRATOS_DEBUG
-        KRATOS_ERROR_IF(mpOriginCond == nullptr) << "Condition no itialized in the PointItem class" << std::endl;
+        KRATOS_ERROR_IF(mpOriginCond == nullptr) << "Condition no initialized in the PointItem class" << std::endl;
     #endif
         return mpOriginCond;
+    }
+    
+    /**
+     * This method checks everything is right
+     */
+
+    void Check()
+    {
+        KRATOS_TRY;
+        
+        auto aux_coord = std::make_shared<array_1d<double, 3>>(this->Coordinates());
+        KRATOS_ERROR_IF(!aux_coord) << "Coordinates no initialized in the PointItem class" << std::endl;
+        KRATOS_ERROR_IF(mpOriginCond == nullptr) << "Condition no initialized in the PointItem class" << std::endl;
+        
+        KRATOS_CATCH("Error checking the PointItem");
     }
     
     /**

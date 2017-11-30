@@ -272,6 +272,15 @@ void TreeContactSearch<TDim>::CreatePointListMortar()
             }
         }
     }
+    
+#ifdef KRATOS_DEBUG
+    // NOTE: We check the list
+    for (unsigned int i_point = 0; i_point < mPointListDestination.size(); ++i_point )
+    {
+        mPointListDestination[i_point]->Check();
+    }
+    std::cout << "The list is properly built" << std::endl;
+#endif
 }
 
 /***********************************************************************************/
@@ -377,7 +386,19 @@ void TreeContactSearch<TDim>::UpdateMortarConditions()
                 }
                 
                 if (number_points_found > 0)
-                {                           
+                {   
+                    // We resize the vector to the actual size
+                    points_found.resize(number_points_found);
+                    
+                #ifdef KRATOS_DEBUG
+                    // NOTE: We check the list
+                    for (unsigned int i_point = 0; i_point < points_found.size(); ++i_point )
+                    {
+                        points_found[i_point]->Check();
+                    }
+                    std::cout << "The search is properly done" << std::endl;
+                #endif
+                    
                     IndexMap::Pointer indexes_map = it_cond->GetValue(INDEX_MAP);
                     Condition::Pointer p_cond_slave = (*it_cond.base()); // MASTER
                     
