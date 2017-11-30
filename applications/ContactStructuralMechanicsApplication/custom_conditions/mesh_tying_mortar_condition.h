@@ -18,7 +18,7 @@
 
 // Project includes
 #include "contact_structural_mechanics_application_variables.h"
-#include "includes/condition.h"
+#include "custom_conditions/paired_condition.h"
 #include "includes/mortar_classes.h"
 
 /* Utilities */
@@ -66,7 +66,7 @@ namespace Kratos
  */
 
 template< const unsigned int TDim, const unsigned int TNumNodesElem, TensorValue TTensor>
-class MeshTyingMortarCondition: public Condition 
+class MeshTyingMortarCondition: public PairedCondition 
 {
 public:
     ///@name Type Definitions
@@ -74,7 +74,7 @@ public:
         
     /// Counted pointer of MeshTyingMortarCondition
     KRATOS_CLASS_POINTER_DEFINITION( MeshTyingMortarCondition );
-    typedef Condition                                                                    BaseType;
+    typedef PairedCondition                                                              BaseType;
     
     typedef typename BaseType::VectorType                                              VectorType;
 
@@ -114,22 +114,20 @@ public:
 
     /// Default constructor
     MeshTyingMortarCondition()
-        : Condition(),
-          mpMasterGeometry(nullptr),
+        : PairedCondition(),
           mIntegrationOrder(2)
     {
-        KRATOS_ERROR_IF(mpMasterGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
+        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
     }
     
     // Constructor 1
     MeshTyingMortarCondition(
         IndexType NewId, 
         GeometryType::Pointer pGeometry
-        ) :Condition(NewId, pGeometry),
-           mpMasterGeometry(nullptr),
+        ) :PairedCondition(NewId, pGeometry),
            mIntegrationOrder(2)
     {
-        KRATOS_ERROR_IF(mpMasterGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
+        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
     }
     
     // Constructor 2
@@ -137,11 +135,10 @@ public:
         IndexType NewId, 
         GeometryType::Pointer pGeometry, 
         PropertiesType::Pointer pProperties
-        ) :Condition( NewId, pGeometry, pProperties ),
-           mpMasterGeometry(nullptr),
+        ) :PairedCondition( NewId, pGeometry, pProperties ),
            mIntegrationOrder(2)
     {
-        KRATOS_ERROR_IF(mpMasterGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
+        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
     }
     
     // Constructor 3
@@ -151,11 +148,10 @@ public:
         PropertiesType::Pointer pProperties, 
         GeometryType::Pointer pMasterGeometry
         )
-        :Condition( NewId, pGeometry, pProperties ),
-         mpMasterGeometry(pMasterGeometry),
+        :PairedCondition( NewId, pGeometry, pProperties, pMasterGeometry),
          mIntegrationOrder(2)
     {
-        KRATOS_ERROR_IF(mpMasterGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
+        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
     }
 
     ///Copy constructor
@@ -269,7 +265,7 @@ public:
         GeometryType::Pointer pGeom,
         PropertiesType::Pointer pProperties,
         GeometryType::Pointer pMasterGeom
-        ) const;
+        ) const override;
         
     /******************************************************************/
     /********** AUXILLIARY METHODS FOR GENERAL CALCULATIONS ***********/
@@ -473,8 +469,6 @@ protected:
     ///@{
 
     MortarConditionMatrices mrThisMortarConditionMatrices; // The mortar operators
-    
-    GeometryType::Pointer mpMasterGeometry;                // The geometry of the pair "condition"
    
     unsigned int mIntegrationOrder;                        // The integration order to consider
     

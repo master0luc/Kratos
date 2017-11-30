@@ -19,7 +19,7 @@
 #include "structural_mechanics_application_variables.h"
 
 // Project includes
-#include "includes/condition.h"
+#include "custom_conditions/paired_condition.h"
 #include "utilities/math_utils.h"
 #include "includes/kratos_flags.h"
 #include "includes/checks.h"
@@ -70,7 +70,7 @@ namespace Kratos
  * Popp, Alexander: Mortar Methods for Computational Contact Mechanics and General Interface Problems, Technische Universität München, jul 2012
  */
 template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional, bool TNormalVariation>
-class AugmentedLagrangianMethodMortarContactCondition: public Condition 
+class AugmentedLagrangianMethodMortarContactCondition: public PairedCondition 
 {
 public:
     ///@name Type Definitions
@@ -79,7 +79,7 @@ public:
     /// Counted pointer of AugmentedLagrangianMethodMortarContactCondition
     KRATOS_CLASS_POINTER_DEFINITION( AugmentedLagrangianMethodMortarContactCondition );
 
-    typedef Condition                                                                                    BaseType;
+    typedef PairedCondition                                                                              BaseType;
     
     typedef typename BaseType::VectorType                                                              VectorType;
 
@@ -131,22 +131,46 @@ public:
     ///@name Life Cycle
     ///@{
 
-    /// Default constructor
-    AugmentedLagrangianMethodMortarContactCondition(): Condition() 
+ /// Default constructor
+    AugmentedLagrangianMethodMortarContactCondition()
+        : PairedCondition(),
+          mIntegrationOrder(2)
     {
-        mIntegrationOrder = 2; // Default value
+        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE AugmentedLagrangianMethodMortarContactCondition" << std::endl;
     }
     
     // Constructor 1
-    AugmentedLagrangianMethodMortarContactCondition(IndexType NewId, GeometryType::Pointer pGeometry):Condition(NewId, pGeometry)
+    AugmentedLagrangianMethodMortarContactCondition(
+        IndexType NewId, 
+        GeometryType::Pointer pGeometry
+        ) :PairedCondition(NewId, pGeometry),
+           mIntegrationOrder(2)
     {
-        mIntegrationOrder = 2; // Default value
+        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE AugmentedLagrangianMethodMortarContactCondition" << std::endl;
     }
     
     // Constructor 2
-    AugmentedLagrangianMethodMortarContactCondition(IndexType NewId, GeometryType::Pointer pGeometry, PropertiesType::Pointer pProperties):Condition( NewId, pGeometry, pProperties )
+    AugmentedLagrangianMethodMortarContactCondition(
+        IndexType NewId, 
+        GeometryType::Pointer pGeometry, 
+        PropertiesType::Pointer pProperties
+        ) :PairedCondition( NewId, pGeometry, pProperties ),
+           mIntegrationOrder(2)
     {
-        mIntegrationOrder = 2; // Default value
+        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE AugmentedLagrangianMethodMortarContactCondition" << std::endl;
+    }
+    
+    // Constructor 3
+    AugmentedLagrangianMethodMortarContactCondition(
+        IndexType NewId, 
+        GeometryType::Pointer pGeometry, 
+        PropertiesType::Pointer pProperties, 
+        GeometryType::Pointer pMasterGeometry
+        )
+        :PairedCondition( NewId, pGeometry, pProperties, pMasterGeometry),
+         mIntegrationOrder(2)
+    {
+        KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE AugmentedLagrangianMethodMortarContactCondition" << std::endl;
     }
 
     ///Copy constructor
@@ -250,6 +274,21 @@ public:
         IndexType NewId,
         GeometryType::Pointer pGeom,
         PropertiesType::Pointer pProperties
+        ) const override;
+        
+    /**
+     * Creates a new element pointer from an existing geometry
+     * @param NewId the ID of the new element
+     * @param pGeom the  geometry taken to create the condition
+     * @param pProperties the properties assigned to the new element
+     * @param pMasterGeom the paired geometry
+     * @return a Pointer to the new element
+     */
+    Condition::Pointer Create(
+        IndexType NewId,
+        GeometryType::Pointer pGeom,
+        PropertiesType::Pointer pProperties,
+        GeometryType::Pointer pMasterGeom
         ) const override;
        
     /**
@@ -434,8 +473,6 @@ protected:
 
     IntegrationMethod mThisIntegrationMethod;            // Integration order of the element
     
-    GeometryType::Pointer mpMasterGeometry;              // The geometry of the pair "condition"
-   
     unsigned int mIntegrationOrder;                      // The integration order to consider
     
     ///@}

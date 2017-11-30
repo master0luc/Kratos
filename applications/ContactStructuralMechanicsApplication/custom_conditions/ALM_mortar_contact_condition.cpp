@@ -66,6 +66,21 @@ Condition::Pointer AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNode
     return Condition::Pointer( new AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation> ( NewId, pGeom, pProperties ));
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
+template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional, bool TNormalVariation>
+Condition::Pointer AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>::Create(
+    IndexType NewId,
+    GeometryType::Pointer pGeom,
+    PropertiesType::Pointer pProperties,
+    GeometryType::Pointer pMasterGeom) const
+{
+    KRATOS_ERROR << "You are calling to the base class method Create, check your condition declaration" << std::endl;
+    
+    return Condition::Pointer( new AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation> ( NewId, pGeom, pProperties, pMasterGeom ));
+}
+
 /************************************* DESTRUCTOR **********************************/
 /***********************************************************************************/
 
@@ -323,7 +338,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     // Iterate over the master segments
     if (this->Is(ACTIVE) == true) // TODO: Check if the AddExplicitContribution checks the activity
     {   
-        GeometryType& master_geometry = *mpMasterGeometry;
+        GeometryType& master_geometry = *BaseType::mpPairedGeometry;
         
         // The normal of the master condition
         aux_coords = master_geometry.PointLocalCoordinates(aux_coords, master_geometry.Center());
@@ -485,7 +500,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
     IntegrationUtility integration_utility = IntegrationUtility (mIntegrationOrder);
     
     // The master geometry
-    GeometryType& master_geometry = *mpMasterGeometry;
+    GeometryType& master_geometry = *BaseType::mpPairedGeometry;
     aux_coords = master_geometry.PointLocalCoordinates(aux_coords, master_geometry.Center());
     const array_1d<double, 3>& master_normal = master_geometry.UnitNormal(aux_coords);
         
@@ -651,7 +666,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     const PointType& LocalPoint
     )
 {    
-    GeometryType& master_geometry = *mpMasterGeometry;
+    GeometryType& master_geometry = *BaseType::mpPairedGeometry;
 
     PointType projected_gp_global;
     const array_1d<double,3> gp_normal = MortarUtilities::GaussPointUnitNormal(rVariables.NSlave, GetGeometry());

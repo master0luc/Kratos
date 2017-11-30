@@ -69,6 +69,8 @@ public:
     
     typedef Condition                                                                        ConditionBaseType;
     
+    typedef PairedCondition                                                            PairedConditionBaseType;
+    
     typedef typename ConditionBaseType::VectorType                                                  VectorType;
 
     typedef typename ConditionBaseType::MatrixType                                                  MatrixType;
@@ -79,6 +81,8 @@ public:
 
     typedef typename ConditionBaseType::NodesArrayType                                          NodesArrayType;
 
+    typedef typename ConditionBaseType::PropertiesType                                          PropertiesType;
+    
     typedef typename ConditionBaseType::PropertiesType::Pointer                          PropertiesPointerType;
     
     typedef typename ConditionBaseType::EquationIdVectorType                              EquationIdVectorType;
@@ -102,17 +106,35 @@ public:
     ///@{
 
     /// Default constructor
-    AugmentedLagrangianMethodFrictionlessMortarContactCondition(): BaseType() 
+    AugmentedLagrangianMethodFrictionlessMortarContactCondition()
+        : BaseType() 
     {
     }
     
     // Constructor 1
-    AugmentedLagrangianMethodFrictionlessMortarContactCondition(IndexType NewId, GeometryPointerType pGeometry):BaseType(NewId, pGeometry)
+    AugmentedLagrangianMethodFrictionlessMortarContactCondition(
+        IndexType NewId, 
+        GeometryPointerType pGeometry
+        ):BaseType(NewId, pGeometry)
     {
     }
     
     // Constructor 2
-    AugmentedLagrangianMethodFrictionlessMortarContactCondition(IndexType NewId, GeometryPointerType pGeometry, PropertiesPointerType pProperties):BaseType( NewId, pGeometry, pProperties )
+    AugmentedLagrangianMethodFrictionlessMortarContactCondition(
+        IndexType NewId, 
+        GeometryPointerType pGeometry, 
+        PropertiesPointerType pProperties
+        ):BaseType( NewId, pGeometry, pProperties )
+    {
+    }
+    
+    // Constructor 3
+    AugmentedLagrangianMethodFrictionlessMortarContactCondition(
+        IndexType NewId, 
+        GeometryPointerType pGeometry, 
+        PropertiesPointerType pProperties,
+        GeometryType::Pointer pMasterGeometry
+        ):BaseType( NewId, pGeometry, pProperties, pMasterGeometry )
     {
     }
 
@@ -159,6 +181,22 @@ public:
         IndexType NewId,
         GeometryPointerType pGeom,
         PropertiesPointerType pProperties
+        ) const override;
+        
+    /**
+     * Creates a new element pointer from an existing geometry
+     * @param NewId the ID of the new element
+     * @param pGeom the  geometry taken to create the condition
+     * @param pProperties the properties assigned to the new element
+     * @param pMasterGeom the paired geometry
+     * @return a Pointer to the new element
+     */
+    
+    Condition::Pointer Create(
+        IndexType NewId,
+        GeometryPointerType pGeom,
+        PropertiesPointerType pProperties,
+        GeometryPointerType pMasterGeom
         ) const override;
         
     /******************************************************************/
