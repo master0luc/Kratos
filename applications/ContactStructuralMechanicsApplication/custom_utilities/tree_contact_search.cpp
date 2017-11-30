@@ -279,7 +279,7 @@ void TreeContactSearch<TDim>::CreatePointListMortar()
     {
         mPointListDestination[i_point]->Check();
     }
-    std::cout << "The list is properly built" << std::endl;
+//     std::cout << "The list is properly built" << std::endl;
 #endif
 }
 
@@ -324,90 +324,88 @@ void TreeContactSearch<TDim>::UpdateMortarConditions()
     SearchTreeType type_search = ConvertSearchTree(mThisParameters["type_search"].GetString()); // The search tree considered
     unsigned int bucket_size = mThisParameters["bucket_size"].GetInt();                         // Bucket size for kd-tree
     
-//         #pragma omp parallel 
-//         {
-        // Initialize values
-        PointVector points_found(allocation_size);
-        unsigned int number_points_found = 0;    
-        
-        // Create a tree
-        // It will use a copy of mNodeList (a std::vector which contains pointers)
-        // Copying the list is required because the tree will reorder it for efficiency
-        KDTree tree_points(mPointListDestination.begin(), mPointListDestination.end(), bucket_size);
-        
-        // Iterate in the conditions
-        ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
-        const int num_conditions = static_cast<int>(conditions_array.size());
+    // Create a tree
+    // It will use a copy of mNodeList (a std::vector which contains pointers)
+    // Copying the list is required because the tree will reorder it for efficiency
+    KDTree tree_points(mPointListDestination.begin(), mPointListDestination.end(), bucket_size);
+    
+    // Iterate in the conditions
+    ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
+    const int num_conditions = static_cast<int>(conditions_array.size());
 
-//             #pragma omp for 
-        for(int i = 0; i < num_conditions; ++i) 
+//     #pragma omp parallel for firstprivate(tree_points)
+    for(int i = 0; i < num_conditions; ++i) 
+    {
+        auto it_cond = conditions_array.begin() + i;
+        
+        if (it_cond->Is(SLAVE) == !mInvertedSearch)
         {
-            auto it_cond = conditions_array.begin() + i;
+            // Initialize values
+            PointVector points_found(allocation_size);
             
-            if (it_cond->Is(SLAVE) == !mInvertedSearch)
+            unsigned int number_points_found = 0;    
+            
+            if (type_search == KdtreeInRadius)
             {
-                if (type_search == KdtreeInRadius)
-                {
-                    GeometryType& geometry = it_cond->GetGeometry();
-                    const Point& center = dynamic ? ContactUtilities::GetHalfJumpCenter(geometry, delta_time) : geometry.Center(); // NOTE: Center in half delta time or real center
-                    
-                    const double search_radius = search_factor * Radius(it_cond->GetGeometry());
+                GeometryType& geometry = it_cond->GetGeometry();
+                const Point& center = dynamic ? ContactUtilities::GetHalfJumpCenter(geometry, delta_time) : geometry.Center(); // NOTE: Center in half delta time or real center
+                
+                const double search_radius = search_factor * Radius(it_cond->GetGeometry());
 
-                    number_points_found = tree_points.SearchInRadius(center, search_radius, points_found.begin(), allocation_size);
-                }
-                else if (type_search == KdtreeInBox)
-                {
-                    // Auxiliar values
-                    const double length_search = search_factor * it_cond->GetGeometry().Length();
-                    
-                    // Compute max/min points
-                    NodeType min_point, max_point;
-                    it_cond->GetGeometry().BoundingBox(min_point, max_point);
-                    
-                    // Get the normal in the extrema points
-                    Vector N_min, N_max;
-                    GeometryType::CoordinatesArrayType local_point_min, local_point_max;
-                    it_cond->GetGeometry().PointLocalCoordinates( local_point_min, min_point.Coordinates( ) ) ;
-                    it_cond->GetGeometry().PointLocalCoordinates( local_point_max, max_point.Coordinates( ) ) ;
-                    it_cond->GetGeometry().ShapeFunctionsValues( N_min, local_point_min );
-                    it_cond->GetGeometry().ShapeFunctionsValues( N_max, local_point_max );
+                number_points_found = tree_points.SearchInRadius(center, search_radius, points_found.begin(), allocation_size);
+            }
+            else if (type_search == KdtreeInBox)
+            {
+                // Auxiliar values
+                const double length_search = search_factor * it_cond->GetGeometry().Length();
                 
-                    const array_1d<double,3>& normal_min = MortarUtilities::GaussPointUnitNormal(N_min, it_cond->GetGeometry());
-                    const array_1d<double,3>& normal_max = MortarUtilities::GaussPointUnitNormal(N_max, it_cond->GetGeometry());
-                    
-                    ContactUtilities::ScaleNode<NodeType>(min_point, normal_min, length_search);
-                    ContactUtilities::ScaleNode<NodeType>(max_point, normal_max, length_search);
-                    
-                    number_points_found = tree_points.SearchInBox(min_point, max_point, points_found.begin(), allocation_size);
-                }
-                else
-                {
-                    KRATOS_ERROR << " The type search is not implemented yet does not exist!!!!. SearchTreeType = " << type_search << std::endl;
-                }
+                // Compute max/min points
+                NodeType min_point, max_point;
+                it_cond->GetGeometry().BoundingBox(min_point, max_point);
                 
-                if (number_points_found > 0)
-                {   
-                    // We resize the vector to the actual size
-                    points_found.resize(number_points_found);
-                    
-                #ifdef KRATOS_DEBUG
-                    // NOTE: We check the list
-                    for (unsigned int i_point = 0; i_point < points_found.size(); ++i_point )
-                    {
-                        points_found[i_point]->Check();
-                    }
-                    std::cout << "The search is properly done" << std::endl;
-                #endif
-                    
-                    IndexMap::Pointer indexes_map = it_cond->GetValue(INDEX_MAP);
-                    Condition::Pointer p_cond_slave = (*it_cond.base()); // MASTER
-                    
-                    // If not active we check if can be potentially in contact
-                    CheckPotentialPairing(computing_contact_model_part, condition_id, p_cond_slave, points_found, indexes_map);
+                // Get the normal in the extrema points
+                Vector N_min, N_max;
+                GeometryType::CoordinatesArrayType local_point_min, local_point_max;
+                it_cond->GetGeometry().PointLocalCoordinates( local_point_min, min_point.Coordinates( ) ) ;
+                it_cond->GetGeometry().PointLocalCoordinates( local_point_max, max_point.Coordinates( ) ) ;
+                it_cond->GetGeometry().ShapeFunctionsValues( N_min, local_point_min );
+                it_cond->GetGeometry().ShapeFunctionsValues( N_max, local_point_max );
+            
+                const array_1d<double,3>& normal_min = MortarUtilities::GaussPointUnitNormal(N_min, it_cond->GetGeometry());
+                const array_1d<double,3>& normal_max = MortarUtilities::GaussPointUnitNormal(N_max, it_cond->GetGeometry());
+                
+                ContactUtilities::ScaleNode<NodeType>(min_point, normal_min, length_search);
+                ContactUtilities::ScaleNode<NodeType>(max_point, normal_max, length_search);
+                
+                number_points_found = tree_points.SearchInBox(min_point, max_point, points_found.begin(), allocation_size);
+            }
+            else
+            {
+                KRATOS_ERROR << " The type search is not implemented yet does not exist!!!!. SearchTreeType = " << type_search << std::endl;
+            }
+            
+            if (number_points_found > 0)
+            {   
+                // We resize the vector to the actual size
+                points_found.resize(number_points_found);
+                
+            #ifdef KRATOS_DEBUG
+                // NOTE: We check the list
+                for (unsigned int i_point = 0; i_point < points_found.size(); ++i_point )
+                {
+                    points_found[i_point]->Check();
                 }
+//                 std::cout << "The search is properly done" << std::endl;
+            #endif
+                
+                IndexMap::Pointer indexes_map = it_cond->GetValue(INDEX_MAP);
+                Condition::Pointer p_cond_slave = (*it_cond.base()); // MASTER
+                
+                // If not active we check if can be potentially in contact
+                CheckPotentialPairing(computing_contact_model_part, condition_id, p_cond_slave, points_found, indexes_map);
             }
         }
-//         }
+    }
 
     mrMainModelPart.RemoveConditions(TO_ERASE);
 }
