@@ -90,9 +90,9 @@ public:
     
     typedef typename std::vector<array_1d<PointType,TDim>>                 ConditionArrayListType;
     
-    typedef Line2D2<Point>                                                            LineType;
+    typedef Line2D2<Point>                                                               LineType;
     
-    typedef Triangle3D3<Point>                                                    TriangleType;
+    typedef Triangle3D3<Point>                                                       TriangleType;
     
     typedef typename std::conditional<TDim == 2, LineType, TriangleType >::type DecompositionType;
 
@@ -113,21 +113,49 @@ public:
     ///@{
 
     /// Default constructor
-    MeshTyingMortarCondition(): Condition() 
+    MeshTyingMortarCondition()
+        : Condition(),
+          mpMasterGeometry(nullptr),
+          mIntegrationOrder(2)
     {
-        mIntegrationOrder = 2; // Default value
+        KRATOS_ERROR_IF(mpMasterGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
     }
     
     // Constructor 1
-    MeshTyingMortarCondition(IndexType NewId, GeometryType::Pointer pGeometry):Condition(NewId, pGeometry)
+    MeshTyingMortarCondition(
+        IndexType NewId, 
+        GeometryType::Pointer pGeometry
+        ) :Condition(NewId, pGeometry),
+           mpMasterGeometry(nullptr),
+           mIntegrationOrder(2)
     {
-        mIntegrationOrder = 2; // Default value
+        KRATOS_ERROR_IF(mpMasterGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
     }
     
     // Constructor 2
-    MeshTyingMortarCondition(IndexType NewId, GeometryType::Pointer pGeometry, PropertiesType::Pointer pProperties):Condition( NewId, pGeometry, pProperties )
+    MeshTyingMortarCondition(
+        IndexType NewId, 
+        GeometryType::Pointer pGeometry, 
+        PropertiesType::Pointer pProperties
+        ) :Condition( NewId, pGeometry, pProperties ),
+           mpMasterGeometry(nullptr),
+           mIntegrationOrder(2)
     {
-        mIntegrationOrder = 2; // Default value
+        KRATOS_ERROR_IF(mpMasterGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
+    }
+    
+    // Constructor 3
+    MeshTyingMortarCondition(
+        IndexType NewId, 
+        GeometryType::Pointer pGeometry, 
+        PropertiesType::Pointer pProperties, 
+        GeometryType::Pointer pMasterGeometry
+        )
+        :Condition( NewId, pGeometry, pProperties ),
+         mpMasterGeometry(pMasterGeometry),
+         mIntegrationOrder(2)
+    {
+        KRATOS_ERROR_IF(mpMasterGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
     }
 
     ///Copy constructor
@@ -227,6 +255,21 @@ public:
         GeometryType::Pointer pGeom,
         PropertiesType::Pointer pProperties
         ) const override;
+        
+    /**
+     * Creates a new element pointer from an existing geometry
+     * @param NewId the ID of the new element
+     * @param pGeom the  geometry taken to create the condition
+     * @param pProperties the properties assigned to the new element
+     * @param pMasterGeom the paired geometry
+     * @return a Pointer to the new element
+     */
+    Condition::Pointer Create(
+        IndexType NewId,
+        GeometryType::Pointer pGeom,
+        PropertiesType::Pointer pProperties,
+        GeometryType::Pointer pMasterGeom
+        ) const;
         
     /******************************************************************/
     /********** AUXILLIARY METHODS FOR GENERAL CALCULATIONS ***********/

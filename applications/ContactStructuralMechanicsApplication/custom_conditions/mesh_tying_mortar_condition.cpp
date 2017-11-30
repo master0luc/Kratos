@@ -59,6 +59,19 @@ Condition::Pointer MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Create(
     return Condition::Pointer( new MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>( NewId, pGeom, pProperties ));
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
+template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
+Condition::Pointer MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Create(
+    IndexType NewId,
+    GeometryType::Pointer pGeom,
+    PropertiesType::Pointer pProperties,
+    GeometryType::Pointer pMasterGeom) const
+{
+    return Condition::Pointer( new MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>( NewId, pGeom, pProperties, pMasterGeom));
+}
+
 /************************************* DESTRUCTOR **********************************/
 /***********************************************************************************/
 
