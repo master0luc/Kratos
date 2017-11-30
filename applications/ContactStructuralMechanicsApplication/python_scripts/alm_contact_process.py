@@ -33,7 +33,6 @@ class ALMContactProcess(python_process.PythonProcess):
             "max_number_results"          : 1000,
             "bucket_size"                 : 4,
             "normal_variation"            : "NODERIVATIVESCOMPUTATION",
-            "pair_variation"              : true,
             "manual_ALM"                  : false,
             "stiffness_factor"            : 1.0,
             "penalty_scale_factor"        : 1.0,
@@ -109,8 +108,6 @@ class ALMContactProcess(python_process.PythonProcess):
             
         # We recompute the normal at each iteration (false by default)
         self.main_model_part.ProcessInfo[ContactStructuralMechanicsApplication.CONSIDER_NORMAL_VARIATION] = self.normal_variation
-        # We recompute the pairs at each iteration (true by default)
-        self.main_model_part.ProcessInfo[ContactStructuralMechanicsApplication.CONSIDER_PAIR_VARIATION] = self.params["pair_variation"].GetBool()
         # We set the max gap factor for the gap adaptation
         max_gap_factor = self.params["max_gap_factor"].GetDouble()
         self.main_model_part.ProcessInfo[ContactStructuralMechanicsApplication.ADAPT_PENALTY] = (max_gap_factor > 0.0)
@@ -235,36 +232,12 @@ class ALMContactProcess(python_process.PythonProcess):
             
     def _interface_preprocess(self, computing_model_part):
         self.interface_preprocess = ContactStructuralMechanicsApplication.InterfacePreprocessCondition(computing_model_part)
-            
-        if self.params["contact_type"].GetString() == "Frictionless":
-            if self.normal_variation == 2:
-                if self.axisymmetric == True:
-                    condition_name = "ALMNVFrictionlessAxisymMortarContact"
-                else:
-                    condition_name = "ALMNVFrictionlessMortarContact"
-            else:
-                if self.axisymmetric == True:
-                    condition_name = "ALMFrictionlessAxisymMortarContact"
-                else:
-                    condition_name = "ALMFrictionlessMortarContact"
-        elif self.params["contact_type"].GetString() == "Frictional":
-            if self.normal_variation == 2:
-                if self.axisymmetric == True:
-                    condition_name = "ALMNVFrictionalAxisymMortarContact"
-                else:
-                    condition_name = "ALMNVFrictionalMortarContact"
-            else:
-                if self.axisymmetric == True:
-                    condition_name = "ALMFrictionalAxisymMortarContact"
-                else:
-                    condition_name = "ALMFrictionalMortarContact"
-        
+                    
         #print("MODEL PART BEFORE CREATING INTERFACE")
         #print(computing_model_part) 
         
         # It should create the conditions automatically
-        interface_parameters = KratosMultiphysics.Parameters("""{"condition_name": "", "final_string": "", "simplify_geometry": false}""")
-        interface_parameters["condition_name"].SetString(condition_name)
+        interface_parameters = KratosMultiphysics.Parameters("""{"simplify_geometry": false}""")
         if (self.dimension == 2):
             self.interface_preprocess.GenerateInterfacePart2D(computing_model_part, self.contact_model_part, interface_parameters) 
         else:
@@ -282,8 +255,6 @@ class ALMContactProcess(python_process.PythonProcess):
             
         # We recompute the normal at each iteration (false by default)
         self.main_model_part.ProcessInfo[ContactStructuralMechanicsApplication.CONSIDER_NORMAL_VARIATION] = self.normal_variation
-        # We recompute the pairs at each iteration (true by default)
-        self.main_model_part.ProcessInfo[ContactStructuralMechanicsApplication.CONSIDER_PAIR_VARIATION] = self.params["pair_variation"].GetBool()
         # We set the max gap factor for the gap adaptation
         max_gap_factor = self.params["max_gap_factor"].GetDouble()
         self.main_model_part.ProcessInfo[ContactStructuralMechanicsApplication.ADAPT_PENALTY] = (max_gap_factor > 0.0)
@@ -326,11 +297,34 @@ class ALMContactProcess(python_process.PythonProcess):
         print("INITIAL_PENALTY: ","{:.2e}".format(self.main_model_part.ProcessInfo[KratosMultiphysics.INITIAL_PENALTY]))
             
     def _create_main_search(self, computing_model_part):
-        search_parameters = KratosMultiphysics.Parameters("""{}""")
+        if self.params["contact_type"].GetString() == "Frictionless":
+            if self.normal_variation == 2:
+                if self.axisymmetric == True:
+                    condition_name = "ALMNVFrictionlessAxisymMortarContact"
+                else:
+                    condition_name = "ALMNVFrictionlessMortarContact"
+            else:
+                if self.axisymmetric == True:
+                    condition_name = "ALMFrictionlessAxisymMortarContact"
+                else:
+                    condition_name = "ALMFrictionlessMortarContact"
+        elif self.params["contact_type"].GetString() == "Frictional":
+            if self.normal_variation == 2:
+                if self.axisymmetric == True:
+                    condition_name = "ALMNVFrictionalAxisymMortarContact"
+                else:
+                    condition_name = "ALMNVFrictionalMortarContact"
+            else:
+                if self.axisymmetric == True:
+                    condition_name = "ALMFrictionalAxisymMortarContact"
+                else:
+                    condition_name = "ALMFrictionalMortarContact"
+        search_parameters = KratosMultiphysics.Parameters("""{"condition_name": "", "final_string": ""}""")
         search_parameters.AddValue("type_search",self.params["type_search"])
         search_parameters.AddValue("allocation_size",self.params["max_number_results"])
         search_parameters.AddValue("bucket_size",self.params["bucket_size"])
         search_parameters.AddValue("search_factor",self.params["search_factor"])
+        search_parameters["condition_name"].SetString(condition_name)
         if (self.dimension == 2):
             self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch2D(computing_model_part, search_parameters)
         else:
