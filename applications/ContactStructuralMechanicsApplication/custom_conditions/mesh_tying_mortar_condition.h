@@ -538,7 +538,7 @@ protected:
      * Calculate Ae matrix
      */
     bool CalculateAe( 
-        const array_1d<double, 3>& MasterNormal,
+        const array_1d<double, 3>& NormalMaster,
         DofData& rDofData,
         GeneralVariables& rVariables,
         ConditionArrayListType& ConditionsPointsSlave,
@@ -550,8 +550,8 @@ protected:
      */
     void CalculateKinematics( 
         GeneralVariables& rVariables,
-        const DofData rDofData,
-        const array_1d<double, 3> MasterNormal,
+        const DofData& rDofData,
+        const array_1d<double, 3>& NormalMaster,
         const PointType& LocalPointDecomp,
         const PointType& LocalPointParent,
         GeometryPointType& GeometryDecomp,
@@ -620,7 +620,7 @@ protected:
      */
     void MasterShapeFunctionValue(
         GeneralVariables& rVariables,
-        const array_1d<double, 3> MasterNormal,
+        const array_1d<double, 3>& NormalMaster,
         const PointType& LocalPoint
         );
     

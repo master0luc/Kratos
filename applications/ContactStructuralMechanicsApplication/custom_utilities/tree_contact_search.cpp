@@ -36,7 +36,7 @@ TreeContactSearch<TDim>::TreeContactSearch(
         "bucket_size"                          : 4, 
         "search_factor"                        : 2.0, 
         "type_search"                          : "InRadius", 
-        "check_gap"                            : false, 
+        "check_gap"                            : true, 
         "condition_name"                       : "",  
         "final_string"                         : "",  
         "inverted_search"                      : false
@@ -465,7 +465,11 @@ void TreeContactSearch<TDim>::AddPairing(
     {
         IndexesMap->AddNewPair(pCondMaster->Id(), ConditionId++);
         Condition::Pointer p_auxiliar_condition = ComputingModelPart.CreateNewCondition(mConditionName, ConditionId, pCondSlave->GetGeometry(), pCondSlave->pGetProperties());
+        // We set the geometrical values
         p_auxiliar_condition->SetValue(PAIRED_GEOMETRY, pCondMaster->pGetGeometry());
+        p_auxiliar_condition->SetValue(NORMAL, pCondSlave->GetValue(NORMAL));
+        p_auxiliar_condition->SetValue(PAIRED_NORMAL, pCondMaster->GetValue(NORMAL));
+        // We activate the condition and initialize it
         p_auxiliar_condition->Set(ACTIVE, true);
         p_auxiliar_condition->Initialize();
     }

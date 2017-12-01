@@ -25,7 +25,8 @@ typedef Geometry<Node<3>> GeometryType;
 /* Mortar method general variables */
 KRATOS_CREATE_VARIABLE( int , INTEGRATION_ORDER_CONTACT )                            // The integration order computed in the contact
 KRATOS_CREATE_VARIABLE( double, ACTIVE_CHECK_FACTOR )                                // The factor employed to search an active/inactive node
-KRATOS_CREATE_VARIABLE( GeometryType::Pointer, PAIRED_GEOMETRY )                     // The factor employed to search an active/inactive node
+KRATOS_CREATE_VARIABLE( GeometryType::Pointer, PAIRED_GEOMETRY )                     // The paired geometry with the current condition
+KRATOS_CREATE_VARIABLE( Vector3, PAIRED_NORMAL )                                     // The normal of the paired geometry
 
 /* Weighted values */
 KRATOS_CREATE_VARIABLE( double, WEIGHTED_GAP )                                       // The integrated gap employed in mortar formulation

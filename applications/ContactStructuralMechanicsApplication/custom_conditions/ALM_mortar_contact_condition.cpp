@@ -311,9 +311,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
 
     // The slave geometry
     GeometryType& slave_geometry = GetGeometry();
-    Point::CoordinatesArrayType aux_coords;
-    aux_coords = slave_geometry.PointLocalCoordinates(aux_coords, slave_geometry.Center());
-    const array_1d<double, 3>& normal_slave = slave_geometry.UnitNormal(aux_coords);
+    const array_1d<double, 3>& normal_slave = this->GetValue(NORMAL);
     
     // Create and initialize condition variables
     GeneralVariables rVariables;
@@ -335,12 +333,11 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     GeometryType& master_geometry = *BaseType::mpPairedGeometry;
     
     // The normal of the master condition
-    aux_coords = master_geometry.PointLocalCoordinates(aux_coords, master_geometry.Center());
-    const array_1d<double, 3>& master_normal = master_geometry.UnitNormal(aux_coords);
+    const array_1d<double, 3>& normal_master = this->GetValue(PAIRED_NORMAL);
     
     // Reading integration points
     ConditionArrayListType conditions_points_slave;
-    const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, master_normal, conditions_points_slave);
+    const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, normal_master, conditions_points_slave);
     
     double integration_area;
     integration_utility.GetTotalArea(slave_geometry, conditions_points_slave, integration_area);
@@ -391,7 +388,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
                     slave_geometry.PointLocalCoordinates(local_point_parent, gp_global);
                     
                     // Calculate the kinematic variables
-                    this->CalculateKinematics( rVariables, rDerivativeData, master_normal, local_point_decomp, local_point_parent, decomp_geom, dual_LM);
+                    this->CalculateKinematics( rVariables, rDerivativeData, normal_master, local_point_decomp, local_point_parent, decomp_geom, dual_LM);
                     
                     const double integration_weight = integration_points_slave[point_number].Weight() * GetAxisymmetricCoefficient(rVariables);
                     
@@ -470,9 +467,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
         
     // The slave geometry
     GeometryType& slave_geometry = this->GetGeometry();
-    Point::CoordinatesArrayType aux_coords;
-    aux_coords = slave_geometry.PointLocalCoordinates(aux_coords, slave_geometry.Center());
-    const array_1d<double, 3>& normal_slave = slave_geometry.UnitNormal(aux_coords);
+    const array_1d<double, 3>& normal_slave = this->GetValue(NORMAL);
     
     // Create and initialize condition variables
     GeneralVariables rVariables;
@@ -494,12 +489,11 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
     
     // The master geometry
     GeometryType& master_geometry = *BaseType::mpPairedGeometry;
-    aux_coords = master_geometry.PointLocalCoordinates(aux_coords, master_geometry.Center());
-    const array_1d<double, 3>& master_normal = master_geometry.UnitNormal(aux_coords);
+    const array_1d<double, 3>& normal_master = this->GetValue(PAIRED_NORMAL);
         
     // Reading integration points
     ConditionArrayListType conditions_points_slave;
-    const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, master_normal, conditions_points_slave);
+    const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, normal_master, conditions_points_slave);
     
     double integration_area;
     integration_utility.GetTotalArea(slave_geometry, conditions_points_slave, integration_area);
@@ -563,7 +557,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                     slave_geometry.PointLocalCoordinates(local_point_parent, gp_global);
                     
                     // Calculate the kinematic variables
-                    this->CalculateKinematics( rVariables, rDerivativeData, master_normal, local_point_decomp, local_point_parent, decomp_geom, dual_LM);
+                    this->CalculateKinematics( rVariables, rDerivativeData, normal_master, local_point_decomp, local_point_parent, decomp_geom, dual_LM);
                     
                     const double integration_weight = integration_points_slave[point_number].Weight() * GetAxisymmetricCoefficient(rVariables);
                     
@@ -575,7 +569,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                         // Update the derivative of DetJ
                         DerivativesUtilitiesType::CalculateDeltaDetjSlave(decomp_geom, rVariables, rDerivativeData);
                         // Update the derivatives of the shape functions and the gap
-                        DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, slave_geometry, master_geometry, normal_slave, master_normal, decomp_geom, local_point_decomp, local_point_parent, consider_normal_variation, dual_LM);
+                        DerivativesUtilitiesType::CalculateDeltaN(rVariables, rDerivativeData, slave_geometry, master_geometry, normal_slave, normal_master, decomp_geom, local_point_decomp, local_point_parent, consider_normal_variation, dual_LM);
                         
                         rThisMortarConditionMatrices.CalculateDeltaMortarOperators(rVariables, rDerivativeData, integration_weight);    
                     }
@@ -622,8 +616,8 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
 template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional, bool TNormalVariation>
 void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>::CalculateKinematics( 
     GeneralVariables& rVariables,
-    const DerivativeDataType rDerivativeData,
-    const array_1d<double, 3> MasterNormal,
+    const DerivativeDataType& rDerivativeData,
+    const array_1d<double, 3>& NormalMaster,
     const PointType& LocalPointDecomp,
     const PointType& LocalPointParent,
     GeometryPointType& GeometryDecomp,
@@ -645,7 +639,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     KRATOS_ERROR_IF(rVariables.DetjSlave < 0.0) << "WARNING:: CONDITION ID: " << this->Id() << " INVERTED. DETJ: " << rVariables.DetjSlave << std::endl;
     
     /// MASTER CONDITION ///
-    this->MasterShapeFunctionValue( rVariables, MasterNormal, LocalPointParent);
+    this->MasterShapeFunctionValue( rVariables, NormalMaster, LocalPointParent);
 }
  
 /***********************************************************************************/
@@ -655,7 +649,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
 template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional, bool TNormalVariation>
 void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>::MasterShapeFunctionValue(
     GeneralVariables& rVariables,
-    const array_1d<double, 3> MasterNormal,
+    const array_1d<double, 3>& NormalMaster,
     const PointType& LocalPoint
     )
 {    
@@ -666,7 +660,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     
     GeometryType::CoordinatesArrayType slave_gp_global;
     this->GetGeometry( ).GlobalCoordinates( slave_gp_global, LocalPoint );
-    MortarUtilities::FastProjectDirection( master_geometry, slave_gp_global, projected_gp_global, MasterNormal, -gp_normal ); // The opposite direction
+    MortarUtilities::FastProjectDirection( master_geometry, slave_gp_global, projected_gp_global, NormalMaster, -gp_normal ); // The opposite direction
     
     GeometryType::CoordinatesArrayType projected_gp_local;
     

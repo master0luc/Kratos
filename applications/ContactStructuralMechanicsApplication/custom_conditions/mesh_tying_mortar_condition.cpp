@@ -94,9 +94,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
     
     // The slave geometry
     GeometryType& slave_geometry = this->GetGeometry();
-    Point::CoordinatesArrayType aux_coords;
-    aux_coords = slave_geometry.PointLocalCoordinates(aux_coords, slave_geometry.Center());
-    const array_1d<double, 3>& normal_slave = slave_geometry.UnitNormal(aux_coords);
+    const array_1d<double, 3>& normal_slave = this->GetValue(NORMAL);
     
     // Create and initialize condition variables:
     GeneralVariables rVariables;
@@ -106,8 +104,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
     
     // The master geometry
     GeometryType& master_geometry = *BaseType::mpPairedGeometry;
-    aux_coords = master_geometry.PointLocalCoordinates(aux_coords, master_geometry.Center());
-    const array_1d<double, 3>& master_normal = master_geometry.UnitNormal(aux_coords);
+    const array_1d<double, 3>& normal_master = this->GetValue(PAIRED_NORMAL);
     // Initialize general variables for the current master element
     rVariables.Initialize();
     
@@ -119,7 +116,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
     
     // Reading integration points
     ConditionArrayListType conditions_points_slave;
-    const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, master_normal, conditions_points_slave);
+    const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, normal_master, conditions_points_slave);
     
     double integration_area;
     integration_utility.GetTotalArea(slave_geometry, conditions_points_slave, integration_area);
@@ -134,7 +131,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
         // Initialize the mortar operators
         mrThisMortarConditionMatrices.Initialize();
         
-        const bool dual_LM = CalculateAe(master_normal, rDofData, rVariables, conditions_points_slave, this_integration_method);
+        const bool dual_LM = CalculateAe(normal_master, rDofData, rVariables, conditions_points_slave, this_integration_method);
             
         for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
         {
@@ -165,7 +162,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
                     slave_geometry.PointLocalCoordinates(local_point_parent, gp_global);
                     
                     // Calculate the kinematic variables
-                    this->CalculateKinematics( rVariables, rDofData, master_normal, local_point_decomp, local_point_parent, decomp_geom, dual_LM);
+                    this->CalculateKinematics( rVariables, rDofData, normal_master, local_point_decomp, local_point_parent, decomp_geom, dual_LM);
                     
                     const double integration_weight = integration_points_slave[point_number].Weight();
 
@@ -427,7 +424,7 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::CalculateConditionS
 
 template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
 bool MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateAe(
-    const array_1d<double, 3>& MasterNormal,
+    const array_1d<double, 3>& NormalMaster,
     DofData& rDofData,
     GeneralVariables& rVariables,
     ConditionArrayListType& ConditionsPointsSlave,
@@ -480,7 +477,7 @@ bool MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateAe(
                 decomp_geom.GlobalCoordinates(gp_global, local_point_decomp);
                 slave_geometry.PointLocalCoordinates(local_point_parent, gp_global);
                 
-                this->CalculateKinematics( rVariables, rDofData, MasterNormal, local_point_decomp, local_point_parent, decomp_geom, false);
+                this->CalculateKinematics( rVariables, rDofData, NormalMaster, local_point_decomp, local_point_parent, decomp_geom, false);
                 
                 // Integrate
                 const double integration_weight = integration_points_slave[point_number].Weight();
@@ -533,8 +530,8 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::InitializeDofData(Dof
 template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
 void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateKinematics( 
     GeneralVariables& rVariables,
-    const DofData rDofData,
-    const array_1d<double, 3> MasterNormal,
+    const DofData& rDofData,
+    const array_1d<double, 3>& NormalMaster,
     const PointType& LocalPointDecomp,
     const PointType& LocalPointParent,
     GeometryPointType& GeometryDecomp,
@@ -552,7 +549,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateKinematics(
     KRATOS_ERROR_IF(rVariables.DetjSlave < 0.0) << "WARNING:: CONDITION ID: " << this->Id() << " INVERTED. DETJ: " << rVariables.DetjSlave << std::endl;
     
     /// MASTER CONDITION ///
-    this->MasterShapeFunctionValue( rVariables, MasterNormal, LocalPointParent);
+    this->MasterShapeFunctionValue( rVariables, NormalMaster, LocalPointParent);
 }
  
 /***********************************************************************************/
@@ -562,7 +559,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateKinematics(
 template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
 void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::MasterShapeFunctionValue(
     GeneralVariables& rVariables,
-    const array_1d<double, 3> MasterNormal,
+    const array_1d<double, 3>& NormalMaster,
     const PointType& LocalPoint
     )
 {    
@@ -573,7 +570,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::MasterShapeFunctionVa
     
     GeometryType::CoordinatesArrayType slave_gp_global;
     this->GetGeometry( ).GlobalCoordinates( slave_gp_global, LocalPoint );
-    MortarUtilities::FastProjectDirection( master_geometry, slave_gp_global, projected_gp_global, MasterNormal, -gp_normal ); // The opposite direction
+    MortarUtilities::FastProjectDirection( master_geometry, slave_gp_global, projected_gp_global, NormalMaster, -gp_normal ); // The opposite direction
     
     GeometryType::CoordinatesArrayType projected_gp_local;
     

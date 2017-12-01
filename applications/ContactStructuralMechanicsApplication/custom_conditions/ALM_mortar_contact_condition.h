@@ -533,8 +533,8 @@ protected:
     
     void CalculateKinematics( 
         GeneralVariables& rVariables,
-        const DerivativeDataType rDerivativeData,
-        const array_1d<double, 3> MasterNormal,
+        const DerivativeDataType& rDerivativeData,
+        const array_1d<double, 3>& NormalMaster,
         const PointType& LocalPointDecomp,
         const PointType& LocalPointParent,
         GeometryPointType& GeometryDecomp,
@@ -575,7 +575,7 @@ protected:
     
     void MasterShapeFunctionValue(
         GeneralVariables& rVariables,
-        const array_1d<double, 3> MasterNormal,
+        const array_1d<double, 3>& NormalMaster,
         const PointType& LocalPoint
     );
     
