@@ -41,6 +41,7 @@ class ALMContactProcess(python_process.PythonProcess):
             "scale_factor"                : 1.0e0,
             "tangent_factor"              : 0.1,
             "type_search"                 : "InRadius",
+            "check_gap"                   : true,
             "hard_clear_after_step"       : false,
             "database_step_update"        : 1,
             "integration_order"           : 3,
@@ -321,6 +322,7 @@ class ALMContactProcess(python_process.PythonProcess):
                     condition_name = "ALMFrictionalMortarContact"
         search_parameters = KratosMultiphysics.Parameters("""{"condition_name": "", "final_string": ""}""")
         search_parameters.AddValue("type_search",self.params["type_search"])
+        search_parameters.AddValue("check_gap",self.params["check_gap"])
         search_parameters.AddValue("allocation_size",self.params["max_number_results"])
         search_parameters.AddValue("bucket_size",self.params["bucket_size"])
         search_parameters.AddValue("search_factor",self.params["search_factor"])

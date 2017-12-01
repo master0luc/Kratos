@@ -33,6 +33,7 @@ class MeshTyingProcess(python_process.PythonProcess):
             "max_number_results"          : 1000,
             "bucket_size"                 : 4,
             "type_search"                 : "InRadius",
+            "check_gap"                   : true,
             "integration_order"           : 2
         }
         """)
@@ -106,6 +107,7 @@ class MeshTyingProcess(python_process.PythonProcess):
         condition_name = "MeshTyingMortar"
         search_parameters = KratosMultiphysics.Parameters("""{"condition_name": "", "final_string": ""}""")
         search_parameters.AddValue("type_search",self.params["type_search"])
+        search_parameters.AddValue("check_gap",self.params["check_gap"])
         search_parameters.AddValue("allocation_size",self.params["max_number_results"])
         search_parameters.AddValue("bucket_size",self.params["bucket_size"])
         search_parameters.AddValue("search_factor",self.params["search_factor"])
