@@ -88,6 +88,8 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
 {
     KRATOS_TRY;
     
+    BaseType::Initialize();
+    
     mIntegrationOrder = GetProperties().Has(INTEGRATION_ORDER_CONTACT) ? GetProperties().GetValue(INTEGRATION_ORDER_CONTACT) : 2;
     
     // The slave geometry

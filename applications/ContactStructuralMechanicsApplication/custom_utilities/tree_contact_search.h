@@ -342,12 +342,10 @@ protected:
                     if (mCreateAuxiliarConditions)
                     {
                         IndexesMap->AddNewPair(p_cond_master->Id(), ConditionId++);
-//                         ComputingModelPart.CreateNewCondition(mConditionName, ConditionId, slave_geometry, pThisProperties);
-                        const PairedCondition& r_condition =  dynamic_cast<const PairedCondition&>(KratosComponents<Condition>::Get(mConditionName));
-                        Condition::Pointer p_auxiliar_condition = Condition::Pointer(r_condition.Create(ConditionId, pCondSlave->pGetGeometry(), pThisProperties, p_cond_master->pGetGeometry()));
+                        Condition::Pointer p_auxiliar_condition = ComputingModelPart.CreateNewCondition(mConditionName, ConditionId, slave_geometry, pThisProperties);
+                        p_auxiliar_condition->SetValue(PAIRED_GEOMETRY, p_cond_master->pGetGeometry());
                         p_auxiliar_condition->Set(ACTIVE, true);
                         p_auxiliar_condition->Initialize( );
-                        ComputingModelPart.AddCondition(p_auxiliar_condition);
                     }
                     else
                         IndexesMap->AddNewPair(p_cond_master->Id(), 0);

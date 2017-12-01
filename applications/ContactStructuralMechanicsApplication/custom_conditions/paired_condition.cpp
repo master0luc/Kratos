@@ -15,6 +15,7 @@
 
 // Project includes
 #include "custom_conditions/paired_condition.h"
+#include "contact_structural_mechanics_application_variables.h"
 
 namespace Kratos 
 {
@@ -57,4 +58,30 @@ Condition::Pointer PairedCondition::Create(
 
 PairedCondition::~PairedCondition( )
 = default;
+
+//************************** STARTING - ENDING  METHODS ***************************//
+/***********************************************************************************/
+/***********************************************************************************/
+
+void PairedCondition::Initialize( ) 
+{
+    KRATOS_TRY;
+    
+    BaseType::Initialize();
+    
+    if (mpPairedGeometry == nullptr) 
+    {
+        if (this->Has(PAIRED_GEOMETRY))
+        {
+            mpPairedGeometry = this->GetValue(PAIRED_GEOMETRY);
+        }
+        else
+        {
+            KRATOS_ERROR << "WARNING:: PAIRED GEOMETRY NOT DEFINED" << std::endl;
+        }
+    }
+    
+    KRATOS_CATCH( "" );
+}
+
 } // Namespace Kratos

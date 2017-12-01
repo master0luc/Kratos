@@ -19,11 +19,13 @@
 namespace Kratos
 {
 typedef array_1d<double,3> Vector3;
+typedef Geometry<Node<3>> GeometryType;
 
 // VARIABLES
 /* Mortar method general variables */
 KRATOS_CREATE_VARIABLE( int , INTEGRATION_ORDER_CONTACT )                            // The integration order computed in the contact
 KRATOS_CREATE_VARIABLE( double, ACTIVE_CHECK_FACTOR )                                // The factor employed to search an active/inactive node
+KRATOS_CREATE_VARIABLE( GeometryType::Pointer, PAIRED_GEOMETRY )                     // The factor employed to search an active/inactive node
 
 /* Weighted values */
 KRATOS_CREATE_VARIABLE( double, WEIGHTED_GAP )                                       // The integrated gap employed in mortar formulation

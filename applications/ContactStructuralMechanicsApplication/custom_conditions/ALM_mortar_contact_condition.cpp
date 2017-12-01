@@ -97,6 +97,8 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
 {
     KRATOS_TRY;
     
+    BaseType::Initialize();
+    
     mIntegrationOrder = GetProperties().Has(INTEGRATION_ORDER_CONTACT) ? GetProperties().GetValue(INTEGRATION_ORDER_CONTACT) : 2;
     
     KRATOS_CATCH( "" );

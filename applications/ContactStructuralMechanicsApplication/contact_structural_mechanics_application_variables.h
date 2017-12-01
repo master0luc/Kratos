@@ -33,6 +33,7 @@ namespace Kratos
 ///@{
     
     typedef array_1d<double,3> Vector3;
+    typedef Geometry<Node<3>> GeometryType;
     
 ///@}
 ///@name  Enum's
@@ -48,6 +49,7 @@ namespace Kratos
 /* Mortar method */ 
 KRATOS_DEFINE_VARIABLE( int , INTEGRATION_ORDER_CONTACT )                            // The integration order computed in the contact
 KRATOS_DEFINE_VARIABLE( double, ACTIVE_CHECK_FACTOR )                                // The factor employed to search an active/inactive node
+KRATOS_DEFINE_VARIABLE( GeometryType::Pointer, PAIRED_GEOMETRY )                     // The factor employed to search an active/inactive node
 
 /* Weighted values */
 KRATOS_DEFINE_VARIABLE( double, WEIGHTED_GAP )                                       // The integrated gap employed in mortar formulation

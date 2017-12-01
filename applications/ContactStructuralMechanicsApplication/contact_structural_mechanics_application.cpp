@@ -82,6 +82,7 @@ void KratosContactStructuralMechanicsApplication::Register()
     /* Mortar method general variables */
     KRATOS_REGISTER_VARIABLE( INTEGRATION_ORDER_CONTACT )                       // The integration order computed in the contact
     KRATOS_REGISTER_VARIABLE( ACTIVE_CHECK_FACTOR )                             // The factor employed to serach an active/inactive node
+    KRATOS_REGISTER_VARIABLE( PAIRED_GEOMETRY )                                 // The factor employed to serach an active/inactive node
     
     /* Weighted values */
     KRATOS_REGISTER_VARIABLE( WEIGHTED_GAP )                                    // The integrated gap employed in mortar formulation

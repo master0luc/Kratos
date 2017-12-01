@@ -125,6 +125,11 @@ public:
     ///@{
     
     /**
+    * Called at the beginning of each solution step
+    */
+    void Initialize() override;
+    
+    /**
      * Creates a new element pointer from an arry of nodes
      * @param NewId the ID of the new element
      * @param rThisNodes the nodes of the new element
