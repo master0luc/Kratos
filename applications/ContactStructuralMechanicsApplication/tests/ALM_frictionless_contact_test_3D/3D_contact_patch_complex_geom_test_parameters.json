@@ -101,14 +101,12 @@
             "type_search"               : "InRadius",
             "integration_order"         : 2,
             "active_check_factor"       : 1.0e-1,
-            "dual_search_check"         : true,
             "stiffness_factor"          : 10.0,
             "penalty_scale_factor"      : 1.0,
             "manual_ALM"                : false,
             "penalty"                   : 1.0e0,
             "scale_factor"              : 1.0e0,
-            "debug_mode"                : false,
-            "use_exact_integration"     : false
+            "debug_mode"                : false
         }
     }],
     "json_check_process" : [
