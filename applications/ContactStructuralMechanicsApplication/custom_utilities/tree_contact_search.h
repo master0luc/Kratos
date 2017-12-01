@@ -454,6 +454,7 @@ private:
     ModelPart& mrMainModelPart;                      // The main model part
     GeometryData::KratosGeometryType mGeometryType;  // The current size of the geometry considered
     Parameters mThisParameters;                      // The configuration parameters
+    bool mCheckGap;                                  // If the gap is checked during the search
     bool mInvertedSearch;                            // The search will be done inverting the way master and slave/master is assigned
     std::string mConditionName;                      // The name of the condition to be created
     bool mCreateAuxiliarConditions;                  // If the auxiliar conditions are created or not

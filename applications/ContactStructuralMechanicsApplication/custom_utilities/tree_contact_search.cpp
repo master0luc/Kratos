@@ -36,6 +36,7 @@ TreeContactSearch<TDim>::TreeContactSearch(
         "bucket_size"                          : 4, 
         "search_factor"                        : 2.0, 
         "type_search"                          : "InRadius", 
+        "check_gap"                            : false, 
         "condition_name"                       : "",  
         "final_string"                         : "",  
         "inverted_search"                      : false
@@ -423,7 +424,7 @@ void TreeContactSearch<TDim>::UpdateMortarConditions()
             if (number_points_found > 0)
             {   
                 // We resize the vector to the actual size
-                points_found.resize(number_points_found);
+                points_found.resize(number_points_found); // TODO: Check this!!!! (may be ineficient)
                 
             #ifdef KRATOS_DEBUG
                 // NOTE: We check the list
@@ -709,6 +710,21 @@ void TreeContactSearch<TDim>::ResetContactOperators()
             }
         }
     }   
+    
+    ModelPart& computing_contact_model_part = mrMainModelPart.GetSubModelPart("ComputingContact"); 
+    ConditionsArrayType& computing_conditions_array = computing_contact_model_part.Conditions();
+    const int num_computing_conditions = static_cast<int>(computing_conditions_array.size());
+
+#ifdef _OPENMP
+    #pragma omp parallel for 
+#endif
+    for(int i = 0; i < num_computing_conditions; ++i) 
+    {
+        auto it_cond = computing_conditions_array.begin() + i;
+        it_cond->Set(TO_ERASE, true);
+    }
+    
+    computing_contact_model_part.RemoveConditions(TO_ERASE);
 }
 
 /***********************************************************************************/
@@ -730,6 +746,21 @@ void TreeContactSearch<TDim>::TotalResetContactOperators()
         auto& condition_pointers = it_cond->GetValue(INDEX_MAP);
         if (condition_pointers != nullptr)  condition_pointers->clear();
     }   
+    
+    ModelPart& computing_contact_model_part = mrMainModelPart.GetSubModelPart("ComputingContact"); 
+    ConditionsArrayType& computing_conditions_array = computing_contact_model_part.Conditions();
+    const int num_computing_conditions = static_cast<int>(computing_conditions_array.size());
+
+#ifdef _OPENMP
+    #pragma omp parallel for 
+#endif
+    for(int i = 0; i < num_computing_conditions; ++i) 
+    {
+        auto it_cond = computing_conditions_array.begin() + i;
+        it_cond->Set(TO_ERASE, true);
+    }
+    
+    computing_contact_model_part.RemoveConditions(TO_ERASE);
 }
 
 /***********************************************************************************/
