@@ -46,13 +46,26 @@ Condition::Pointer AugmentedLagrangianMethodFrictionalMortarContactCondition<TDi
     return Condition::Pointer( new AugmentedLagrangianMethodFrictionalMortarContactCondition<TDim,TNumNodes,TNormalVariation>( NewId, pGeom, pProperties ));
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
+template< unsigned int TDim, unsigned int TNumNodes, bool TNormalVariation >
+Condition::Pointer AugmentedLagrangianMethodFrictionalMortarContactCondition<TDim,TNumNodes,TNormalVariation>::Create(
+    IndexType NewId,
+    GeometryPointerType pGeom,
+    PropertiesType::Pointer pProperties,
+    GeometryType::Pointer pMasterGeom ) const
+{
+    return Condition::Pointer( new AugmentedLagrangianMethodFrictionalMortarContactCondition<TDim,TNumNodes,TNormalVariation>( NewId, pGeom, pProperties, pMasterGeom ));
+}
+
 /************************************* DESTRUCTOR **********************************/
 /***********************************************************************************/
 
 template< unsigned int TDim, unsigned int TNumNodes, bool TNormalVariation >
 AugmentedLagrangianMethodFrictionalMortarContactCondition<TDim,TNumNodes,TNormalVariation>::~AugmentedLagrangianMethodFrictionalMortarContactCondition( )
 = default;
-
+	
 /***************************** BEGIN AD REPLACEMENT ********************************/
 /***********************************************************************************/
 
@@ -85,10 +98,10 @@ void AugmentedLagrangianMethodFrictionalMortarContactCondition<TDim,TNumNodes,TN
     unsigned int index = 0;
     
     /* ORDER - [ MASTER, SLAVE, LAMBDA ] */
-    GeometryType& current_master = *BaseType::mpMasterGeometry;
+    GeometryType& current_master = *PairedConditionBaseType::mpPairedGeometry;
     
     // Master Nodes Displacement Equation IDs
-    for ( unsigned int i_master = 0; i_master < TNumNodes; i_master++ ) // NOTE: Assuming same number of nodes for master and slave
+    for ( unsigned int i_master = 0; i_master < TNumNodes; ++i_master ) // NOTE: Assuming same number of nodes for master and slave
     {
         NodeType& master_node = current_master[i_master];
         rResult[index++] = master_node.GetDof( DISPLACEMENT_X ).EquationId( );
@@ -97,7 +110,7 @@ void AugmentedLagrangianMethodFrictionalMortarContactCondition<TDim,TNumNodes,TN
     }
 
     // Slave Nodes Displacement Equation IDs
-    for ( unsigned int i_slave = 0; i_slave < TNumNodes; i_slave++ )
+    for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave )
     {
         NodeType& slave_node = this->GetGeometry()[ i_slave ];
         rResult[index++] = slave_node.GetDof( DISPLACEMENT_X ).EquationId( );
@@ -106,7 +119,7 @@ void AugmentedLagrangianMethodFrictionalMortarContactCondition<TDim,TNumNodes,TN
     }
 
     // Slave Nodes  Lambda Equation IDs
-    for ( unsigned int i_slave = 0; i_slave < TNumNodes; i_slave++ )
+    for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave )
     {
         NodeType& slave_node = this->GetGeometry()[ i_slave ];
         rResult[index++] = slave_node.GetDof( VECTOR_LAGRANGE_MULTIPLIER_X ).EquationId( );
@@ -136,10 +149,10 @@ void AugmentedLagrangianMethodFrictionalMortarContactCondition<TDim,TNumNodes,TN
     unsigned int index = 0;
     
     /* ORDER - [ MASTER, SLAVE, LAMBDA ] */
-    GeometryType& current_master = *BaseType::mpMasterGeometry;
+    GeometryType& current_master = *PairedConditionBaseType::mpPairedGeometry;
 
     // Master Nodes Displacement Equation IDs
-    for ( unsigned int i_master = 0; i_master < TNumNodes; i_master++ ) // NOTE: Assuming same number of nodes for master and slave
+    for ( unsigned int i_master = 0; i_master < TNumNodes; ++i_master ) // NOTE: Assuming same number of nodes for master and slave
     {
         NodeType& master_node = current_master[i_master];
         rConditionalDofList[index++] = master_node.pGetDof( DISPLACEMENT_X );
@@ -148,7 +161,7 @@ void AugmentedLagrangianMethodFrictionalMortarContactCondition<TDim,TNumNodes,TN
     }
 
     // Slave Nodes Displacement Equation IDs
-    for ( unsigned int i_slave = 0; i_slave < TNumNodes; i_slave++ )
+    for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave )
     {
         NodeType& slave_node = this->GetGeometry()[ i_slave ];
         rConditionalDofList[index++] = slave_node.pGetDof( DISPLACEMENT_X );
@@ -157,7 +170,7 @@ void AugmentedLagrangianMethodFrictionalMortarContactCondition<TDim,TNumNodes,TN
     }
 
     // Slave Nodes Lambda Equation IDs
-    for ( unsigned int i_slave = 0; i_slave < TNumNodes; i_slave++ )
+    for ( unsigned int i_slave = 0; i_slave < TNumNodes; ++i_slave )
     {
         NodeType& slave_node = this->GetGeometry()[ i_slave ];
         rConditionalDofList[index++] = slave_node.pGetDof( VECTOR_LAGRANGE_MULTIPLIER_X );
@@ -185,7 +198,7 @@ int AugmentedLagrangianMethodFrictionalMortarContactCondition<TDim,TNumNodes,TNo
     KRATOS_CHECK_VARIABLE_KEY(WEIGHTED_SLIP)
 
     // Check that the element's nodes contain all required SolutionStepData and Degrees of freedom
-    for ( unsigned int i = 0; i < TNumNodes; i++ )
+    for ( unsigned int i = 0; i < TNumNodes; ++i )
     {
         Node<3> &rnode = this->GetGeometry()[i];
         KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(VECTOR_LAGRANGE_MULTIPLIER,rnode)

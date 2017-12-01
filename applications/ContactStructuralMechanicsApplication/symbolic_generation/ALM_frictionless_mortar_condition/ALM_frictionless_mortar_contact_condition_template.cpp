@@ -46,6 +46,19 @@ Condition::Pointer AugmentedLagrangianMethodFrictionlessMortarContactCondition<T
     return Condition::Pointer( new  AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation >( NewId, pGeom, pProperties ));
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
+template< unsigned int TDim, unsigned int TNumNodes, bool TNormalVariation >
+Condition::Pointer AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes,TNormalVariation>::Create(
+    IndexType NewId,
+    GeometryPointerType pGeom,
+    PropertiesType::Pointer pProperties,
+    GeometryType::Pointer pMasterGeom) const
+{
+    return Condition::Pointer( new  AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation >( NewId, pGeom, pProperties, pMasterGeom ));
+}
+
 /************************************* DESTRUCTOR **********************************/
 /***********************************************************************************/
 
@@ -85,7 +98,7 @@ void AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes,
     unsigned int index = 0;
     
     /* ORDER - [ MASTER, SLAVE, LAMBDA ] */
-    GeometryType& current_master = *BaseType::mpMasterGeometry;
+    GeometryType& current_master = *PairedConditionBaseType::mpPairedGeometry;
     
     // Master Nodes Displacement Equation IDs
     for ( unsigned int i_master = 0; i_master < TNumNodes; i_master++ ) // NOTE: Assuming same number of nodes for master and slave
@@ -134,7 +147,7 @@ void AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes,
     unsigned int index = 0;
     
     /* ORDER - [ MASTER, SLAVE, LAMBDA ] */
-    GeometryType& current_master = *BaseType::mpMasterGeometry;
+    GeometryType& current_master = *PairedConditionBaseType::mpPairedGeometry;
 
     // Master Nodes Displacement Equation IDs
     for ( unsigned int i_master = 0; i_master < TNumNodes; ++i_master ) // NOTE: Assuming same number of nodes for master and slave
@@ -180,7 +193,7 @@ int AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes,T
     KRATOS_CHECK_VARIABLE_KEY(NORMAL_CONTACT_STRESS)
 
     // Check that the element's nodes contain all required SolutionStepData and Degrees of freedom
-    for ( unsigned int i = 0; i < TNumNodes; i++ )
+    for ( unsigned int i = 0; i < TNumNodes; ++i )
     {
         Node<3> &rnode = this->GetGeometry()[i];
         KRATOS_CHECK_VARIABLE_IN_NODAL_DATA(NORMAL_CONTACT_STRESS,rnode)

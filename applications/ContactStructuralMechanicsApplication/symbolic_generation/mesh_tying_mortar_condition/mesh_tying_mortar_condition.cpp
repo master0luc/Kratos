@@ -59,6 +59,19 @@ Condition::Pointer MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Create(
     return Condition::Pointer( new MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>( NewId, pGeom, pProperties ));
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
+template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
+Condition::Pointer MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Create(
+    IndexType NewId,
+    GeometryType::Pointer pGeom,
+    PropertiesType::Pointer pProperties,
+    GeometryType::Pointer pMasterGeom) const
+{
+    return Condition::Pointer( new MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>( NewId, pGeom, pProperties, pMasterGeom));
+}
+
 /************************************* DESTRUCTOR **********************************/
 /***********************************************************************************/
 
@@ -88,9 +101,9 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
     
     // Create the current DoF data
     DofData rDofData;
-
+    
     // The master geometry
-    GeometryType& master_geometry = *mpMasterGeometry;
+    GeometryType& master_geometry = *BaseType::mpPairedGeometry;
     aux_coords = master_geometry.PointLocalCoordinates(aux_coords, master_geometry.Center());
     const array_1d<double, 3>& master_normal = master_geometry.UnitNormal(aux_coords);
     // Initialize general variables for the current master element
@@ -163,7 +176,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
     {
         this->Set(ACTIVE, false);
     }
-
+    
     KRATOS_CATCH( "" );
 }
 
@@ -386,7 +399,7 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::CalculateConditionS
     this->InitializeDofData(rDofData);
     
     // Update slave element info
-    rDofData.UpdateMasterPair(*mpMasterGeometry);
+    rDofData.UpdateMasterPair(*BaseType::mpPairedGeometry);
     
     // Assemble of the matrix is required
     if ( rLocalSystem.CalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX ) )
@@ -551,7 +564,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::MasterShapeFunctionVa
     const PointType& LocalPoint
     )
 {    
-    GeometryType& master_geometry = *mpMasterGeometry;
+    GeometryType& master_geometry = *BaseType::mpPairedGeometry;
 
     PointType projected_gp_global;
     const array_1d<double,3> gp_normal = MortarUtilities::GaussPointUnitNormal(rVariables.NSlave, GetGeometry());
@@ -3764,8 +3777,6 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::EquationIdVector(
 {
     KRATOS_TRY;  
     
-    // Calculates the size of the system
-    
     if (rResult.size() != MatrixSize)
     {
         rResult.resize( MatrixSize, false );
@@ -3775,7 +3786,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::EquationIdVector(
     
     /* ORDER - [ MASTER, SLAVE, LM ] */
     // Master Nodes DoF Equation IDs
-    GeometryType& current_master = *mpMasterGeometry;
+    GeometryType& current_master = *BaseType::mpPairedGeometry;
     
     if (TTensor == ScalarValue)
     {
@@ -3862,7 +3873,7 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::GetDofList(
     
     /* ORDER - [ MASTER, SLAVE, LM ] */
     // Master Nodes DoF Equation IDs
-    GeometryType& current_master = *mpMasterGeometry;
+    GeometryType& current_master = *BaseType::mpPairedGeometry;
     
     if (TTensor == ScalarValue)
     {
@@ -4045,6 +4056,25 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateOnIntegratio
     }
     
     KRATOS_CATCH( "" );
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
+int MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Check( const ProcessInfo& rCurrentProcessInfo )
+{
+    KRATOS_TRY
+
+    // Base class checks for positive Jacobian and Id > 0
+    int ierr = Condition::Check(rCurrentProcessInfo);
+    if(ierr != 0) return ierr;
+
+    KRATOS_ERROR_IF(BaseType::mpPairedGeometry == nullptr) << "YOU HAVE NOT INITIALIZED THE PAIR GEOMETRY IN THE MeshTyingMortarCondition" << std::endl;
+
+    return ierr;
+
+    KRATOS_CATCH("")
 }
 
 /***********************************************************************************/
