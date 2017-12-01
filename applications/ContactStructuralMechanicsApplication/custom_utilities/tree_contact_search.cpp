@@ -44,6 +44,7 @@ TreeContactSearch<TDim>::TreeContactSearch(
     
     mThisParameters.ValidateAndAssignDefaults(DefaultParameters);
     
+    mCheckGap = mThisParameters["check_gap"].GetBool();
     mInvertedSearch = mThisParameters["inverted_search"].GetBool();
     
     // Check if the computing contact submodelpart
@@ -424,11 +425,11 @@ void TreeContactSearch<TDim>::UpdateMortarConditions()
             if (number_points_found > 0)
             {   
                 // We resize the vector to the actual size
-                points_found.resize(number_points_found); // TODO: Check this!!!! (may be ineficient)
+//                 points_found.resize(number_points_found); // NOTE: May be ineficient
                 
             #ifdef KRATOS_DEBUG
                 // NOTE: We check the list
-                for (unsigned int i_point = 0; i_point < points_found.size(); ++i_point )
+                for (unsigned int i_point = 0; i_point < number_points_found; ++i_point )
                 {
                     points_found[i_point]->Check();
                 }
@@ -439,12 +440,39 @@ void TreeContactSearch<TDim>::UpdateMortarConditions()
                 Condition::Pointer p_cond_slave = (*it_cond.base()); // MASTER
                 
                 // If not active we check if can be potentially in contact
-                CheckPotentialPairing(computing_contact_model_part, condition_id, p_cond_slave, points_found, indexes_map);
+                if (mCheckGap == true) CheckPotentialPairing(computing_contact_model_part, condition_id, p_cond_slave, points_found, number_points_found, indexes_map);
+                else AddPotentialPairing(computing_contact_model_part, condition_id, p_cond_slave, points_found, number_points_found, indexes_map);
             }
         }
     }
 
     mrMainModelPart.RemoveConditions(TO_ERASE);
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+template<unsigned int TDim>
+void TreeContactSearch<TDim>::AddPairing(
+    ModelPart& ComputingModelPart,
+    std::size_t& ConditionId,
+    Condition::Pointer pCondSlave,
+    Condition::Pointer pCondMaster,
+    IndexMap::Pointer IndexesMap
+    )
+{
+    if (mCreateAuxiliarConditions == true) // We add the ID and we create a new auxiliar condition
+    {
+        IndexesMap->AddNewPair(pCondMaster->Id(), ConditionId++);
+        Condition::Pointer p_auxiliar_condition = ComputingModelPart.CreateNewCondition(mConditionName, ConditionId, pCondSlave->GetGeometry(), pCondSlave->pGetProperties());
+        p_auxiliar_condition->SetValue(PAIRED_GEOMETRY, pCondMaster->pGetGeometry());
+        p_auxiliar_condition->Set(ACTIVE, true);
+        p_auxiliar_condition->Initialize();
+    }
+    else // We just add the ID
+    {
+        IndexesMap->AddNewPair(pCondMaster->Id(), 0);
+    }
 }
 
 /***********************************************************************************/
@@ -466,7 +494,8 @@ void TreeContactSearch<TDim>::CleanMortarConditions()
         if ( it_cond->Has(INDEX_MAP) == true)
         {
             IndexMap::Pointer indexes_map = it_cond->GetValue(INDEX_MAP);
-            CheckCurrentPairing(*(it_cond.base()), indexes_map);
+            if (mCheckGap == true) CheckCurrentPairing(*(it_cond.base()), indexes_map);
+            else CheckAllActivePairing(*(it_cond.base()), indexes_map);;
         }
     }
     
@@ -572,6 +601,7 @@ inline void TreeContactSearch<2>::CheckPotentialPairing(
     std::size_t& ConditionId,
     Condition::Pointer pCondSlave,
     PointVector& PointsFound,
+    const unsigned int NumberOfPointsFound,
     IndexMap::Pointer IndexesMap
     )
 {
@@ -580,7 +610,7 @@ inline void TreeContactSearch<2>::CheckPotentialPairing(
     const auto& this_geometry_type = this_geometry.GetGeometryType();
     if (this_geometry_type == GeometryData::KratosGeometryType::Kratos_Line2D2)
     {
-        AuxiliarCheckPotentialPairing<2>(ComputingModelPart, ConditionId, pCondSlave, PointsFound, IndexesMap);
+        AuxiliarCheckPotentialPairing<2>(ComputingModelPart, ConditionId, pCondSlave, PointsFound, NumberOfPointsFound, IndexesMap);
     }
     else
     {
@@ -597,6 +627,7 @@ inline void TreeContactSearch<3>::CheckPotentialPairing(
     std::size_t& ConditionId,
     Condition::Pointer pCondSlave,
     PointVector& PointsFound,
+    const unsigned int NumberOfPointsFound,
     IndexMap::Pointer IndexesMap
     )
 {    
@@ -604,11 +635,11 @@ inline void TreeContactSearch<3>::CheckPotentialPairing(
     const auto& this_geometry_type = this_geometry.GetGeometryType();
     if (this_geometry_type == GeometryData::KratosGeometryType::Kratos_Triangle3D3)
     {
-        AuxiliarCheckPotentialPairing<3>(ComputingModelPart, ConditionId, pCondSlave, PointsFound, IndexesMap);
+        AuxiliarCheckPotentialPairing<3>(ComputingModelPart, ConditionId, pCondSlave, PointsFound, NumberOfPointsFound, IndexesMap);
     }
     else if (this_geometry_type == GeometryData::KratosGeometryType::Kratos_Quadrilateral3D4)
     {
-        AuxiliarCheckPotentialPairing<4>(ComputingModelPart, ConditionId, pCondSlave, PointsFound, IndexesMap);
+        AuxiliarCheckPotentialPairing<4>(ComputingModelPart, ConditionId, pCondSlave, PointsFound, NumberOfPointsFound, IndexesMap);
     }
     else
     {
@@ -616,6 +647,30 @@ inline void TreeContactSearch<3>::CheckPotentialPairing(
     }
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
+template<unsigned int TDim>
+inline void TreeContactSearch<TDim>::AddPotentialPairing(
+    ModelPart& ComputingModelPart,
+    std::size_t& ConditionId,
+    Condition::Pointer pCondSlave,
+    PointVector& PointsFound,
+    const unsigned int NumberOfPointsFound,
+    IndexMap::Pointer IndexesMap
+    )
+{
+    auto& geom = pCondSlave->GetGeometry();
+    for (unsigned int i_node = 0; i_node < geom.size(); ++i_node)
+    {
+        geom[i_node].Set(ACTIVE, true);
+    }
+    
+    for (unsigned int i_point = 0; i_point < NumberOfPointsFound; ++i_point )
+    {
+        AddPairing(ComputingModelPart, ConditionId, pCondSlave, PointsFound[i_point]->GetCondition(), IndexesMap);
+    }    
+}
 /***********************************************************************************/
 /***********************************************************************************/
 
@@ -660,6 +715,36 @@ inline void TreeContactSearch<3>::CheckCurrentPairing(
     else
     {
         KRATOS_ERROR << "INTEGRATION NOT IMPLEMENTED: Dimension = 3. Number of nodes = " << this_geometry.size() << std::endl;
+    }
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+template<unsigned int TDim>
+inline void TreeContactSearch<TDim>::CheckAllActivePairing(
+    Condition::Pointer pCondSlave,
+    IndexMap::Pointer IndexesMap
+    )
+{
+    bool active = false;
+    GeometryType& geom = pCondSlave->GetGeometry();
+    for (unsigned int i_node = 0; i_node < geom.size(); ++i_node)
+    {
+        if (geom[i_node].Is(ACTIVE) == true) 
+        {
+            active = true;
+            break;
+        }
+    }
+    
+    if (active == false)
+    {
+        for (auto it_pair = IndexesMap->begin(); it_pair != IndexesMap->end(); ++it_pair )
+        {
+            Condition::Pointer p_cond_master = mrMainModelPart.pGetCondition(it_pair->first);
+            mrMainModelPart.pGetCondition(it_pair->second)->Set(TO_ERASE, true);
+            IndexesMap->RemoveId(p_cond_master->Id());
+        }
     }
 }
 

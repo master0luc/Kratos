@@ -284,6 +284,7 @@ protected:
         std::size_t& ConditionId,
         Condition::Pointer pCondSlave,
         PointVector& PointsFound,
+        const unsigned int NumberOfPointsFound,
         IndexMap::Pointer IndexesMap
         );
     
@@ -296,6 +297,7 @@ protected:
         std::size_t& ConditionId,
         Condition::Pointer pCondSlave,
         PointVector& PointsFound,
+        const unsigned int NumberOfPointsFound,
         IndexMap::Pointer IndexesMap
         )
     {        
@@ -304,7 +306,6 @@ protected:
         const array_1d<double, 3>& contact_normal_origin = pCondSlave->GetValue(NORMAL);
         GeometryType& slave_geometry = pCondSlave->GetGeometry();
         const double active_check_length = slave_geometry.Length() * active_check_factor;
-        Properties::Pointer pThisProperties = pCondSlave->pGetProperties();
         
         // We update the base condition
         if (mCreateAuxiliarConditions && slave_geometry.GetGeometryType() != mGeometryType)
@@ -322,7 +323,7 @@ protected:
         MortarOperator<TNumNodes> rThisMortarConditionMatrices;
         ExactMortarIntegrationUtility<TDim, TNumNodes> integration_utility = ExactMortarIntegrationUtility<TDim, TNumNodes>(TDim);
         
-        for(unsigned int i_pair = 0; i_pair < PointsFound.size(); ++i_pair)
+        for(unsigned int i_pair = 0; i_pair < NumberOfPointsFound; ++i_pair)
         {   
             bool condition_is_active = false;
             
@@ -337,19 +338,7 @@ protected:
                 condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, true>(rVariables, rThisMortarConditionMatrices, integration_utility, slave_geometry, master_geometry, contact_normal_origin, master_normal, active_check_length);
                 
                 // If condition is active we add
-                if (condition_is_active) 
-                {
-                    if (mCreateAuxiliarConditions)
-                    {
-                        IndexesMap->AddNewPair(p_cond_master->Id(), ConditionId++);
-                        Condition::Pointer p_auxiliar_condition = ComputingModelPart.CreateNewCondition(mConditionName, ConditionId, slave_geometry, pThisProperties);
-                        p_auxiliar_condition->SetValue(PAIRED_GEOMETRY, p_cond_master->pGetGeometry());
-                        p_auxiliar_condition->Set(ACTIVE, true);
-                        p_auxiliar_condition->Initialize( );
-                    }
-                    else
-                        IndexesMap->AddNewPair(p_cond_master->Id(), 0);
-                }
+                if (condition_is_active == true) AddPairing(ComputingModelPart, ConditionId, pCondSlave, p_cond_master, IndexesMap);
             }
             else if (condition_checked_right == AlreadyInTheMap)
             {
@@ -367,7 +356,37 @@ protected:
     }
     
     /**
+     * This method checks the potential pairing between two conditions/geometries
+     */
+    inline void AddPotentialPairing(
+        ModelPart& ComputingModelPart,
+        std::size_t& ConditionId,
+        Condition::Pointer pCondSlave,
+        PointVector& PointsFound,
+        const unsigned int NumberOfPointsFound,
+        IndexMap::Pointer IndexesMap
+        );
+    
+    /**
+     * This method add a new pair to the computing model part
+     * @param ComputingModelPart The modelpart  used in the assemble of the system
+     * @param ConditionId The ID of the new condition to be created
+     * @param pCondSlave The pointer to the slave condition
+     * @param pCondMaster The pointer to the master condition
+     * @param IndexesMap The map of indexes considered
+     */
+    inline void AddPairing(
+        ModelPart& ComputingModelPart,
+        std::size_t& ConditionId,
+        Condition::Pointer pCondSlave,
+        Condition::Pointer pCondMaster,
+        IndexMap::Pointer IndexesMap
+        );
+    
+    /**
      * This method checks the current pairing between two conditions/geometries
+     * @param pCondSlave The pointer to the slave condition
+     * @param IndexesMap The map of indexes considered
      */
     inline void CheckCurrentPairing(
         Condition::Pointer pCondSlave,
@@ -376,6 +395,8 @@ protected:
     
     /**
      * This method checks the current pairing between two conditions/geometries
+     * @param pCondSlave The pointer to the slave condition
+     * @param IndexesMap The map of indexes considered
      */
     template<unsigned int TNumNodes>
     inline void AuxiliarCheckCurrentPairing(
@@ -402,11 +423,21 @@ protected:
             
             if (condition_is_active == false) 
             {
-                IndexesMap->RemoveId(p_cond_master->Id());
                 mrMainModelPart.pGetCondition(it_pair->second)->Set(TO_ERASE, true);
+                IndexesMap->RemoveId(p_cond_master->Id());
             }
         }
     }
+    
+    /**
+     * This method checks the current pairing between two conditions/geometries
+     * @param pCondSlave The pointer to the slave condition
+     * @param IndexesMap The map of indexes considered
+     */
+    inline void CheckAllActivePairing(
+        Condition::Pointer pCondSlave,
+        IndexMap::Pointer IndexesMap
+        );
     
     /**  
      * Calculates the minimal distance between one node and its center 

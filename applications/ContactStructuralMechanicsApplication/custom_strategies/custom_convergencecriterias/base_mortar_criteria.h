@@ -156,6 +156,8 @@ public:
         ConditionsArrayType& conditions_array = rModelPart.GetSubModelPart("Contact").Conditions();
         const int num_conditions = static_cast<int>(conditions_array.size());
 
+        auto& r_process_info = rModelPart.GetProcessInfo();
+        
     #ifdef _OPENMP
         #pragma omp parallel for 
     #endif
@@ -163,7 +165,8 @@ public:
         {
             auto it_cond = conditions_array.begin() + i;
             
-            it_cond->AddExplicitContribution(rModelPart.GetProcessInfo());
+            if (it_cond->Is(ACTIVE))
+                it_cond->AddExplicitContribution(r_process_info);
         }
         
         return true;

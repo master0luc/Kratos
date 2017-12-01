@@ -258,20 +258,14 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     if ( rCalculationFlags.Is( AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>::COMPUTE_LHS_MATRIX ) ) // Calculation of the matrix is required
     {
         if ( rLeftHandSideMatrix.size1() != MatrixSize )
-        {
             rLeftHandSideMatrix.resize( MatrixSize, MatrixSize, false );
-        }
-//         noalias( rLeftHandSideMatrix ) = ZeroMatrix( MatrixSize, MatrixSize ); // Resetting LHS // TODO: Check if remove it or not
     }
 
     // Resizing as needed the RHS
     if ( rCalculationFlags.Is( AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>::COMPUTE_RHS_VECTOR ) ) // Calculation of the matrix is required
     {
         if ( rRightHandSideVector.size() != MatrixSize )
-        {
             rRightHandSideVector.resize( MatrixSize, false );
-        }
-//         noalias(rRightHandSideVector) = ZeroVector( MatrixSize ); // Resetting RHS
     }
 }
 
@@ -337,128 +331,125 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     // If we consider the normal variation
     const NormalDerivativesComputation consider_normal_variation = static_cast<NormalDerivativesComputation>(rCurrentProcessInfo[CONSIDER_NORMAL_VARIATION]);
     
-    // Iterate over the master segments
-    if (this->Is(ACTIVE) == true) // TODO: Check if the AddExplicitContribution checks the activity
-    {   
-        GeometryType& master_geometry = *BaseType::mpPairedGeometry;
+    // The master geometry
+    GeometryType& master_geometry = *BaseType::mpPairedGeometry;
+    
+    // The normal of the master condition
+    aux_coords = master_geometry.PointLocalCoordinates(aux_coords, master_geometry.Center());
+    const array_1d<double, 3>& master_normal = master_geometry.UnitNormal(aux_coords);
+    
+    // Reading integration points
+    ConditionArrayListType conditions_points_slave;
+    const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, master_normal, conditions_points_slave);
+    
+    double integration_area;
+    integration_utility.GetTotalArea(slave_geometry, conditions_points_slave, integration_area);
+    
+    if ((is_inside == true) && ((integration_area/slave_geometry.Area()) > 1.0e-3 * slave_geometry.Area()))
+    {            
+        IntegrationMethod this_integration_method = GetIntegrationMethod();
         
-        // The normal of the master condition
-        aux_coords = master_geometry.PointLocalCoordinates(aux_coords, master_geometry.Center());
-        const array_1d<double, 3>& master_normal = master_geometry.UnitNormal(aux_coords);
+        // Initialize general variables for the current master element
+        rVariables.Initialize();
         
-        // Reading integration points
-        ConditionArrayListType conditions_points_slave;
-        const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, master_normal, conditions_points_slave);
+        // Update slave element info
+        rDerivativeData.UpdateMasterPair(master_geometry);
         
-        double integration_area;
-        integration_utility.GetTotalArea(slave_geometry, conditions_points_slave, integration_area);
+        // Initialize the mortar operators
+        rThisMortarConditionMatrices.Initialize();
         
-        if ((is_inside == true) && ((integration_area/slave_geometry.Area()) > 1.0e-3 * slave_geometry.Area()))
-        {            
-            IntegrationMethod this_integration_method = GetIntegrationMethod();
-            
-            // Initialize general variables for the current master element
-            rVariables.Initialize();
-            
-            // Update slave element info
-            rDerivativeData.UpdateMasterPair(master_geometry);
-            
-            // Initialize the mortar operators
-            rThisMortarConditionMatrices.Initialize();
-            
-            const bool dual_LM = DerivativesUtilitiesType::CalculateAeAndDeltaAe(slave_geometry, normal_slave, master_geometry, rDerivativeData, rVariables, consider_normal_variation, conditions_points_slave, this_integration_method, GetAxisymmetricCoefficient(rVariables));
-            
-            for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
+        const bool dual_LM = DerivativesUtilitiesType::CalculateAeAndDeltaAe(slave_geometry, normal_slave, master_geometry, rDerivativeData, rVariables, consider_normal_variation, conditions_points_slave, this_integration_method, GetAxisymmetricCoefficient(rVariables));
+        
+        for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
+        {
+            std::vector<PointType::Pointer> points_array (TDim); // The points are stored as local coordinates, we calculate the global coordinates of this points
+            array_1d<BelongType, TDim> belong_array;
+            for (unsigned int i_node = 0; i_node < TDim; ++i_node)
             {
-                std::vector<PointType::Pointer> points_array (TDim); // The points are stored as local coordinates, we calculate the global coordinates of this points
-                array_1d<BelongType, TDim> belong_array;
-                for (unsigned int i_node = 0; i_node < TDim; ++i_node)
-                {
-                    PointType global_point;
-                    slave_geometry.GlobalCoordinates(global_point, conditions_points_slave[i_geom][i_node]);
-                    points_array[i_node] = PointType::Pointer( new PointType(global_point) );
-                    belong_array[i_node] = conditions_points_slave[i_geom][i_node].GetBelong();
-                }
-                
-                DecompositionType decomp_geom( points_array );
-                
-                const bool bad_shape = (TDim == 2) ? MortarUtilities::LengthCheck(decomp_geom, slave_geometry.Length() * 1.0e-6) : MortarUtilities::HeronCheck(decomp_geom);
-                
-                if (bad_shape == false)
-                {
-                    const GeometryType::IntegrationPointsArrayType& integration_points_slave = decomp_geom.IntegrationPoints( this_integration_method );
-                    
-                    // Integrating the mortar operators
-                    for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); ++point_number )
-                    {
-                        // We compute the local coordinates 
-                        const PointType local_point_decomp = integration_points_slave[point_number].Coordinates();
-                        PointType local_point_parent;
-                        PointType gp_global;
-                        decomp_geom.GlobalCoordinates(gp_global, local_point_decomp);
-                        slave_geometry.PointLocalCoordinates(local_point_parent, gp_global);
-                        
-                        // Calculate the kinematic variables
-                        this->CalculateKinematics( rVariables, rDerivativeData, master_normal, local_point_decomp, local_point_parent, decomp_geom, dual_LM);
-                        
-                        const double integration_weight = integration_points_slave[point_number].Weight() * GetAxisymmetricCoefficient(rVariables);
-                        
-                        rThisMortarConditionMatrices.CalculateMortarOperators(rVariables, integration_weight);   
-                    }
-                }
+                PointType global_point;
+                slave_geometry.GlobalCoordinates(global_point, conditions_points_slave[i_geom][i_node]);
+                points_array[i_node] = PointType::Pointer( new PointType(global_point) );
+                belong_array[i_node] = conditions_points_slave[i_geom][i_node].GetBelong();
             }
             
-            // Setting the weighted gap
-            // Mortar condition matrices - DOperator and MOperator
-            const bounded_matrix<double, TNumNodes, TNumNodes>& DOperator = rThisMortarConditionMatrices.DOperator;
-            const bounded_matrix<double, TNumNodes, TNumNodes>& MOperator = rThisMortarConditionMatrices.MOperator;
+            DecompositionType decomp_geom( points_array );
             
-            // Current coordinates 
-            const bounded_matrix<double, TNumNodes, TDim>& x1 = MortarUtilities::GetCoordinates<TDim,TNumNodes>(slave_geometry);
-            const bounded_matrix<double, TNumNodes, TDim>& x2 = MortarUtilities::GetCoordinates<TDim,TNumNodes>(master_geometry);
+            const bool bad_shape = (TDim == 2) ? MortarUtilities::LengthCheck(decomp_geom, slave_geometry.Length() * 1.0e-6) : MortarUtilities::HeronCheck(decomp_geom);
+            
+            if (bad_shape == false)
+            {
+                const GeometryType::IntegrationPointsArrayType& integration_points_slave = decomp_geom.IntegrationPoints( this_integration_method );
+                
+                // Integrating the mortar operators
+                for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); ++point_number )
+                {
+                    // We compute the local coordinates 
+                    const PointType local_point_decomp = integration_points_slave[point_number].Coordinates();
+                    PointType local_point_parent;
+                    PointType gp_global;
+                    decomp_geom.GlobalCoordinates(gp_global, local_point_decomp);
+                    slave_geometry.PointLocalCoordinates(local_point_parent, gp_global);
+                    
+                    // Calculate the kinematic variables
+                    this->CalculateKinematics( rVariables, rDerivativeData, master_normal, local_point_decomp, local_point_parent, decomp_geom, dual_LM);
+                    
+                    const double integration_weight = integration_points_slave[point_number].Weight() * GetAxisymmetricCoefficient(rVariables);
+                    
+                    rThisMortarConditionMatrices.CalculateMortarOperators(rVariables, integration_weight);   
+                }
+            }
+        }
+        
+        // Setting the weighted gap
+        // Mortar condition matrices - DOperator and MOperator
+        const bounded_matrix<double, TNumNodes, TNumNodes>& DOperator = rThisMortarConditionMatrices.DOperator;
+        const bounded_matrix<double, TNumNodes, TNumNodes>& MOperator = rThisMortarConditionMatrices.MOperator;
+        
+        // Current coordinates 
+        const bounded_matrix<double, TNumNodes, TDim>& x1 = MortarUtilities::GetCoordinates<TDim,TNumNodes>(slave_geometry);
+        const bounded_matrix<double, TNumNodes, TDim>& x2 = MortarUtilities::GetCoordinates<TDim,TNumNodes>(master_geometry);
+
+        const bounded_matrix<double, TNumNodes, TDim> D_x1_M_x2 = prod(DOperator, x1) - prod(MOperator, x2); 
+        
+        for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+        {
+            const array_1d<double, 3>& normal = slave_geometry[i_node].FastGetSolutionStepValue(NORMAL);
+            const array_1d<double, TDim> aux_array = row(D_x1_M_x2, i_node);
+                            
+            double& weighted_gap = slave_geometry[i_node].FastGetSolutionStepValue(WEIGHTED_GAP);
+            
+        #ifdef _OPENMP
+            #pragma omp atomic
+        #endif
+            weighted_gap += inner_prod(aux_array, - subrange(normal, 0, TDim)); 
+        }
+        
+        if (TFrictional == true) // TODO: Check this!!!
+        {
+            // Old coordinates 
+            const bounded_matrix<double, TNumNodes, TDim>& x1_old = MortarUtilities::GetCoordinates<TDim,TNumNodes>(slave_geometry, false, 1);
+            const bounded_matrix<double, TNumNodes, TDim>& x2_old = MortarUtilities::GetCoordinates<TDim,TNumNodes>(master_geometry, false, 1);
     
-            const bounded_matrix<double, TNumNodes, TDim> D_x1_M_x2 = prod(DOperator, x1) - prod(MOperator, x2); 
+            const bounded_matrix<double, TNumNodes, TDim> D_x1_old_M_x2_old = prod(DOperator, x1_old) - prod(MOperator, x2_old); 
             
             for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
             {
+                // We compute the tangent
                 const array_1d<double, 3>& normal = slave_geometry[i_node].FastGetSolutionStepValue(NORMAL);
-                const array_1d<double, TDim> aux_array = row(D_x1_M_x2, i_node);
-                                
-                double& weighted_gap = slave_geometry[i_node].FastGetSolutionStepValue(WEIGHTED_GAP);
+                const array_1d<double, 3>& lm = slave_geometry[i_node].FastGetSolutionStepValue(VECTOR_LAGRANGE_MULTIPLIER);
+                const double lm_normal = inner_prod(normal, lm);
+                array_1d<double, 3> tangent_lm = lm - lm_normal * normal;
+                tangent_lm /= norm_2(tangent_lm); 
+                const array_1d<double, TDim>& tangent = subrange(tangent_lm, 0, TDim);
                 
+                const array_1d<double, TDim>& aux_array = row(D_x1_old_M_x2_old, i_node);
+                            
+                double& weighted_slip = slave_geometry[i_node].FastGetSolutionStepValue(WEIGHTED_SLIP);
+
             #ifdef _OPENMP
                 #pragma omp atomic
             #endif
-                weighted_gap += inner_prod(aux_array, - subrange(normal, 0, TDim)); 
-            }
-            
-            if (TFrictional == true) // TODO: Check this!!!
-            {
-                // Old coordinates 
-                const bounded_matrix<double, TNumNodes, TDim>& x1_old = MortarUtilities::GetCoordinates<TDim,TNumNodes>(slave_geometry, false, 1);
-                const bounded_matrix<double, TNumNodes, TDim>& x2_old = MortarUtilities::GetCoordinates<TDim,TNumNodes>(master_geometry, false, 1);
-        
-                const bounded_matrix<double, TNumNodes, TDim> D_x1_old_M_x2_old = prod(DOperator, x1_old) - prod(MOperator, x2_old); 
-                
-                for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
-                {
-                    // We compute the tangent
-                    const array_1d<double, 3>& normal = slave_geometry[i_node].FastGetSolutionStepValue(NORMAL);
-                    const array_1d<double, 3>& lm = slave_geometry[i_node].FastGetSolutionStepValue(VECTOR_LAGRANGE_MULTIPLIER);
-                    const double lm_normal = inner_prod(normal, lm);
-                    array_1d<double, 3> tangent_lm = lm - lm_normal * normal;
-                    tangent_lm /= norm_2(tangent_lm); 
-                    const array_1d<double, TDim>& tangent = subrange(tangent_lm, 0, TDim);
-                    
-                    const array_1d<double, TDim>& aux_array = row(D_x1_old_M_x2_old, i_node);
-                                
-                    double& weighted_slip = slave_geometry[i_node].FastGetSolutionStepValue(WEIGHTED_SLIP);
-
-                #ifdef _OPENMP
-                    #pragma omp atomic
-                #endif
-                    weighted_slip += inner_prod(aux_array, tangent); 
-                }
+                weighted_slip += inner_prod(aux_array, tangent); 
             }
         }
     }
