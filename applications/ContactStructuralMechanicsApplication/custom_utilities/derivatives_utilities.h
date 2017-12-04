@@ -673,9 +673,15 @@ public:
                     
                     // The derivatives of the dual shape function 
                     auto& delta_phi = rDerivativeData.DeltaPhi[i_node * TDim + i_dof];
-                    noalias(delta_phi) = prod(rDerivativeData.DeltaAe[i_node * TDim + i_dof], N1);
-                    if (DualLM == true) noalias(delta_phi) += prod(rDerivativeData.Ae, delta_n1);
-                    else noalias(delta_phi) += delta_n1;
+                    if (DualLM == true) 
+                    {
+                        noalias(delta_phi) = prod(rDerivativeData.DeltaAe[i_node * TDim + i_dof], N1);
+                        noalias(delta_phi) += prod(rDerivativeData.Ae, delta_n1);
+                    }
+                    else 
+                    {
+                        noalias(delta_phi) = delta_n1;
+                    }
                 }
             }
         }

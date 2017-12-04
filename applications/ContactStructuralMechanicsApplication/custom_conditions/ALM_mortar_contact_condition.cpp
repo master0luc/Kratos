@@ -547,7 +547,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                 for ( unsigned int point_number = 0; point_number < integration_points_slave.size(); ++point_number )
                 {
                     // We reset the derivatives
-//                         rDerivativeData.ResetDerivatives(); // FIXME
+                    rDerivativeData.ResetDerivatives();
                     
                     // We compute the local coordinates 
                     const PointType local_point_decomp = integration_points_slave[point_number].Coordinates();
@@ -580,7 +580,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                 }
             }
         }
-                
+              
         // Calculates the active/inactive combination pair
         const unsigned int active_inactive = GetActiveInactiveValue(slave_geometry);
         

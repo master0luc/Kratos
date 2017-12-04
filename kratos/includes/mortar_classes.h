@@ -577,26 +577,16 @@ public:
     }
     
     /**
-     * This method reset tos zero the derivatives
+     * This method reset to zero the cell vertex derivatives
      */
     
     virtual void ResetDerivatives()
     {                
         // Derivatives 
-        for (unsigned int i = 0; i < TNumNodes * TDim; ++i)
-        {
-            DeltaPhi[i] = ZeroVector(TNumNodes);
-            DeltaN1[i] = ZeroVector(TNumNodes);
-            DeltaN1[i + TNumNodes * TDim] = ZeroVector(TNumNodes);
-            DeltaN2[i] = ZeroVector(TNumNodes);
-            DeltaN2[i + TNumNodes * TDim] = ZeroVector(TNumNodes);
-        }
-    
         if (TDim == 3) // Derivative of the cell vertex
         {
             for (unsigned int i = 0; i < TNumNodes * TDim; ++i)
             {
-                DeltaPhi[i + TNumNodes * TDim] = ZeroVector(TNumNodes);
                 DeltaCellVertex[i] = ZeroMatrix(3, 3);
                 DeltaCellVertex[i + TNumNodes * TDim] = ZeroMatrix(3, 3);
             }
