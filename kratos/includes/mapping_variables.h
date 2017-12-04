@@ -85,6 +85,22 @@ namespace Kratos
         ///@{
         
         /**
+        * It checks if an ID exists in the map
+        * @param IndexOrigin The condition ID to remove
+        * @return If the ID already exists or not
+        */     
+        bool Has(const IndexType IndexOrigin)
+        {
+            BaseType::iterator set = find(IndexOrigin);
+            if(set != end())
+            {
+                return true;
+            }
+            
+            return false;
+        }
+        
+        /**
         * It adds a new ID to the map
         * @param IndexOrigin The condition ID to remove
         */     
