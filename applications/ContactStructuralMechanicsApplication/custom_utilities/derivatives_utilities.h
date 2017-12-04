@@ -441,7 +441,7 @@ public:
                     for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                     {                    
                         // We get the delta normal
-                        if (ConsiderNormalVariation != NODERIVATIVESCOMPUTATION && belong_index < TNumNodes) delta_normal = all_delta_normal[belong_index * TDim + i_dof] * (1.0/aux_nodes_coeff);
+                        if (ConsiderNormalVariation != NO_DERIVATIVES_COMPUTATION && belong_index < TNumNodes) delta_normal = all_delta_normal[belong_index * TDim + i_dof] * (1.0/aux_nodes_coeff);
                         else delta_normal = ZeroVector(3);
                     
                         auto& local_delta_vertex = rDerivativeData.DeltaCellVertex[belong_index * TDim + i_dof];
@@ -463,7 +463,7 @@ public:
                         const double coeff2 = num/std::pow(denom, 2);
                         
                         // We add the part corresponding purely to delta normal
-                        if (ConsiderNormalVariation != NODERIVATIVESCOMPUTATION)
+                        if (ConsiderNormalVariation != NO_DERIVATIVES_COMPUTATION)
                         {
                             noalias(row(local_delta_vertex, i_triangle)) += diff3 * coeff1 * inner_prod(aux_num,  delta_normal); 
                             noalias(row(local_delta_vertex, i_triangle)) += diff3 * coeff2 * inner_prod(aux_denom, delta_normal); 
@@ -499,7 +499,7 @@ public:
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof)
                 {
                     // We get the delta normal
-                    if (ConsiderNormalVariation != NODERIVATIVESCOMPUTATION && belong_index < TNumNodes) delta_normal = all_delta_normal[belong_index * TDim + i_dof] * (1.0/aux_nodes_coeff);
+                    if (ConsiderNormalVariation != NO_DERIVATIVES_COMPUTATION && belong_index < TNumNodes) delta_normal = all_delta_normal[belong_index * TDim + i_dof] * (1.0/aux_nodes_coeff);
                     else delta_normal = ZeroVector(3);
                     
                     auto& local_delta_vertex = rDerivativeData.DeltaCellVertex[belong_index * TDim + i_dof];
@@ -531,7 +531,7 @@ public:
         const DecompositionType& DecompGeom,
         const PointType& LocalPointDecomp,
         const PointType& LocalPointParent,
-        const NormalDerivativesComputation ConsiderNormalVariation = NODERIVATIVESCOMPUTATION
+        const NormalDerivativesComputation ConsiderNormalVariation = NO_DERIVATIVES_COMPUTATION
         )
     {
         /* Shape functions */
@@ -558,7 +558,7 @@ public:
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof) 
                 {
                     // We get the delta normal
-                    const array_1d<double, 3>& delta_normal = (ConsiderNormalVariation != NODERIVATIVESCOMPUTATION && i_node < TNumNodes) ? all_delta_normal[i_node * TDim + i_dof] : ZeroVector(3);
+                    const array_1d<double, 3>& delta_normal = (ConsiderNormalVariation != NO_DERIVATIVES_COMPUTATION && i_node < TNumNodes) ? all_delta_normal[i_node * TDim + i_dof] : ZeroVector(3);
                     
                     // We compute the residuals
                     array_1d<double, 3> aux_RHS1 = ZeroVector(3);
@@ -611,7 +611,7 @@ public:
         const DecompositionType& DecompGeom,
         const PointType& LocalPointDecomp,
         const PointType& LocalPointParent,
-        const NormalDerivativesComputation ConsiderNormalVariation = NODERIVATIVESCOMPUTATION,
+        const NormalDerivativesComputation ConsiderNormalVariation = NO_DERIVATIVES_COMPUTATION,
         const bool DualLM = false
         )
     {
@@ -641,7 +641,7 @@ public:
                 for (unsigned i_dof = 0; i_dof < TDim; ++i_dof) 
                 {
                     // We get the delta normal
-                    const array_1d<double, 3>& delta_normal = (ConsiderNormalVariation != NODERIVATIVESCOMPUTATION && i_node < TNumNodes) ? all_delta_normal[i_node * TDim + i_dof] : ZeroVector(3);
+                    const array_1d<double, 3>& delta_normal = (ConsiderNormalVariation != NO_DERIVATIVES_COMPUTATION && i_node < TNumNodes) ? all_delta_normal[i_node * TDim + i_dof] : ZeroVector(3);
                     
                     // We compute the residuals
                     array_1d<double, 3> aux_RHS1 = ZeroVector(3);
@@ -1004,7 +1004,7 @@ private:
         aux_delta_vertex += aux_der;
         
         // The corresponding part to the normal
-        const double coordsxdeltanormal = (ConsiderNormalVariation != NODERIVATIVESCOMPUTATION) ? inner_prod(coords_node - coords_center, DeltaNormal) : 0.0;
+        const double coordsxdeltanormal = (ConsiderNormalVariation != NO_DERIVATIVES_COMPUTATION) ? inner_prod(coords_node - coords_center, DeltaNormal) : 0.0;
         
         const double factor_belong = (iBelong < TNumNodes) ? (1.0 - auxiliar_coeff) : 1.0; 
         const double deltacoordsxnormal =  factor_belong * Normal[iDoF];
@@ -1012,7 +1012,7 @@ private:
         
         // The corresponding part to delta normal
         const double coordsxnormal = - inner_prod(coords_node - coords_center, Normal);
-        if (ConsiderNormalVariation != NODERIVATIVESCOMPUTATION) aux_delta_vertex += coordsxnormal * DeltaNormal;
+        if (ConsiderNormalVariation != NO_DERIVATIVES_COMPUTATION) aux_delta_vertex += coordsxnormal * DeltaNormal;
         
         return Coeff * aux_delta_vertex;
     }

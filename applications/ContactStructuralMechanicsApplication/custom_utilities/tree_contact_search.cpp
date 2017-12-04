@@ -21,8 +21,8 @@
 
 namespace Kratos
 {
-template<unsigned int TDim>
-TreeContactSearch<TDim>::TreeContactSearch( 
+template<unsigned int TDim, unsigned int TNumNodes>
+TreeContactSearch<TDim, TNumNodes>::TreeContactSearch( 
     ModelPart & rMainModelPart, 
     Parameters ThisParameters 
     ):mrMainModelPart(rMainModelPart), 
@@ -116,8 +116,8 @@ TreeContactSearch<TDim>::TreeContactSearch(
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::InitializeMortarConditions()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::InitializeMortarConditions()
 {
 //     // The allocation size
 //     const unsigned int allocation_size = mThisParameters["allocation_size"].GetInt();
@@ -141,8 +141,8 @@ void TreeContactSearch<TDim>::InitializeMortarConditions()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::TotalClearScalarMortarConditions()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::TotalClearScalarMortarConditions()
 {
     TotalResetContactOperators();
     
@@ -162,8 +162,8 @@ void TreeContactSearch<TDim>::TotalClearScalarMortarConditions()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::TotalClearComponentsMortarConditions()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::TotalClearComponentsMortarConditions()
 {
     TotalResetContactOperators();
     
@@ -183,8 +183,8 @@ void TreeContactSearch<TDim>::TotalClearComponentsMortarConditions()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::TotalClearALMFrictionlessMortarConditions()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::TotalClearALMFrictionlessMortarConditions()
 {        
     TotalResetContactOperators();
     
@@ -204,8 +204,8 @@ void TreeContactSearch<TDim>::TotalClearALMFrictionlessMortarConditions()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::PartialClearScalarMortarConditions()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::PartialClearScalarMortarConditions()
 {
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
     const int num_nodes = static_cast<int>(nodes_array.size());
@@ -223,8 +223,8 @@ void TreeContactSearch<TDim>::PartialClearScalarMortarConditions()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::PartialClearComponentsMortarConditions()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::PartialClearComponentsMortarConditions()
 {
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
     const int num_nodes = static_cast<int>(nodes_array.size());
@@ -242,8 +242,8 @@ void TreeContactSearch<TDim>::PartialClearComponentsMortarConditions()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::PartialClearALMFrictionlessMortarConditions()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::PartialClearALMFrictionlessMortarConditions()
 {
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
     const int num_nodes = static_cast<int>(nodes_array.size());
@@ -261,8 +261,8 @@ void TreeContactSearch<TDim>::PartialClearALMFrictionlessMortarConditions()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::CreatePointListMortar()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::CreatePointListMortar()
 {
     // Clearing the vector
     mPointListDestination.clear();
@@ -320,8 +320,8 @@ void TreeContactSearch<TDim>::CreatePointListMortar()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::UpdatePointListMortar()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::UpdatePointListMortar()
 {
     const double delta_time = mrMainModelPart.GetProcessInfo()[DELTA_TIME];
     
@@ -336,8 +336,8 @@ void TreeContactSearch<TDim>::UpdatePointListMortar()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::UpdateMortarConditions()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::UpdateMortarConditions()
 {        
     // We update the list of points
     UpdatePointListMortar();
@@ -452,8 +452,8 @@ void TreeContactSearch<TDim>::UpdateMortarConditions()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::AddPairing(
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::AddPairing(
     ModelPart& ComputingModelPart,
     std::size_t& ConditionId,
     Condition::Pointer pCondSlave,
@@ -482,8 +482,8 @@ void TreeContactSearch<TDim>::AddPairing(
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::CleanMortarConditions()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::CleanMortarConditions()
 {
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
     const int num_conditions = static_cast<int>(conditions_array.size());
@@ -509,8 +509,8 @@ void TreeContactSearch<TDim>::CleanMortarConditions()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::CheckMortarConditions()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::CheckMortarConditions()
 {
     // Iterate in the conditions
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
@@ -545,8 +545,8 @@ void TreeContactSearch<TDim>::CheckMortarConditions()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::InvertSearch()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::InvertSearch()
 {
     mInvertedSearch = !mInvertedSearch;
 }
@@ -554,8 +554,8 @@ void TreeContactSearch<TDim>::InvertSearch()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-inline CheckResult TreeContactSearch<TDim>::CheckCondition(
+template<unsigned int TDim, unsigned int TNumNodes>
+inline CheckResult TreeContactSearch<TDim, TNumNodes>::CheckCondition(
     IndexMap::Pointer IndexesMap,
     const Condition::Pointer pCond1,
     const Condition::Pointer pCond2,
@@ -599,63 +599,8 @@ inline CheckResult TreeContactSearch<TDim>::CheckCondition(
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<>
-inline void TreeContactSearch<2>::CheckPotentialPairing(
-    ModelPart& ComputingModelPart,
-    std::size_t& ConditionId,
-    Condition::Pointer pCondSlave,
-    PointVector& PointsFound,
-    const unsigned int NumberOfPointsFound,
-    IndexMap::Pointer IndexesMap
-    )
-{
-    // Some initial parameters
-    const GeometryType& this_geometry = pCondSlave->GetGeometry();
-    const auto& this_geometry_type = this_geometry.GetGeometryType();
-    if (this_geometry_type == GeometryData::KratosGeometryType::Kratos_Line2D2)
-    {
-        AuxiliarCheckPotentialPairing<2>(ComputingModelPart, ConditionId, pCondSlave, PointsFound, NumberOfPointsFound, IndexesMap);
-    }
-    else
-    {
-        KRATOS_ERROR << "INTEGRATION NOT IMPLEMENTED: Dimension = 2. Number of nodes = " << this_geometry.size() << std::endl;
-    }
-}
-
-/***********************************************************************************/
-/***********************************************************************************/
-
-template<>
-inline void TreeContactSearch<3>::CheckPotentialPairing(
-    ModelPart& ComputingModelPart,
-    std::size_t& ConditionId,
-    Condition::Pointer pCondSlave,
-    PointVector& PointsFound,
-    const unsigned int NumberOfPointsFound,
-    IndexMap::Pointer IndexesMap
-    )
-{    
-    const GeometryType& this_geometry = pCondSlave->GetGeometry();
-    const auto& this_geometry_type = this_geometry.GetGeometryType();
-    if (this_geometry_type == GeometryData::KratosGeometryType::Kratos_Triangle3D3)
-    {
-        AuxiliarCheckPotentialPairing<3>(ComputingModelPart, ConditionId, pCondSlave, PointsFound, NumberOfPointsFound, IndexesMap);
-    }
-    else if (this_geometry_type == GeometryData::KratosGeometryType::Kratos_Quadrilateral3D4)
-    {
-        AuxiliarCheckPotentialPairing<4>(ComputingModelPart, ConditionId, pCondSlave, PointsFound, NumberOfPointsFound, IndexesMap);
-    }
-    else
-    {
-        KRATOS_ERROR << "INTEGRATION NOT IMPLEMENTED: Dimension = 3. Number of nodes = " << this_geometry.size() << std::endl;
-    }
-}
-
-/***********************************************************************************/
-/***********************************************************************************/
-
-template<unsigned int TDim>
-inline void TreeContactSearch<TDim>::AddPotentialPairing(
+template<unsigned int TDim, unsigned int TNumNodes>
+inline void TreeContactSearch<TDim, TNumNodes>::AddPotentialPairing(
     ModelPart& ComputingModelPart,
     std::size_t& ConditionId,
     Condition::Pointer pCondSlave,
@@ -675,57 +620,12 @@ inline void TreeContactSearch<TDim>::AddPotentialPairing(
         AddPairing(ComputingModelPart, ConditionId, pCondSlave, PointsFound[i_point]->GetCondition(), IndexesMap);
     }    
 }
-/***********************************************************************************/
-/***********************************************************************************/
-
-template<>
-inline void TreeContactSearch<2>::CheckCurrentPairing(
-    Condition::Pointer pCondSlave,
-    IndexMap::Pointer IndexesMap
-    )
-{
-    // Some initial parameters
-    const GeometryType& this_geometry = pCondSlave->GetGeometry();
-    const auto& this_geometry_type = this_geometry.GetGeometryType();
-    if (this_geometry_type == GeometryData::KratosGeometryType::Kratos_Line2D2)
-    {
-        AuxiliarCheckCurrentPairing<2>(pCondSlave, IndexesMap);
-    }
-    else
-    {
-        KRATOS_ERROR << "INTEGRATION NOT IMPLEMENTED: Dimension = 2. Number of nodes = " << this_geometry.size() << std::endl;
-    }
-}
 
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<>
-inline void TreeContactSearch<3>::CheckCurrentPairing(
-    Condition::Pointer pCondSlave,
-    IndexMap::Pointer IndexesMap
-    )
-{    
-    const GeometryType& this_geometry = pCondSlave->GetGeometry();
-    const auto& this_geometry_type = this_geometry.GetGeometryType();
-    if (this_geometry_type == GeometryData::KratosGeometryType::Kratos_Triangle3D3)
-    {
-        AuxiliarCheckCurrentPairing<3>(pCondSlave, IndexesMap);
-    }
-    else if (this_geometry_type == GeometryData::KratosGeometryType::Kratos_Quadrilateral3D4)
-    {
-        AuxiliarCheckCurrentPairing<4>(pCondSlave, IndexesMap);
-    }
-    else
-    {
-        KRATOS_ERROR << "INTEGRATION NOT IMPLEMENTED: Dimension = 3. Number of nodes = " << this_geometry.size() << std::endl;
-    }
-}
-
-/***********************************************************************************/
-/***********************************************************************************/
-template<unsigned int TDim>
-inline void TreeContactSearch<TDim>::CheckAllActivePairing(
+template<unsigned int TDim, unsigned int TNumNodes>
+inline void TreeContactSearch<TDim, TNumNodes>::CheckAllActivePairing(
     Condition::Pointer pCondSlave,
     IndexMap::Pointer IndexesMap
     )
@@ -755,8 +655,8 @@ inline void TreeContactSearch<TDim>::CheckAllActivePairing(
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-inline double TreeContactSearch<TDim>::Radius(GeometryType& ThisGeometry) 
+template<unsigned int TDim, unsigned int TNumNodes>
+inline double TreeContactSearch<TDim, TNumNodes>::Radius(GeometryType& ThisGeometry) 
 { 
     double radius = 0.0; 
     const Point& center = ThisGeometry.Center(); 
@@ -776,8 +676,8 @@ inline double TreeContactSearch<TDim>::Radius(GeometryType& ThisGeometry)
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::ResetContactOperators()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::ResetContactOperators()
 {
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
     const int num_conditions = static_cast<int>(conditions_array.size());
@@ -819,8 +719,8 @@ void TreeContactSearch<TDim>::ResetContactOperators()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-void TreeContactSearch<TDim>::TotalResetContactOperators()
+template<unsigned int TDim, unsigned int TNumNodes>
+void TreeContactSearch<TDim, TNumNodes>::TotalResetContactOperators()
 {
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
     const int num_conditions = static_cast<int>(conditions_array.size());
@@ -855,8 +755,8 @@ void TreeContactSearch<TDim>::TotalResetContactOperators()
 /***********************************************************************************/
 /***********************************************************************************/
 
-template<unsigned int TDim>
-SearchTreeType TreeContactSearch<TDim>::ConvertSearchTree(const std::string& str)
+template<unsigned int TDim, unsigned int TNumNodes>
+SearchTreeType TreeContactSearch<TDim, TNumNodes>::ConvertSearchTree(const std::string& str)
 {
     if(str == "InRadius") 
     {
@@ -880,7 +780,8 @@ SearchTreeType TreeContactSearch<TDim>::ConvertSearchTree(const std::string& str
 /***********************************************************************************/
 /***********************************************************************************/
 
-template class TreeContactSearch<2>;
-template class TreeContactSearch<3>;
+template class TreeContactSearch<2, 2>;
+template class TreeContactSearch<3, 3>;
+template class TreeContactSearch<3, 4>;
 
 }  // namespace Kratos.

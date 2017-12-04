@@ -32,7 +32,7 @@ class ALMContactProcess(python_process.PythonProcess):
             "active_check_factor"         : 0.01,
             "max_number_results"          : 1000,
             "bucket_size"                 : 4,
-            "normal_variation"            : "NODERIVATIVESCOMPUTATION",
+            "normal_variation"            : "NO_DERIVATIVES_COMPUTATION",
             "manual_ALM"                  : false,
             "stiffness_factor"            : 1.0,
             "penalty_scale_factor"        : 1.0,
@@ -65,14 +65,14 @@ class ALMContactProcess(python_process.PythonProcess):
         self.axisymmetric  = self.params["axisymmetric"].GetBool()
         if (self.axisymmetric == True) and (self.dimension == 3):
             raise NameError("3D and axisymmetric makes no sense")
-        if (self.params["normal_variation"].GetString() == "NODERIVATIVESCOMPUTATION"):
+        if (self.params["normal_variation"].GetString() == "NO_DERIVATIVES_COMPUTATION"):
             self.normal_variation = 0
-        elif (self.params["normal_variation"].GetString() == "ELEMENTALDERIVATIVES"):
+        elif (self.params["normal_variation"].GetString() == "ELEMENTAL_DERIVATIVES"):
             self.normal_variation = 1
-        elif (self.params["normal_variation"].GetString() == "NODALELEMENTALDERIVATIVES"):
+        elif (self.params["normal_variation"].GetString() == "NODAL_ELEMENTAL_DERIVATIVES"):
             self.normal_variation = 2
         else:
-            raise NameError("The options to normal derivatives are: NODERIVATIVESCOMPUTATION, ELEMENTALDERIVATIVES, NODALELEMENTALDERIVATIVES")
+            raise NameError("The options to normal derivatives are: NO_DERIVATIVES_COMPUTATION, ELEMENTAL_DERIVATIVES, NODAL_ELEMENTAL_DERIVATIVES")
         self.database_step_update = self.params["database_step_update"].GetInt() 
         self.database_step = 0
         self.frictional_law = self.params["frictional_law"].GetString()
@@ -327,10 +327,17 @@ class ALMContactProcess(python_process.PythonProcess):
         search_parameters.AddValue("bucket_size",self.params["bucket_size"])
         search_parameters.AddValue("search_factor",self.params["search_factor"])
         search_parameters["condition_name"].SetString(condition_name)
+        for cond in computing_model_part.Conditions:
+            number_nodes = len(cond.GetNodes())
+            break
+        del(cond)
         if (self.dimension == 2):
-            self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch2D(computing_model_part, search_parameters)
+            self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch2D2N(computing_model_part, search_parameters)
         else:
-            self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch3D(computing_model_part, search_parameters)
+            if (number_nodes == 3):
+                self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch3D3N(computing_model_part, search_parameters)
+            else:
+                self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch3D4N(computing_model_part, search_parameters)
     
     def _transfer_slave_to_master(self):
     

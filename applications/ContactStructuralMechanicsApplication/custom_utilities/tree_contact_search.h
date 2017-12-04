@@ -62,7 +62,7 @@ namespace Kratos
  * The conditions that can be created are Mortar conditions (or segment to segment) conditions: The created conditions will be between two segments
  * The utility employs the projection.h from MeshingApplication, which works internally using a kd-tree 
  */
-template<unsigned int TDim>
+template<unsigned int TDim, unsigned int TNumNodes>
 class TreeContactSearch
 {
 public:
@@ -286,19 +286,6 @@ protected:
         PointVector& PointsFound,
         const unsigned int NumberOfPointsFound,
         IndexMap::Pointer IndexesMap
-        );
-    
-    /**
-     * This method checks the potential pairing between two conditions/geometries
-     */
-    template<unsigned int TNumNodes>
-    inline void AuxiliarCheckPotentialPairing(
-        ModelPart& ComputingModelPart,
-        std::size_t& ConditionId,
-        Condition::Pointer pCondSlave,
-        PointVector& PointsFound,
-        const unsigned int NumberOfPointsFound,
-        IndexMap::Pointer IndexesMap
         )
     {        
         // Some initial parameters
@@ -389,17 +376,6 @@ protected:
      * @param IndexesMap The map of indexes considered
      */
     inline void CheckCurrentPairing(
-        Condition::Pointer pCondSlave,
-        IndexMap::Pointer IndexesMap
-        );
-    
-    /**
-     * This method checks the current pairing between two conditions/geometries
-     * @param pCondSlave The pointer to the slave condition
-     * @param IndexesMap The map of indexes considered
-     */
-    template<unsigned int TNumNodes>
-    inline void AuxiliarCheckCurrentPairing(
         Condition::Pointer pCondSlave,
         IndexMap::Pointer IndexesMap
         )

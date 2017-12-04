@@ -113,10 +113,17 @@ class MeshTyingProcess(python_process.PythonProcess):
         search_parameters.AddValue("search_factor",self.params["search_factor"])
         search_parameters["condition_name"].SetString(condition_name)
         search_parameters["final_string"].SetString(self.geometry_element + self.type_variable)
+        for cond in computing_model_part.Conditions:
+            number_nodes = len(cond.GetNodes())
+            break
+        del(cond)
         if (self.dimension == 2):
-            self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch2D(computing_model_part, search_parameters)
+            self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch2D2N(computing_model_part, search_parameters)
         else:
-            self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch3D(computing_model_part, search_parameters)
+            if (number_nodes == 3):
+                self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch3D3N(computing_model_part, search_parameters)
+            else:
+                self.contact_search = ContactStructuralMechanicsApplication.TreeContactSearch3D4N(computing_model_part, search_parameters)
         
         ZeroVector = KratosMultiphysics.Vector(3) 
         ZeroVector[0] = 0.0
