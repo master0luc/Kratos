@@ -330,7 +330,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     const NormalDerivativesComputation consider_normal_variation = static_cast<NormalDerivativesComputation>(rCurrentProcessInfo[CONSIDER_NORMAL_VARIATION]);
     
     // The master geometry
-    GeometryType& master_geometry = *BaseType::mpPairedGeometry;
+    GeometryType& master_geometry = this->GetPairedGeometry();
     
     // The normal of the master condition
     const array_1d<double, 3>& normal_master = this->GetValue(PAIRED_NORMAL);
@@ -488,7 +488,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
     IntegrationUtility integration_utility = IntegrationUtility (mIntegrationOrder);
     
     // The master geometry
-    GeometryType& master_geometry = *BaseType::mpPairedGeometry;
+    GeometryType& master_geometry = this->GetPairedGeometry();
     const array_1d<double, 3>& normal_master = this->GetValue(PAIRED_NORMAL);
         
     // Reading integration points
@@ -653,7 +653,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     const PointType& LocalPoint
     )
 {    
-    GeometryType& master_geometry = *BaseType::mpPairedGeometry;
+    GeometryType& master_geometry = this->GetPairedGeometry();
 
     PointType projected_gp_global;
     const array_1d<double,3> gp_normal = MortarUtilities::GaussPointUnitNormal(rVariables.NSlave, GetGeometry());

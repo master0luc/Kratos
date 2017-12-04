@@ -98,7 +98,7 @@ void AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes,
     unsigned int index = 0;
     
     /* ORDER - [ MASTER, SLAVE, LAMBDA ] */
-    GeometryType& current_master = *PairedConditionBaseType::mpPairedGeometry;
+    GeometryType& current_master = this->GetPairedGeometry();;
     
     // Master Nodes Displacement Equation IDs
     for ( unsigned int i_master = 0; i_master < TNumNodes; i_master++ ) // NOTE: Assuming same number of nodes for master and slave
@@ -147,7 +147,7 @@ void AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes,
     unsigned int index = 0;
     
     /* ORDER - [ MASTER, SLAVE, LAMBDA ] */
-    GeometryType& current_master = *PairedConditionBaseType::mpPairedGeometry;
+    GeometryType& current_master = this->GetPairedGeometry();;
 
     // Master Nodes Displacement Equation IDs
     for ( unsigned int i_master = 0; i_master < TNumNodes; ++i_master ) // NOTE: Assuming same number of nodes for master and slave

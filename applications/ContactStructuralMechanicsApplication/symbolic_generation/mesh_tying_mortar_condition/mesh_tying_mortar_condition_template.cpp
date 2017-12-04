@@ -103,7 +103,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
     DofData rDofData;
     
     // The master geometry
-    GeometryType& master_geometry = *BaseType::mpPairedGeometry;
+    GeometryType& master_geometry = this->GetPairedGeometry();
     aux_coords = master_geometry.PointLocalCoordinates(aux_coords, master_geometry.Center());
     const array_1d<double, 3>& master_normal = master_geometry.UnitNormal(aux_coords);
     // Initialize general variables for the current master element
@@ -399,7 +399,7 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::CalculateConditionS
     this->InitializeDofData(rDofData);
     
     // Update slave element info
-    rDofData.UpdateMasterPair(*BaseType::mpPairedGeometry);
+    rDofData.UpdateMasterPair(this->GetPairedGeometry());
     
     // Assemble of the matrix is required
     if ( rLocalSystem.CalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX ) )
@@ -564,7 +564,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::MasterShapeFunctionVa
     const PointType& LocalPoint
     )
 {    
-    GeometryType& master_geometry = *BaseType::mpPairedGeometry;
+    GeometryType& master_geometry = this->GetPairedGeometry();
 
     PointType projected_gp_global;
     const array_1d<double,3> gp_normal = MortarUtilities::GaussPointUnitNormal(rVariables.NSlave, GetGeometry());
@@ -614,7 +614,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::EquationIdVector(
     
     /* ORDER - [ MASTER, SLAVE, LM ] */
     // Master Nodes DoF Equation IDs
-    GeometryType& current_master = *BaseType::mpPairedGeometry;
+    GeometryType& current_master = this->GetPairedGeometry();
     
     if (TTensor == ScalarValue)
     {
@@ -701,7 +701,7 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::GetDofList(
     
     /* ORDER - [ MASTER, SLAVE, LM ] */
     // Master Nodes DoF Equation IDs
-    GeometryType& current_master = *BaseType::mpPairedGeometry;
+    GeometryType& current_master = this->GetPairedGeometry();
     
     if (TTensor == ScalarValue)
     {

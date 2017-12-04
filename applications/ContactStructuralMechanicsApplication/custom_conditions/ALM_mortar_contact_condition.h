@@ -15,8 +15,6 @@
 // System includes
 
 // External includes
-#include "structural_mechanics_application.h"
-#include "structural_mechanics_application_variables.h"
 
 // Project includes
 #include "custom_conditions/paired_condition.h"

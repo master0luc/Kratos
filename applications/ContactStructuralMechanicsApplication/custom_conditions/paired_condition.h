@@ -173,7 +173,27 @@ public:
     ///@}
     ///@name Access
     ///@{
+        
+    GeometryType::Pointer pGetPairedGeometry()
+    {
+        return mpPairedGeometry;
+    }
 
+    const GeometryType::Pointer pGetPairedGeometry() const
+    {
+        return mpPairedGeometry;
+    }
+
+    GeometryType& GetPairedGeometry()
+    {
+        return *mpPairedGeometry;
+    }
+
+    GeometryType const& GetPairedGeometry() const
+    {
+        return *mpPairedGeometry;
+    }
+    
     ///@}
     ///@name Inquiry
     ///@{
