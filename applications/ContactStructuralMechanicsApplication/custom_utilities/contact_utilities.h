@@ -47,8 +47,6 @@ public:
     typedef Point                                               PointType;
     typedef PointType::CoordinatesArrayType          CoordinatesArrayType;
     typedef Geometry<NodeType>                               GeometryType;
-    typedef Geometry<PointType>                         GeometryPointType;
-    typedef GeometryData::IntegrationMethod             IntegrationMethod;
     typedef ModelPart::NodesContainerType                  NodesArrayType;
     typedef ModelPart::ConditionsContainerType        ConditionsArrayType;
     
@@ -75,30 +73,6 @@ public:
     ///@}
     ///@name Operations
     ///@{
-    
-    /**
-     * Project a point over a plane
-     * @param PointOrigin A point in the plane
-     * @param PointDestiny The point to be projected
-     * @param Normal The normal of the plane
-     * @param PointProjected The point pojected over the plane
-     * @param Distance The distance between the point and the plane
-     */
-    
-    static inline void Project(
-        const PointType& PointOrigin,
-        const PointType& PointDestiny,
-        PointType& PointProjected,
-        double& Distance,
-        const array_1d<double,3>& Normal
-        )
-    {
-        array_1d<double,3> vector_points = PointDestiny.Coordinates() - PointOrigin.Coordinates();
-
-        Distance = inner_prod(vector_points, Normal); 
-
-        PointProjected.Coordinates() = PointDestiny.Coordinates() - Normal * Distance;
-    }
     
     /**
      * This function scales the points according to a factor (to increase the bounding box)

@@ -17,17 +17,10 @@
 // External includes
 
 // Project includes
-#include "contact_structural_mechanics_application_variables.h"
-#include "includes/model_part.h"
-#include "geometries/point.h"
+#include "processes/simple_mortar_mapper_process.h"
 
 /* Custom includes */
-#include "includes/mortar_classes.h"
 #include "custom_includes/point_item.h"
-
-/* Custom utilities */
-#include "utilities/exact_mortar_segmentation_utility.h"
-#include "custom_utilities/contact_utilities.h"
 
 namespace Kratos
 {
