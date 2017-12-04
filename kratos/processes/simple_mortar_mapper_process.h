@@ -240,14 +240,14 @@ private:
     
     /**
      * This method assemble locally the mortar operators
-     * @param ConditionsPointSlave: The list of points that form the triangle decomposition
-     * @param SlaveGeometry: The slave geometry
-     * @param MasterGeometry: The master geometry
-     * @param MasterNormal: The normal vector of the master geometry
-     * @param ThisKinematicVariables: The kinematic variables of the geometries, needed to integrate the mortar operators
-     * @param ThisMortarOperators: The mortar operators
-     * @param ThisIntegrationMethod: The integration method used, determines the integration order
-     * @param Ae: The dual lagrange multiplier operator
+     * @param ConditionsPointSlave The list of points that form the triangle decomposition
+     * @param SlaveGeometry The slave geometry
+     * @param MasterGeometry The master geometry
+     * @param MasterNormal The normal vector of the master geometry
+     * @param ThisKinematicVariables The kinematic variables of the geometries, needed to integrate the mortar operators
+     * @param ThisMortarOperators The mortar operators
+     * @param ThisIntegrationMethod The integration method used, determines the integration order
+     * @param Ae The dual lagrange multiplier operator
      */
     void AssemblyMortarOperators(
         const std::vector<array_1d<PointType,TDim>>& ConditionsPointSlave,
@@ -262,10 +262,10 @@ private:
     
     /**
      * This method computes the Ae matrix
-     * @param SlaveGeometry: The slave geometry
-     * @param ThisKinematicVariables: The kinematic variables
-     * @param ConditionsPointsSlave: The list of decomposed triangles
-     * @param ThisIntegrationMethod: The integration method considered
+     * @param SlaveGeometry The slave geometry
+     * @param ThisKinematicVariables The kinematic variables
+     * @param ConditionsPointsSlave The list of decomposed triangles
+     * @param ThisIntegrationMethod The integration method considered
      * @return Ae: The matrix of dual LM
      */
     static inline bounded_matrix<double, TNumNodes, TNumNodes> CalculateAe(
@@ -277,15 +277,15 @@ private:
         
     /**
      * This method inverts a diagonal matrix
-     * @param InputMatrix: The matrix to invert
+     * @param InputMatrix The matrix to invert
      * @return The matrix inverted
      */
     static inline bounded_matrix<double, TNumNodes, TNumNodes> FastInverse(const bounded_matrix<double, TNumNodes, TNumNodes>& InputMatrix);
 
     /**
      * This method inverts a diagonal matrix
-     * @param InputMatrix: The matrix to invert
-     * @param InvertedMatrix: The matrix inverted
+     * @param InputMatrix The matrix to invert
+     * @param InvertedMatrix The matrix inverted
      */
     static inline void FastInverse(
         const bounded_matrix<double, TNumNodes, TNumNodes>& InputMatrix,
@@ -294,22 +294,22 @@ private:
     
     /**
      * This method lumps a matrix
-     * @param InputMatrix: The matrix to lump
+     * @param InputMatrix The matrix to lump
      */
     void LumpMatrix(bounded_matrix<double, TNumNodes, TNumNodes>& InputMatrix);
     
     /**
      * This method computes the size of the system
-     * @param SizeSystem: The size of the system
+     * @param SizeSystem The size of the system
      */
         
     void GetSystemSize(std::size_t& SizeSystem);
 
     /**
      * This method creates a slave database needed to assemble the system
-     * @param SizeSystem: The size of the system
-     * @param ConectivityDatabase: The database that will be used to assemble the system
-     * @param InverseConectivityDatabase: The inverse database that will be used to assemble the system
+     * @param SizeSystem The size of the system
+     * @param ConectivityDatabase The database that will be used to assemble the system
+     * @param InverseConectivityDatabase The inverse database that will be used to assemble the system
      */
         
     void CreateSlaveConectivityDatabase(
@@ -326,17 +326,17 @@ private:
     
     /**
      * This method checks if all components of a vector are true
-     * @param VectorToCheck: The vector to check
-     * @return result: True if all componets are true
+     * @param VectorToCheck The vector to check
+     * @return result True if all componets are true
      */
     bool CheckWholeVector(std::vector<bool> VectorToCheck);
     
     /**
      * This method computes the residual matrix of the mapping
-     * @param ResidualMatrix: The matrix containing the residual of the mappping
-     * @param SlaveGeometry: The slave geometry
-     * @param MasterGeometry: The master geometry
-     * @param ThisMortarOperators: The mortar operators
+     * @param ResidualMatrix The matrix containing the residual of the mappping
+     * @param SlaveGeometry The slave geometry
+     * @param MasterGeometry The master geometry
+     * @param ThisMortarOperators The mortar operators
      */
     void ComputeResidualMatrix(       
         Matrix& ResidualMatrix,
@@ -347,13 +347,13 @@ private:
     
     /**
      * This method assembles the LHS and the RHS
-     * @param A: The LHS of the system
-     * @param b: The RHS of the system
-     * @param VariableSize: The size of the variable
-     * @param ResidualMatrix: The matrix containing the residual of the mappping
-     * @param SlaveGeometry: The slave geometry
-     * @param InverseConectivityDatabase: The inverse database that will be used to assemble the system
-     * @param ThisMortarOperators: The mortar operators
+     * @param A The LHS of the system
+     * @param b The RHS of the system
+     * @param VariableSize The size of the variable
+     * @param ResidualMatrix The matrix containing the residual of the mappping
+     * @param SlaveGeometry The slave geometry
+     * @param InverseConectivityDatabase The inverse database that will be used to assemble the system
+     * @param ThisMortarOperators The mortar operators
      */
     void AssembleRHSAndLHS(
         MatrixType& A,
@@ -367,11 +367,11 @@ private:
     
     /**
      * This method assembles the RHS
-     * @param b: The RHS of the system
-     * @param VariableSize: The size of the variable
-     * @param ResidualMatrix: The matrix containing the residual of the mappping
-     * @param SlaveGeometry: The slave geometry
-     * @param InverseConectivityDatabase: The inverse database that will be used to assemble the system
+     * @param b The RHS of the system
+     * @param VariableSize The size of the variable
+     * @param ResidualMatrix The matrix containing the residual of the mappping
+     * @param SlaveGeometry The slave geometry
+     * @param InverseConectivityDatabase The inverse database that will be used to assemble the system
      */
     void AssembleRHS(
         std::vector<VectorType>& b,
