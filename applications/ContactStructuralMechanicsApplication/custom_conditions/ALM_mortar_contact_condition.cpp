@@ -25,7 +25,6 @@
 
 /* Utilities */
 #include "utilities/math_utils.h"
-#include "custom_utilities/search_utilities.h"
 
 namespace Kratos 
 {
