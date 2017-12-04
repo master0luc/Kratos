@@ -92,13 +92,9 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>:: Execute()
     KRATOS_TRY;
 
     if (mpThisLinearSolver == nullptr)
-    {
         ExecuteExplicitMapping();
-    }
     else
-    {
         ExecuteImplicitMapping();
-    }
     
     KRATOS_CATCH("");
 }
@@ -263,9 +259,7 @@ inline bounded_matrix<double, TNumNodes, TNumNodes> SimpleMortarMapperProcess<TD
     bounded_matrix<double, TNumNodes, TNumNodes> inv_matrix = ZeroMatrix(TNumNodes);
     
     for (std::size_t i = 0; i < TNumNodes; ++i)
-    {
         inv_matrix(i, i) = 1.0/InputMatrix(i, i);
-    }
     
     return inv_matrix;
 }
@@ -282,9 +276,7 @@ inline void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::FastInv
     InvertedMatrix = ZeroMatrix(TNumNodes);
     
     for (std::size_t i = 0; i < TNumNodes; ++i)
-    {
         InvertedMatrix(i, i) = 1.0/InputMatrix(i, i);
-    }
 }
 
 /***********************************************************************************/
@@ -395,9 +387,7 @@ bool SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::CheckWholeVect
     bool result = true;
 
     for(std::size_t i = 0; i < VectorToCheck.size(); ++i)
-    {
         if (VectorToCheck[i] == false) return false;
-    }
     
     return result;
 }
@@ -421,9 +411,7 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ComputeResidua
     const std::size_t size_1 = var_origin_matrix.size1();
     const std::size_t size_2 = var_origin_matrix.size2();
     if (ResidualMatrix.size1() != size_1  || ResidualMatrix.size2() !=  size_2)
-    {
         ResidualMatrix.resize(size_1, size_2, false);
-    }
     
     noalias(ResidualMatrix) = prod(ThisMortarOperators.MOperator, var_origin_matrix) - prod(ThisMortarOperators.DOperator, var_destination_matrix);
 }
@@ -558,6 +546,7 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteExplici
                 GeometryType& slave_geometry = it_cond->GetGeometry();
                 
                 IndexMap::Pointer& indexes_map = it_cond->GetValue( INDEX_MAP ); // These are the master conditions
+                std::vector<std::size_t> indexes_to_remove;
                 
                 for (auto it_pair = indexes_map->begin(); it_pair != indexes_map->end(); ++it_pair )
                 {
@@ -615,6 +604,16 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteExplici
                             }
                         }
                     }
+                    else
+                    {
+                        indexes_to_remove.push_back(it_pair->first);
+                    }
+                }
+                
+                // Clear indexes
+                for (unsigned int i_to_remove = 0; i_to_remove < indexes_to_remove.size(); ++i_to_remove)
+                {
+                    indexes_map->RemoveId(indexes_to_remove[i_to_remove]);
                 }
             }
         }
@@ -734,6 +733,7 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteImplici
                 GeometryType& slave_geometry = it_cond->GetGeometry();
                 
                 IndexMap::Pointer& indexes_map = it_cond->GetValue( INDEX_MAP ); // These are the master conditions
+                std::vector<std::size_t> indexes_to_remove;
                 
                 for (auto it_pair = indexes_map->begin(); it_pair != indexes_map->end(); ++it_pair )
                 {
@@ -790,6 +790,16 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteImplici
                             AssembleRHS(b, variable_size, residual_matrix, slave_geometry, inverse_conectivity_database);
                         }
                     }
+                    else
+                    {
+                        indexes_to_remove.push_back(it_pair->first);
+                    }
+                }
+                
+                // Clear indexes
+                for (unsigned int i_to_remove = 0; i_to_remove < indexes_to_remove.size(); ++i_to_remove)
+                {
+                    indexes_map->RemoveId(indexes_to_remove[i_to_remove]);
                 }
             }
         }
