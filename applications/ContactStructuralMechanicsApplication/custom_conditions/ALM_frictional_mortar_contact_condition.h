@@ -304,19 +304,14 @@ protected:
     unsigned int GetActiveInactiveValue(GeometryType& CurrentGeometry) const override
     {
         unsigned int value = 0;
-        
-        for (unsigned int i_node = 0; i_node < CurrentGeometry.size(); i_node++)
+        for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
         {
-            if ((CurrentGeometry[i_node].Is(ACTIVE) == true) || (this->Is(VISITED) == true))
+            if (CurrentGeometry[i_node].Is(ACTIVE) == true)
             {
-                if ((CurrentGeometry[i_node].Is(SLIP) == true) || (this->Is(VISITED) == true))
-                {
+                if (CurrentGeometry[i_node].Is(SLIP) == true)
                     value += std::pow(3, i_node);
-                }
                 else
-                {
                     value += 2 * std::pow(3, i_node);
-                }
             }
         }
         

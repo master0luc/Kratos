@@ -150,8 +150,6 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
 {
     KRATOS_TRY;
     
-    this->Set(VISITED, true);
-    
     KRATOS_CATCH( "" );
 }
 
@@ -518,7 +516,6 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
         if (dual_LM == false)
         {
             std::cout << "WARNING:: NOT USING DUAL LM. Integration area: " << integration_area << "\tOriginal area: " << slave_geometry.Area() << "\tRatio: " << integration_area/slave_geometry.Area() << std::endl;
-//                 IntegrationUtility::MathematicaDebug(this->Id(), slave_geometry, mThisMasterElements[pair_index]->Id(), master_geometry, conditions_points_slave);
         }
     #endif
         
@@ -573,9 +570,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
                         rThisMortarConditionMatrices.CalculateDeltaMortarOperators(rVariables, rDerivativeData, integration_weight);    
                     }
                     else // In case we are computing RHS we don't compute derivatives (not necessary)
-                    {
-                        rThisMortarConditionMatrices.CalculateMortarOperators(rVariables, integration_weight);   
-                    }
+                        rThisMortarConditionMatrices.CalculateMortarOperators(rVariables, integration_weight);
                 }
             }
         }
@@ -598,12 +593,6 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
             const array_1d<double, MatrixSize>& RHS_contact_pair = this->CalculateLocalRHS( rThisMortarConditionMatrices, rDerivativeData, active_inactive);
             rLocalSystem.GetRightHandSideVector() = RHS_contact_pair;
         }
-    }
-    
-    // Reseting flag
-    if ((this)->Is(VISITED) == true)
-    {
-        (this)->Set(VISITED, false);
     }
     
     KRATOS_CATCH( "" );
