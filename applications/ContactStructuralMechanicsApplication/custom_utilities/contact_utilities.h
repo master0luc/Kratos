@@ -15,9 +15,6 @@
 #include "utilities/math_utils.h"
 #include "contact_structural_mechanics_application_variables.h"
 #include "includes/model_part.h"
-#include "geometries/point.h"
-#include "utilities/openmp_utils.h"
-#include "utilities/mortar_utilities.h"
 
 namespace Kratos
 {
