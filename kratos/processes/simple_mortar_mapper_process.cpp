@@ -329,8 +329,8 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::GetSystemSize(
 template< int TDim, int TNumNodes, class TVarType, HistoricalValues THist> 
 void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::CreateSlaveConectivityDatabase(
     std::size_t& SizeSystem,
-    std::unordered_map<int, int>& ConectivityDatabase,
-    std::unordered_map<int, int>& InverseConectivityDatabase
+    IntMap& ConectivityDatabase,
+    IntMap& InverseConectivityDatabase
     )
 {
     // Initialize the value
@@ -403,9 +403,10 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ComputeResidua
     const MortarOperator<TNumNodes>& ThisMortarOperators
     )
 {    
-    Matrix var_origin_matrix;
+    const unsigned int size_to_compute = MortarUtilities::SizeToCompute<TDim, TVarType>();
+    Matrix var_origin_matrix(TNumNodes, size_to_compute);
     MortarUtilities::MatrixValue<TVarType, THist>(MasterGeometry, mOriginVariable, var_origin_matrix);
-    Matrix var_destination_matrix;
+    Matrix var_destination_matrix(TNumNodes, size_to_compute);
     MortarUtilities::MatrixValue<TVarType, THist>(SlaveGeometry, mDestinationVariable, var_destination_matrix);
     
     const std::size_t size_1 = var_origin_matrix.size1();
@@ -426,7 +427,7 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::AssembleRHSAnd
     const unsigned int& VariableSize,
     const Matrix& ResidualMatrix,
     GeometryType& SlaveGeometry,
-    std::unordered_map<int, int>& InverseConectivityDatabase,
+    IntMap& InverseConectivityDatabase,
     const MortarOperator<TNumNodes>& ThisMortarOperators
     )
 {
@@ -465,7 +466,7 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::AssembleRHS(
     const unsigned int& VariableSize,
     const Matrix& ResidualMatrix,
     GeometryType& SlaveGeometry,
-    std::unordered_map<int, int>& InverseConectivityDatabase
+    IntMap& InverseConectivityDatabase
     )
 {
     // First we assemble the RHS
@@ -687,7 +688,7 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteImplici
     
     // Creating the assemble database
     std::size_t system_size;
-    std::unordered_map<int, int> conectivity_database, inverse_conectivity_database;
+    IntMap conectivity_database, inverse_conectivity_database;
     CreateSlaveConectivityDatabase(system_size, conectivity_database, inverse_conectivity_database);
     
     // Defining the operators

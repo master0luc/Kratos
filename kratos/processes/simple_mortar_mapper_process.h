@@ -87,6 +87,9 @@ public:
     
     // Component type
     typedef VariableComponent< VectorComponentAdaptor<array_1d<double, 3> > > ComponentType;  
+    
+    // An integer map
+    typedef std::unordered_map<int, int>                             IntMap;
 
     ///@}
     ///@name Life Cycle
@@ -314,8 +317,8 @@ private:
         
     void CreateSlaveConectivityDatabase(
         std::size_t& SizeSystem,
-        std::unordered_map<int, int>& ConectivityDatabase,
-        std::unordered_map<int, int>& InverseConectivityDatabase
+        IntMap& ConectivityDatabase,
+        IntMap& InverseConectivityDatabase
         );
     
     /**
@@ -361,7 +364,7 @@ private:
         const unsigned int& VariableSize,
         const Matrix& ResidualMatrix,
         GeometryType& SlaveGeometry,
-        std::unordered_map<int, int>& InverseConectivityDatabase,
+        IntMap& InverseConectivityDatabase,
         const MortarOperator<TNumNodes>& ThisMortarOperators
         );
     
@@ -378,7 +381,7 @@ private:
         const unsigned int& VariableSize,
         const Matrix& ResidualMatrix,
         GeometryType& SlaveGeometry,
-        std::unordered_map<int, int>& InverseConectivityDatabase
+        IntMap& InverseConectivityDatabase
         );
     
     /**

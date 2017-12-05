@@ -60,6 +60,7 @@ public:
     typedef GeometryData::IntegrationMethod             IntegrationMethod;
     typedef ModelPart::NodesContainerType                  NodesArrayType;
     typedef ModelPart::ConditionsContainerType        ConditionsArrayType;
+    typedef std::unordered_map<int, int>                           IntMap;
     
     ///@}
     ///@name Life Cycle
@@ -734,7 +735,7 @@ public:
         TVarType& ThisVariable,
         Vector& Dx,
         unsigned int Index,
-        std::unordered_map<int, int>& ConectivityDatabase
+        IntMap& ConectivityDatabase
         );
     
 private:
@@ -981,14 +982,11 @@ inline void MortarUtilities::MatrixValue<Variable<double>, Historical>(
         Matrix& ThisValue
         )
 {
-    if (ThisValue.size1() != ThisGeometry.size() && ThisValue.size2() != 1)
-    {
+    if (ThisValue.size1() != ThisGeometry.size() || ThisValue.size2() != 1)
         ThisValue.resize(ThisGeometry.size(), 1, false);
-    }
+    
     for (unsigned int i_node = 0; i_node < ThisGeometry.size(); ++i_node)
-    {
         ThisValue(i_node, 0) = ThisGeometry[i_node].FastGetSolutionStepValue(ThisVariable);
-    }
 }
 
 template<> 
@@ -998,14 +996,11 @@ inline void MortarUtilities::MatrixValue<ComponentType, Historical>(
         Matrix& ThisValue
         )
 {
-    if (ThisValue.size1() != ThisGeometry.size() && ThisValue.size2() != 1)
-    {
+    if (ThisValue.size1() != ThisGeometry.size() || ThisValue.size2() != 1)
         ThisValue.resize(ThisGeometry.size(), 1, false);
-    }
+    
     for (unsigned int i_node = 0; i_node < ThisGeometry.size(); ++i_node)
-    {
         ThisValue(i_node, 0) = ThisGeometry[i_node].FastGetSolutionStepValue(ThisVariable);
-    }
 }
 
 template<> 
@@ -1015,14 +1010,13 @@ inline void MortarUtilities::MatrixValue<Variable<array_1d<double, 3>>, Historic
         Matrix& ThisValue
         )
 {    
-    if (ThisValue.size1() != ThisGeometry.size() && ThisValue.size2() != ThisGeometry.WorkingSpaceDimension())
-    {
-        ThisValue.resize(ThisGeometry.size(), ThisGeometry.WorkingSpaceDimension(), false);
-    }
-    for (unsigned int i_node = 0; i_node < ThisGeometry.size(); ++i_node)
-    {
-        row(ThisValue, i_node) = ThisGeometry[i_node].FastGetSolutionStepValue(ThisVariable);
-    }
+    const std::size_t num_nodes = ThisGeometry.size();
+    const std::size_t dimension = ThisGeometry.WorkingSpaceDimension();
+    if (ThisValue.size1() != num_nodes || ThisValue.size2() != dimension)
+        ThisValue.resize(num_nodes, dimension, false);
+    
+    for (unsigned int i_node = 0; i_node < num_nodes; ++i_node)
+        row(ThisValue, i_node) = subrange(ThisGeometry[i_node].FastGetSolutionStepValue(ThisVariable), 0, dimension);
 }
 template<> 
 inline void MortarUtilities::MatrixValue<Variable<double>, NonHistorical>(
@@ -1031,14 +1025,11 @@ inline void MortarUtilities::MatrixValue<Variable<double>, NonHistorical>(
         Matrix& ThisValue
         )
 {
-    if (ThisValue.size1() != ThisGeometry.size() && ThisValue.size2() != 1)
-    {
+    if (ThisValue.size1() != ThisGeometry.size() || ThisValue.size2() != 1)
         ThisValue.resize(ThisGeometry.size(), 1, false);
-    }
+    
     for (unsigned int i_node = 0; i_node < ThisGeometry.size(); ++i_node)
-    {
         ThisValue(i_node, 0) = ThisGeometry[i_node].GetValue(ThisVariable);
-    }
 }
 
 template<> 
@@ -1048,14 +1039,11 @@ inline void MortarUtilities::MatrixValue<ComponentType, NonHistorical>(
         Matrix& ThisValue
         )
 {
-    if (ThisValue.size1() != ThisGeometry.size() && ThisValue.size2() != 1)
-    {
+    if (ThisValue.size1() != ThisGeometry.size() || ThisValue.size2() != 1)
         ThisValue.resize(ThisGeometry.size(), 1, false);
-    }
+    
     for (unsigned int i_node = 0; i_node < ThisGeometry.size(); ++i_node)
-    {
         ThisValue(i_node, 0) = ThisGeometry[i_node].GetValue(ThisVariable);
-    }
 }
 
 template<> 
@@ -1065,14 +1053,13 @@ inline void MortarUtilities::MatrixValue<Variable<array_1d<double, 3>>, NonHisto
         Matrix& ThisValue
         )
 {
-    if (ThisValue.size1() != ThisGeometry.size() && ThisValue.size2() != ThisGeometry.WorkingSpaceDimension())
-    {
-        ThisValue.resize(ThisGeometry.size(), ThisGeometry.WorkingSpaceDimension(), false);
-    }
-    for (unsigned int i_node = 0; i_node < ThisGeometry.size(); ++i_node)
-    {
-        row(ThisValue, i_node) = ThisGeometry[i_node].GetValue(ThisVariable);
-    }
+    const std::size_t num_nodes = ThisGeometry.size();
+    const std::size_t dimension = ThisGeometry.WorkingSpaceDimension();
+    if (ThisValue.size1() != num_nodes || ThisValue.size2() != dimension)
+        ThisValue.resize(num_nodes, dimension, false);
+    
+    for (unsigned int i_node = 0; i_node < num_nodes; ++i_node)
+        row(ThisValue, i_node) = subrange(ThisGeometry[i_node].GetValue(ThisVariable), 0, dimension);
 }
 
 template<> 
@@ -1083,9 +1070,7 @@ inline void MortarUtilities::AddValue<Variable<double>, Historical>(
         )
 {
     for (unsigned int i_node = 0; i_node < ThisGeometry.size(); ++i_node)
-    {
         ThisGeometry[i_node].FastGetSolutionStepValue(ThisVariable) += ThisValue(i_node, 0);
-    }
 }
 
 template<> 
@@ -1096,9 +1081,7 @@ inline void MortarUtilities::AddValue<ComponentType, Historical>(
         )
 {
     for (unsigned int i_node = 0; i_node < ThisGeometry.size(); ++i_node)
-    {
         ThisGeometry[i_node].FastGetSolutionStepValue(ThisVariable) += ThisValue(i_node, 0);
-    }
 }
 
 template<> 
@@ -1111,7 +1094,8 @@ inline void MortarUtilities::AddValue<Variable<array_1d<double, 3>>, Historical>
     for (unsigned int i_node = 0; i_node < ThisGeometry.size(); ++i_node)
     {
         auto& aux_vector = ThisGeometry[i_node].FastGetSolutionStepValue(ThisVariable);
-        aux_vector += row(ThisValue, i_node);
+        for (unsigned int i_dim = 0; i_dim < ThisGeometry.WorkingSpaceDimension(); ++i_dim)
+            aux_vector[i_dim] += ThisValue(i_node, i_dim);
     }
 }
 template<> 
@@ -1122,9 +1106,7 @@ inline void MortarUtilities::AddValue<Variable<double>, NonHistorical>(
         )
 {
     for (unsigned int i_node = 0; i_node < ThisGeometry.size(); ++i_node)
-    {
         ThisGeometry[i_node].GetValue(ThisVariable) += ThisValue(i_node, 0);
-    }
 }
 
 template<> 
@@ -1134,11 +1116,8 @@ inline void MortarUtilities::AddValue<ComponentType, NonHistorical>(
         const Matrix& ThisValue
         )
 {
-
     for (unsigned int i_node = 0; i_node < ThisGeometry.size(); ++i_node)
-    {
         ThisGeometry[i_node].GetValue(ThisVariable) += ThisValue(i_node, 0);
-    }
 }
 
 template<> 
@@ -1151,7 +1130,8 @@ inline void MortarUtilities::AddValue<Variable<array_1d<double, 3>>, NonHistoric
     for (unsigned int i_node = 0; i_node < ThisGeometry.size(); ++i_node)
     {
         auto& aux_vector = ThisGeometry[i_node].GetValue(ThisVariable);
-        aux_vector += row(ThisValue, i_node);
+        for (unsigned int i_dim = 0; i_dim < ThisGeometry.WorkingSpaceDimension(); ++i_dim)
+            aux_vector[i_dim] += ThisValue(i_node, i_dim);
     }
 }
 
@@ -1253,7 +1233,7 @@ inline void MortarUtilities::UpdateDatabase<Variable<double>, Historical>(
         Variable<double>& ThisVariable,
         Vector& Dx,
         unsigned int Index,
-        std::unordered_map<int, int>& ConectivityDatabase
+        IntMap& ConectivityDatabase
         )
 {
     #pragma omp parallel for
@@ -1270,7 +1250,7 @@ inline void MortarUtilities::UpdateDatabase<ComponentType, Historical>(
         ComponentType& ThisVariable,
         Vector& Dx,
         unsigned int Index,
-        std::unordered_map<int, int>& ConectivityDatabase
+        IntMap& ConectivityDatabase
         )
 {
     #pragma omp parallel for
@@ -1287,7 +1267,7 @@ inline void MortarUtilities::UpdateDatabase<Variable<array_1d<double, 3>>, Histo
         Variable<array_1d<double, 3>>& ThisVariable,
         Vector& Dx,
         unsigned int Index,
-        std::unordered_map<int, int>& ConectivityDatabase
+        IntMap& ConectivityDatabase
         )
 {
     #pragma omp parallel for
@@ -1304,7 +1284,7 @@ inline void MortarUtilities::UpdateDatabase<Variable<double>, NonHistorical>(
         Variable<double>& ThisVariable,
         Vector& Dx,
         unsigned int Index,
-        std::unordered_map<int, int>& ConectivityDatabase
+        IntMap& ConectivityDatabase
         )
 {
     #pragma omp parallel for
@@ -1321,7 +1301,7 @@ inline void MortarUtilities::UpdateDatabase<ComponentType, NonHistorical>(
         ComponentType& ThisVariable,
         Vector& Dx,
         unsigned int Index,
-        std::unordered_map<int, int>& ConectivityDatabase
+        IntMap& ConectivityDatabase
         )
 {
     #pragma omp parallel for
@@ -1338,7 +1318,7 @@ inline void MortarUtilities::UpdateDatabase<Variable<array_1d<double, 3>>, NonHi
         Variable<array_1d<double, 3>>& ThisVariable,
         Vector& Dx,
         unsigned int Index,
-        std::unordered_map<int, int>& ConectivityDatabase
+        IntMap& ConectivityDatabase
         )
 {
     #pragma omp parallel for
