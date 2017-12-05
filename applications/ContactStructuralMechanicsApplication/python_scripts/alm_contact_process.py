@@ -89,11 +89,17 @@ class ALMContactProcess(python_process.PythonProcess):
             self.write_conditions = KratosMultiphysics.WriteConditionsFlag.WriteElementsOnly
         
     def ExecuteInitialize(self):
+        # The computing model part
+        computing_model_part = self.main_model_part.GetSubModelPart(self.computing_model_part_name)
+        
+        # We compute NODAL_H that can be used in the search and some values computation
+        self.find_nodal_h = KratosMultiphysics.FindNodalHProcess(computing_model_part)
+        self.find_nodal_h.Execute()
+        
         # Assigning master and slave sides
         self._assign_slave_nodes()
         
         # Appending the conditions created to the self.main_model_part
-        computing_model_part = self.main_model_part.GetSubModelPart(self.computing_model_part_name)
         if (computing_model_part.HasSubModelPart("Contact")):
             preprocess = False
             interface_model_part = computing_model_part.GetSubModelPart("Contact")
@@ -225,10 +231,12 @@ class ALMContactProcess(python_process.PythonProcess):
         if (self.params["assume_master_slave"].GetString() != ""):
             for node in self.contact_model_part.Nodes:
                 node.Set(KratosMultiphysics.SLAVE, False)
+                node.Set(KratosMultiphysics.MASTER, True)
             del(node)
             model_part_slave = self.main_model_part.GetSubModelPart(self.params["assume_master_slave"].GetString())
             for node in model_part_slave.Nodes:
                 node.Set(KratosMultiphysics.SLAVE, True)
+                node.Set(KratosMultiphysics.MASTER, False)
             del(node)
             
     def _interface_preprocess(self, computing_model_part):
@@ -276,9 +284,6 @@ class ALMContactProcess(python_process.PythonProcess):
     def _initialize_alm_parameters(self, computing_model_part):
         if (self.params["manual_ALM"].GetBool() == False):
             # Computing the scale factors or the penalty parameters (StiffnessFactor * E_mean/h_mean)
-            self.find_nodal_h = KratosMultiphysics.FindNodalHProcess(computing_model_part)
-            self.find_nodal_h.Execute()
-            
             alm_var_parameters = KratosMultiphysics.Parameters("""{}""")
             alm_var_parameters.AddValue("stiffness_factor",self.params["stiffness_factor"])
             alm_var_parameters.AddValue("penalty_scale_factor",self.params["penalty_scale_factor"])
@@ -414,6 +419,7 @@ class ALMContactProcess(python_process.PythonProcess):
         gid_io.WriteNodalFlags(KratosMultiphysics.SLAVE, "SLAVE", self.main_model_part.Nodes, label)
         gid_io.WriteNodalResults(KratosMultiphysics.NORMAL, self.main_model_part.Nodes, label, 0)
         gid_io.WriteNodalResultsNonHistorical(ContactStructuralMechanicsApplication.AUGMENTED_NORMAL_CONTACT_PRESSURE, self.main_model_part.Nodes, label)
+        gid_io.WriteNodalResultsNonHistorical(KratosMultiphysics.NODAL_AREA, self.main_model_part.Nodes, label)
         gid_io.WriteNodalResults(KratosMultiphysics.DISPLACEMENT, self.main_model_part.Nodes, label, 0)
         gid_io.WriteNodalResults(KratosMultiphysics.NORMAL_CONTACT_STRESS, self.main_model_part.Nodes, label, 0)
         gid_io.WriteNodalResults(ContactStructuralMechanicsApplication.WEIGHTED_GAP, self.main_model_part.Nodes, label, 0)

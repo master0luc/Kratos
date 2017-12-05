@@ -17,6 +17,7 @@
 // External includes
 
 // Project includes
+#include "processes/simple_mortar_mapper_process.h" 
 #include "includes/model_part.h"
 #include "includes/kratos_parameters.h"
 #include "utilities/openmp_utils.h"
@@ -24,9 +25,6 @@
 /* Custom includes*/
 #include "custom_includes/point_item.h"
 #include "custom_conditions/paired_condition.h"
-
-/* Custom utilities*/
-#include "custom_utilities/search_utilities.h"
 
 /* Tree structures */
 // #include "spatial_containers/bounding_volume_tree.h" // k-DOP
@@ -277,70 +275,10 @@ protected:
         );
     
     /**
-     * This method checks the potential pairing between two conditions/geometries
+     * This method reorders the ID of the conditions
      */
-    inline void CheckPotentialPairing(
-        ModelPart& ComputingModelPart,
-        std::size_t& ConditionId,
-        Condition::Pointer pCondSlave,
-        PointVector& PointsFound,
-        const unsigned int NumberOfPointsFound,
-        IndexMap::Pointer IndexesMap
-        )
-    {        
-        // Some initial parameters
-        const double active_check_factor = mrMainModelPart.GetProcessInfo()[ACTIVE_CHECK_FACTOR];
-        const array_1d<double, 3>& contact_normal_origin = pCondSlave->GetValue(NORMAL);
-        GeometryType& slave_geometry = pCondSlave->GetGeometry();
-        const double active_check_length = slave_geometry.Length() * active_check_factor;
-        
-        // We update the base condition
-        if (mCreateAuxiliarConditions && slave_geometry.GetGeometryType() != mGeometryType)
-        {
-            mConditionName = mThisParameters["mConditionName"].GetString(); 
-            mConditionName.append("Condition"); 
-            mConditionName.append(std::to_string(TDim));
-            mConditionName.append("D"); 
-            mConditionName.append(std::to_string(TNumNodes)); 
-            mConditionName.append("N"); 
-            mConditionName.append(mThisParameters["final_string"].GetString());
-        }
-        
-        MortarKinematicVariables<TNumNodes> rVariables;
-        MortarOperator<TNumNodes> rThisMortarConditionMatrices;
-        ExactMortarIntegrationUtility<TDim, TNumNodes> integration_utility = ExactMortarIntegrationUtility<TDim, TNumNodes>(TDim);
-        
-        for(unsigned int i_pair = 0; i_pair < NumberOfPointsFound; ++i_pair)
-        {   
-            bool condition_is_active = false;
-            
-            Condition::Pointer p_cond_master = PointsFound[i_pair]->GetCondition(); // MASTER
-            GeometryType& master_geometry = p_cond_master->GetGeometry();
-            const array_1d<double, 3>& master_normal = p_cond_master->GetValue(NORMAL); 
-                                
-            const CheckResult condition_checked_right = CheckCondition(IndexesMap, pCondSlave, p_cond_master, mInvertedSearch);
-            
-            if (condition_checked_right == OK)
-            {   
-                condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, true>(rVariables, rThisMortarConditionMatrices, integration_utility, slave_geometry, master_geometry, contact_normal_origin, master_normal, active_check_length);
-                
-                // If condition is active we add
-                if (condition_is_active == true) AddPairing(ComputingModelPart, ConditionId, pCondSlave, p_cond_master, IndexesMap);
-            }
-            else if (condition_checked_right == AlreadyInTheMap)
-            {
-                condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, false>(rVariables, rThisMortarConditionMatrices, integration_utility, slave_geometry, master_geometry, contact_normal_origin, master_normal, active_check_length);
-                
-                if (condition_is_active == false) 
-                {
-                    const std::size_t index_slave = p_cond_master->Id();
-                    const std::size_t index_master = IndexesMap->GetAuxiliarIndex(index_slave);
-                    IndexesMap->RemoveId(p_cond_master->Id());
-                    if (mCreateAuxiliarConditions) ComputingModelPart.pGetCondition(index_master)->Set(TO_ERASE, true);
-                }
-            }
-        }
-    }
+
+    inline std::size_t ReorderConditionsIds();
     
     /**
      * This method checks the potential pairing between two conditions/geometries
@@ -371,39 +309,14 @@ protected:
         );
     
     /**
-     * This method checks the current pairing between two conditions/geometries
-     * @param pCondSlave The pointer to the slave condition
-     * @param IndexesMap The map of indexes considered
+     * This method checks the pairing
+     * @param ComputingModelPart The modelpart  used in the assemble of the system
+     * @param ConditionId The ID of the new condition to be created
      */
-    inline void CheckCurrentPairing(
-        Condition::Pointer pCondSlave,
-        IndexMap::Pointer IndexesMap
-        )
-    {
-        // Some initial parameters
-        const double active_check_factor = mrMainModelPart.GetProcessInfo()[ACTIVE_CHECK_FACTOR];
-        const array_1d<double, 3>& contact_normal_origin = pCondSlave->GetValue(NORMAL);
-        const GeometryType& this_geometry = pCondSlave->GetGeometry();
-        const double active_check_length = this_geometry.Length() * active_check_factor;
-        
-        MortarKinematicVariables<TNumNodes> rVariables;
-        MortarOperator<TNumNodes> rThisMortarConditionMatrices;
-        ExactMortarIntegrationUtility<TDim, TNumNodes> integration_utility = ExactMortarIntegrationUtility<TDim, TNumNodes>(TDim);
-        
-        for (auto it_pair = IndexesMap->begin(); it_pair != IndexesMap->end(); ++it_pair )
-        {                                   
-            Condition::Pointer p_cond_master = mrMainModelPart.pGetCondition(it_pair->first);
-            const array_1d<double, 3>& master_normal = p_cond_master->GetValue(NORMAL); 
-
-            const bool condition_is_active = SearchUtilities::CheckExactIntegration<TDim, TNumNodes, false>(rVariables, rThisMortarConditionMatrices, integration_utility, pCondSlave->GetGeometry(), p_cond_master->GetGeometry(), contact_normal_origin, master_normal, active_check_length);
-            
-            if (condition_is_active == false) 
-            {
-                mrMainModelPart.pGetCondition(it_pair->second)->Set(TO_ERASE, true);
-                IndexesMap->RemoveId(p_cond_master->Id());
-            }
-        }
-    }
+    inline void CheckPairing(
+        ModelPart& ComputingModelPart,
+        std::size_t& ConditionId
+        );
     
     /**
      * This method checks the current pairing between two conditions/geometries
@@ -457,7 +370,6 @@ private:
     ///@{
   
     ModelPart& mrMainModelPart;                      // The main model part
-    GeometryData::KratosGeometryType mGeometryType;  // The current size of the geometry considered
     Parameters mThisParameters;                      // The configuration parameters
     bool mCheckGap;                                  // If the gap is checked during the search
     bool mInvertedSearch;                            // The search will be done inverting the way master and slave/master is assigned

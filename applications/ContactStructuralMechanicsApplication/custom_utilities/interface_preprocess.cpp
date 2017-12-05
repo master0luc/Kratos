@@ -59,9 +59,7 @@ void InterfacePreprocessCondition::GenerateInterfacePart<2>(
         Properties::Pointer p_prop = it_elem->pGetProperties();
         
         for (unsigned int i_edge = 0; i_edge < this_geometry.EdgesNumber(); ++i_edge)
-        {
             GenerateEdgeCondition(rInterfacePart, p_prop, this_geometry.Edges()[i_edge], simplest_geometry, cond_counter, cond_id);
-        }
     }
     
     
@@ -108,14 +106,10 @@ void InterfacePreprocessCondition::GenerateInterfacePart<3>(
         if (this_geometry.LocalSpaceDimension() == 3)
         {
             for (unsigned int i_face = 0; i_face < this_geometry.FacesNumber(); ++i_face)
-            {
                 GenerateFaceCondition(rInterfacePart, p_prop, this_geometry.Faces()[i_face], simplest_geometry, cond_counter, cond_id);
-            }
         }
         else
-        {
             GenerateFaceCondition(rInterfacePart, p_prop, this_geometry, simplest_geometry, cond_counter, cond_id);
-        }
     }
     
     // NOTE: Reorder ID if parallellization
@@ -145,9 +139,7 @@ void InterfacePreprocessCondition::CreateNewCondition(
     GeometryType& this_geometry = p_cond->GetGeometry();
     bool is_slave = true;
     for (unsigned int it_node = 0; it_node < this_geometry.size(); ++it_node)
-    {
         if (this_geometry[it_node].Is(SLAVE) == false) is_slave = false;
-    }
     if (is_slave == true)  p_cond->Set(SLAVE, true);
     else  p_cond->Set(MASTER, true);
 
@@ -199,15 +191,13 @@ inline void InterfacePreprocessCondition::GenerateEdgeCondition(
     unsigned int& CondCounter,
     unsigned int& CondId
     )
-{
+{    
     unsigned int count = 0;
     const unsigned int number_of_points = EdgeGeometry.PointsNumber();
     for (unsigned int it_node = 0; it_node < number_of_points; ++it_node)
     {
-        if (EdgeGeometry[it_node].IsDefined(INTERFACE) == true)  
-        {
+        if (EdgeGeometry[it_node].IsDefined(INTERFACE) == true)
             if (EdgeGeometry[it_node].Is(INTERFACE) == true) ++count;
-        }
     }
  
     const std::string condition_name = (number_of_points == 2 || SimplestGeometry) ? "Condition2D2N" : "Condition2D3N";
@@ -279,9 +269,7 @@ inline void InterfacePreprocessCondition::GenerateFaceCondition(
     for (unsigned int it_node = 0; it_node < number_of_points; ++it_node)
     {
         if (FaceGeometry[it_node].IsDefined(INTERFACE) == true)  
-        {
             if (FaceGeometry[it_node].Is(INTERFACE) == true) ++count;
-        }
     }
     
     const std::string condition_name = (number_of_points == 3 || SimplestGeometry) ? "Condition3D" : (number_of_points == 4) ? "Condition3D4N" : (number_of_points == 6) ? "Condition3D6N" : (number_of_points == 8) ? "Condition3D8N" : "Condition3D9N";

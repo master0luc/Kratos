@@ -50,16 +50,27 @@ class MeshTyingProcess(python_process.PythonProcess):
         self.mesh_tying_model_part = model_part[self.params["mesh_tying_model_part"].GetString()]
         
         if (self.params["assume_master_slave"].GetString() != ""):
+            for node in self.main_model_part.Nodes:
+                node.Set(KratosMultiphysics.SLAVE, False)
+                node.Set(KratosMultiphysics.MASTER, True)
+            del(node)
             for node in model_part[self.params["assume_master_slave"].GetString()].Nodes:
                 node.Set(KratosMultiphysics.SLAVE, True)
+                node.Set(KratosMultiphysics.MASTER, False)
+            del(node)
 
         self.type_variable     = self.params["type_variable"].GetString() 
         self.geometry_element  = self.params["geometry_element"].GetString() 
         
     def ExecuteInitialize(self):
+        # The computing model part
+        computing_model_part = self.main_model_part.GetSubModelPart(self.computing_model_part_name)
+        
+        # We compute NODAL_H that can be used in the search and some values computation
+        self.find_nodal_h = KratosMultiphysics.FindNodalHProcess(computing_model_part)
+        self.find_nodal_h.Execute()
         
         # Appending the conditions created to the self.main_model_part
-        computing_model_part = self.main_model_part.GetSubModelPart(self.computing_model_part_name)
         if (computing_model_part.HasSubModelPart("Contact")):
             interface_model_part = computing_model_part.GetSubModelPart("Contact")
         else:
