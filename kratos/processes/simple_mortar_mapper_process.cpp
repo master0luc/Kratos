@@ -615,7 +615,7 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteExplici
                 {
                     const std::size_t unused_id = indexes_to_remove[i_to_remove];
                     const std::size_t index_auxiliar = indexes_map->GetAuxiliarIndex(unused_id);
-                    if (indexes_map != 0) mrThisModelPart.pGetCondition(index_auxiliar)->Set(TO_ERASE);; 
+                    if (index_auxiliar != 0) mrThisModelPart.pGetCondition(index_auxiliar)->Set(TO_ERASE);; 
                     indexes_map->RemoveId(unused_id);
                 }
             }
@@ -804,7 +804,7 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteImplici
                 {
                     const std::size_t unused_id = indexes_to_remove[i_to_remove];
                     const std::size_t index_auxiliar = indexes_map->GetAuxiliarIndex(unused_id);
-                    if (indexes_map != 0) mrThisModelPart.pGetCondition(index_auxiliar)->Set(TO_ERASE);; 
+                    if (index_auxiliar != 0) mrThisModelPart.pGetCondition(index_auxiliar)->Set(TO_ERASE);; 
                     indexes_map->RemoveId(unused_id);
                 }
             }
