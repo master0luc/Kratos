@@ -574,6 +574,19 @@ public:
             PenaltyParameter[i] = SlaveGeometry[i].GetValue(INITIAL_PENALTY);
         }
         ScaleFactor = rCurrentProcessInfo[SCALE_FACTOR];
+        
+        // We initialize the derivatives
+        for (unsigned int i = 0; i < TNumNodes * TDim; ++i)
+        {
+            DeltaDetjSlave[i] = 0.0;
+            if (TDim == 3) DeltaDetjSlave[i + TNumNodes * TDim] = 0.0;
+            DeltaPhi[i] = ZeroVector(TNumNodes);
+            if (TDim == 3) DeltaPhi[i + TNumNodes * TDim] = ZeroVector(TNumNodes);
+            DeltaN1[i] = ZeroVector(TNumNodes);
+            DeltaN1[i + TNumNodes * TDim] = ZeroVector(TNumNodes);
+            DeltaN2[i] = ZeroVector(TNumNodes);
+            DeltaN2[i + TNumNodes * TDim] = ZeroVector(TNumNodes);
+        }
     }
     
     /**
