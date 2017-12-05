@@ -1142,7 +1142,7 @@ inline void MortarUtilities::AddAreaWeightedNodalValue<Variable<double>, Histori
         )
 {
     double area_coeff = pThisNode->GetValue(NODAL_AREA);
-    const bool null_area = (area_coeff == 0.0);
+    const bool null_area = (std::abs(area_coeff) < std::numeric_limits<double>::epsilon());
 #ifdef KRATOS_DEBUG 
     if (null_area) std::cout << "WARNING:: NODE OF NULL AREA. ID: " << pThisNode->Id() << std::endl;
 #endif
@@ -1157,7 +1157,7 @@ inline void MortarUtilities::AddAreaWeightedNodalValue<ComponentType, Historical
         )
 {
     double area_coeff = pThisNode->GetValue(NODAL_AREA);
-    const bool null_area = (area_coeff == 0.0);
+    const bool null_area = (std::abs(area_coeff) < std::numeric_limits<double>::epsilon());
 #ifdef KRATOS_DEBUG 
     if (null_area) std::cout << "WARNING:: NODE OF NULL AREA. ID: " << pThisNode->Id() << std::endl;
 #endif
@@ -1172,7 +1172,7 @@ inline void MortarUtilities::AddAreaWeightedNodalValue<Variable<array_1d<double,
         )
 {
     double area_coeff = pThisNode->GetValue(NODAL_AREA);
-    const bool null_area = (area_coeff == 0.0);
+    const bool null_area = (std::abs(area_coeff) < std::numeric_limits<double>::epsilon());
 #ifdef KRATOS_DEBUG 
     if (null_area) std::cout << "WARNING:: NODE OF NULL AREA. ID: " << pThisNode->Id() << std::endl;
 #endif
@@ -1188,7 +1188,7 @@ inline void MortarUtilities::AddAreaWeightedNodalValue<Variable<double>, NonHist
         )
 {
     double area_coeff = pThisNode->GetValue(NODAL_AREA);
-    const bool null_area = (area_coeff == 0.0);
+    const bool null_area = (std::abs(area_coeff) < std::numeric_limits<double>::epsilon());
 #ifdef KRATOS_DEBUG 
     if (null_area) std::cout << "WARNING:: NODE OF NULL AREA. ID: " << pThisNode->Id() << std::endl;
 #endif
@@ -1203,7 +1203,7 @@ inline void MortarUtilities::AddAreaWeightedNodalValue<ComponentType, NonHistori
         )
 {
     double area_coeff = pThisNode->GetValue(NODAL_AREA);
-    const bool null_area = (area_coeff == 0.0);
+    const bool null_area = (std::abs(area_coeff) < std::numeric_limits<double>::epsilon());
 #ifdef KRATOS_DEBUG 
     if (null_area) std::cout << "WARNING:: NODE OF NULL AREA. ID: " << pThisNode->Id() << std::endl;
 #endif
@@ -1218,7 +1218,7 @@ inline void MortarUtilities::AddAreaWeightedNodalValue<Variable<array_1d<double,
         )
 {
     double area_coeff = pThisNode->GetValue(NODAL_AREA);
-    const bool null_area = (area_coeff == 0.0);
+    const bool null_area = (std::abs(area_coeff) < std::numeric_limits<double>::epsilon());
 #ifdef KRATOS_DEBUG 
     if (null_area) std::cout << "WARNING:: NODE OF NULL AREA. ID: " << pThisNode->Id() << std::endl;
 #endif
