@@ -51,7 +51,7 @@ public:
                 "model_part_name":"PLEASE_CHOOSE_MODEL_PART_NAME",
                 "mesh_id": 0,
                 "variable_name"      : "PLEASE_PRESCRIBE_VARIABLE_NAME",
-                "is_fixed"           : false,
+                "initial_value"      : 0.0,
                 "input_file_name"    : ""
             }  )" );
         
@@ -65,7 +65,7 @@ public:
 
         mMeshId = rParameters["mesh_id"].GetInt();
         mVariableName = rParameters["variable_name"].GetString();
-        mIsFixed = rParameters["is_fixed"].GetBool();
+        mInitialValue = rParameters["initial_value"].GetDouble();
        
         KRATOS_CATCH("");
     }
@@ -85,20 +85,35 @@ public:
         
         Variable<double> var = KratosComponents< Variable<double> >::Get(mVariableName);
         const int nnodes = mrModelPart.GetMesh(mMeshId).Nodes().size();
-       
+        bool numa_convergence = mrModelPart.GetProcessInfo()[IS_RESTARTED];
+
         if(nnodes != 0)
         {
             ModelPart::NodesContainerType::iterator it_begin = mrModelPart.GetMesh(mMeshId).NodesBegin();
         
-            #pragma omp parallel for
-            for(int i = 0; i<nnodes; i++)
+            if (numa_convergence == false)
             {
-                ModelPart::NodesContainerType::iterator it = it_begin + i;
-               
-                it->FastGetSolutionStepValue(var) = mrTable.GetValue(it->Id());
+                #pragma omp parallel for
+                for(int i = 0; i<nnodes; i++)
+                {
+                    ModelPart::NodesContainerType::iterator it = it_begin + i;
+                
+                    it->FastGetSolutionStepValue(var) = mInitialValue;
 
+                }
             }
-        }
+            else
+            {
+                #pragma omp parallel for
+                for(int i = 0; i<nnodes; i++)
+                {
+                    ModelPart::NodesContainerType::iterator it = it_begin + i;
+                
+                    it->FastGetSolutionStepValue(var) = mrTable.GetValue(it->Id());
+
+                }
+            }
+        }   
         
         KRATOS_CATCH("");
     }
@@ -112,23 +127,42 @@ public:
         
         Variable<double> var = KratosComponents< Variable<double> >::Get(mVariableName);
         const int nnodes = mrModelPart.GetMesh(mMeshId).Nodes().size();
-                
+        bool numa_convergence = mrModelPart.GetProcessInfo()[IS_RESTARTED];
+
+        
         if(nnodes != 0)
         {
             ModelPart::NodesContainerType::iterator it_begin = mrModelPart.GetMesh(mMeshId).NodesBegin();
         
-            #pragma omp parallel for
-            for(int i = 0; i<nnodes; i++)
+            if (numa_convergence == false)
             {
-                ModelPart::NodesContainerType::iterator it = it_begin + i;
-                                
-                it->FastGetSolutionStepValue(var) = mrTable.GetValue(it->Id());
+                #pragma omp parallel for
+                for(int i = 0; i<nnodes; i++)
+                {
+                    ModelPart::NodesContainerType::iterator it = it_begin + i;
+                
+                    it->FastGetSolutionStepValue(var) = mInitialValue;
+
+                }
             }
-        }
+            else
+            {
+                #pragma omp parallel for
+                for(int i = 0; i<nnodes; i++)
+                {
+                    ModelPart::NodesContainerType::iterator it = it_begin + i;
+                
+                    it->FastGetSolutionStepValue(var) = mrTable.GetValue(it->Id());
+
+                }
+            }
+        }   
         
         KRATOS_CATCH("");
     }
     
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
     /// Turn back information as a string.
     std::string Info() const
     {
@@ -156,7 +190,7 @@ protected:
     TableType& mrTable;
     std::size_t mMeshId;
     std::string mVariableName;
-    bool mIsFixed;   
+    double mInitialValue;
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 

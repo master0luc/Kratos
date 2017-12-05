@@ -16,8 +16,8 @@ class ImposeInputTableNodalYoungModulusProcess(Process):
         Process.__init__(self)
         model_part = Model[settings["model_part_name"].GetString()]
         input_file_name = settings["input_file_name"].GetString()
-        settings.RemoveValue("MinValue")
-        settings.RemoveValue("MaxValue")
+        settings.RemoveValue("min_value")
+        settings.RemoveValue("max_value")
 
         self.table = PiecewiseLinearTable()
         with open(input_file_name,'r') as file_name:
