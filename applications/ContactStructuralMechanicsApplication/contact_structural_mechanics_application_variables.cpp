@@ -27,6 +27,7 @@ KRATOS_CREATE_VARIABLE( int , INTEGRATION_ORDER_CONTACT )                       
 KRATOS_CREATE_VARIABLE( double, ACTIVE_CHECK_FACTOR )                                // The factor employed to search an active/inactive node
 KRATOS_CREATE_VARIABLE( GeometryType::Pointer, PAIRED_GEOMETRY )                     // The paired geometry with the current condition
 KRATOS_CREATE_VARIABLE( Vector3, PAIRED_NORMAL )                                     // The normal of the paired geometry
+KRATOS_CREATE_3D_VARIABLE_WITH_COMPONENTS( AUXILIAR_COORDINATES )                    // Auxiliar coordinates used to map
 
 /* Weighted values */
 KRATOS_CREATE_VARIABLE( double, WEIGHTED_GAP )                                       // The integrated gap employed in mortar formulation
