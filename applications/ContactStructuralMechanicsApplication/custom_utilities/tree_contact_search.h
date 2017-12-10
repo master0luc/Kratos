@@ -131,37 +131,19 @@ public:
      * This function clears the mortar conditions already created 
      */
     
-    void TotalClearScalarMortarConditions();
+    void ClearScalarMortarConditions();
     
     /**
      * This function clears the mortar conditions already created 
      */
     
-    void TotalClearComponentsMortarConditions();
+    void ClearComponentsMortarConditions();
     
     /**
      * This function clears the ALM frictionless mortar conditions already created 
      */
     
-    void TotalClearALMFrictionlessMortarConditions();
-    
-    /**
-     * This function clears the mortar conditions already created (scalar version)
-     */
-    
-    void PartialClearScalarMortarConditions();
-    
-    /**
-     * This function clears the mortar conditions already created (components version)
-     */
-        
-    void PartialClearComponentsMortarConditions();
-    
-    /**
-     * This function clears the ALM frictionless mortar conditions already created 
-     */
-    
-    void PartialClearALMFrictionlessMortarConditions();
+    void ClearALMFrictionlessMortarConditions();
       
     /**
      * This function creates a lists  points ready for the Mortar method
@@ -182,12 +164,6 @@ public:
     void UpdateMortarConditions();
     
     /**
-     * This function has as pourpose to clean the existing pairs
-     */
-    
-    void CleanMortarConditions();
-    
-    /**
      * It checks the current mortar conditions
      */
     
@@ -204,12 +180,6 @@ public:
      */
         
     void ResetContactOperators();
-    
-    /**
-     * This resets all the contact operators
-     */
-        
-    void TotalResetContactOperators();
     
     ///@}
     ///@name Access
@@ -268,7 +238,7 @@ protected:
      */
     
     static inline CheckResult CheckCondition(
-        IndexMap::Pointer IndexesMap,
+        IndexSet::Pointer IndexesSet,
         const Condition::Pointer pCond1,
         const Condition::Pointer pCond2,
         const bool InvertedSearch = false
@@ -289,7 +259,7 @@ protected:
         Condition::Pointer pCondSlave,
         PointVector& PointsFound,
         const unsigned int NumberOfPointsFound,
-        IndexMap::Pointer IndexesMap
+        IndexSet::Pointer IndexesSet
         );
     
     /**
@@ -298,14 +268,14 @@ protected:
      * @param ConditionId The ID of the new condition to be created
      * @param pCondSlave The pointer to the slave condition
      * @param pCondMaster The pointer to the master condition
-     * @param IndexesMap The map of indexes considered
+     * @param IndexesSet The map of indexes considered
      */
     inline void AddPairing(
         ModelPart& ComputingModelPart,
         std::size_t& ConditionId,
         Condition::Pointer pCondSlave,
         Condition::Pointer pCondMaster,
-        IndexMap::Pointer IndexesMap
+        IndexSet::Pointer IndexesSet
         );
     
     /**
@@ -321,11 +291,11 @@ protected:
     /**
      * This method checks the current pairing between two conditions/geometries
      * @param pCondSlave The pointer to the slave condition
-     * @param IndexesMap The map of indexes considered
+     * @param IndexesSet The map of indexes considered
      */
     inline void CheckAllActivePairing(
         Condition::Pointer pCondSlave,
-        IndexMap::Pointer IndexesMap
+        IndexSet::Pointer IndexesSet
         );
     
     /**  

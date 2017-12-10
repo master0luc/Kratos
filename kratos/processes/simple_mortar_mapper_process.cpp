@@ -361,18 +361,12 @@ IntegrationMethod SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::G
     const int& integration_order = mThisParameters["integration_order"].GetInt();
     switch ( integration_order )
     {
-        case 1:
-            return GeometryData::GI_GAUSS_1;
-        case 2:
-            return GeometryData::GI_GAUSS_2;
-        case 3:
-            return GeometryData::GI_GAUSS_3;
-        case 4:
-            return GeometryData::GI_GAUSS_4;
-        case 5:
-            return GeometryData::GI_GAUSS_5;
-        default:
-            return GeometryData::GI_GAUSS_2;
+        case 1: return GeometryData::GI_GAUSS_1;
+        case 2: return GeometryData::GI_GAUSS_2;
+        case 3: return GeometryData::GI_GAUSS_3;
+        case 4: return GeometryData::GI_GAUSS_4;
+        case 5: return GeometryData::GI_GAUSS_5;
+        default: return GeometryData::GI_GAUSS_2;
     }
     
     return GeometryData::GI_GAUSS_2;
@@ -546,12 +540,12 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteExplici
                 const array_1d<double, 3>& slave_normal = it_cond->GetValue(NORMAL);
                 GeometryType& slave_geometry = it_cond->GetGeometry();
                 
-                IndexMap::Pointer& indexes_map = it_cond->GetValue( INDEX_MAP ); // These are the master conditions
+                IndexSet::Pointer& indexes_set = it_cond->GetValue( INDEX_SET ); // These are the master conditions
                 std::vector<std::size_t> indexes_to_remove;
                 
-                for (auto it_pair = indexes_map->begin(); it_pair != indexes_map->end(); ++it_pair )
+                for (auto it_pair = indexes_set->begin(); it_pair != indexes_set->end(); ++it_pair )
                 {
-                    Condition::Pointer p_cond_master = mrThisModelPart.pGetCondition(it_pair->first); // MASTER
+                    Condition::Pointer p_cond_master = mrThisModelPart.pGetCondition(*it_pair); // MASTER
                     const array_1d<double, 3>& master_normal = p_cond_master->GetValue(NORMAL); 
                     GeometryType& master_geometry = p_cond_master->GetGeometry();
                     
@@ -601,17 +595,12 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteExplici
                                 slave_geometry[i_node].GetValue(NODAL_AREA) += this_mortar_operators.DOperator(i_node, i_node);
                     }
                     else
-                        indexes_to_remove.push_back(it_pair->first);
+                        indexes_to_remove.push_back(*it_pair);
                 }
                 
                 // Clear indexes
                 for (unsigned int i_to_remove = 0; i_to_remove < indexes_to_remove.size(); ++i_to_remove)
-                {
-                    const std::size_t unused_id = indexes_to_remove[i_to_remove];
-                    const std::size_t index_auxiliar = indexes_map->GetAuxiliarIndex(unused_id);
-                    if (index_auxiliar != 0) mrThisModelPart.pGetCondition(index_auxiliar)->Set(TO_ERASE);; 
-                    indexes_map->RemoveId(unused_id);
-                }
+                    indexes_set->RemoveId(indexes_to_remove[i_to_remove]);
             }
         }
         
@@ -723,12 +712,12 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteImplici
                 const array_1d<double, 3>& slave_normal = it_cond->GetValue(NORMAL);
                 GeometryType& slave_geometry = it_cond->GetGeometry();
                 
-                IndexMap::Pointer& indexes_map = it_cond->GetValue( INDEX_MAP ); // These are the master conditions
+                IndexSet::Pointer& indexes_set = it_cond->GetValue( INDEX_SET ); // These are the master conditions
                 std::vector<std::size_t> indexes_to_remove;
                 
-                for (auto it_pair = indexes_map->begin(); it_pair != indexes_map->end(); ++it_pair )
+                for (auto it_pair = indexes_set->begin(); it_pair != indexes_set->end(); ++it_pair )
                 {
-                    Condition::Pointer p_cond_master = mrThisModelPart.pGetCondition(it_pair->first); // MASTER
+                    Condition::Pointer p_cond_master = mrThisModelPart.pGetCondition(*it_pair); // MASTER
                     const array_1d<double, 3>& master_normal = p_cond_master->GetValue(NORMAL); 
                     GeometryType& master_geometry = p_cond_master->GetGeometry();
                     
@@ -778,17 +767,12 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteImplici
                             AssembleRHS(b, variable_size, residual_matrix, slave_geometry, inverse_conectivity_database);
                     }
                     else
-                        indexes_to_remove.push_back(it_pair->first);
+                        indexes_to_remove.push_back(*it_pair);
                 }
                 
                 // Clear indexes
                 for (unsigned int i_to_remove = 0; i_to_remove < indexes_to_remove.size(); ++i_to_remove)
-                {
-                    const std::size_t unused_id = indexes_to_remove[i_to_remove];
-                    const std::size_t index_auxiliar = indexes_map->GetAuxiliarIndex(unused_id);
-                    if (index_auxiliar != 0) mrThisModelPart.pGetCondition(index_auxiliar)->Set(TO_ERASE);; 
-                    indexes_map->RemoveId(unused_id);
-                }
+                    indexes_set->RemoveId(indexes_to_remove[i_to_remove]);
             }
         }
         

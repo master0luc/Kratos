@@ -170,19 +170,19 @@ public:
 
     void UpdatePoint(const double DeltaTime)
     {        
-        bool update_coordinates = false;
-        if (mpOriginCond->GetGeometry()[0].SolutionStepsDataHas(VELOCITY_X) == true && DeltaTime > 0.0)
-        {
-            update_coordinates = true;
-        }
-        if (update_coordinates == true)
-        {
-            this->Coordinates() = ContactUtilities::GetHalfJumpCenter(mpOriginCond->GetGeometry(), DeltaTime); // NOTE: Center in half delta time
-        }
-        else
-        {
+//         bool update_coordinates = false;
+//         if (mpOriginCond->GetGeometry()[0].SolutionStepsDataHas(VELOCITY_X) == true && DeltaTime > 0.0)
+//         {
+//             update_coordinates = true;
+//         }
+//         if (update_coordinates == true)
+//         {
+//             this->Coordinates() = ContactUtilities::GetHalfJumpCenter(mpOriginCond->GetGeometry(), DeltaTime); // NOTE: Center in half delta time
+//         }
+//         else
+//         {
             this->Coordinates() = mpOriginCond->GetGeometry().Center().Coordinates(); // NOTE: Real center
-        }
+//         }
     }
 
 protected:

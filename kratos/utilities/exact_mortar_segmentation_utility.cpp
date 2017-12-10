@@ -70,22 +70,16 @@ bool ExactMortarIntegrationUtility<2,2, false>::GetExactIntegration(
             const bool is_inside = MortarUtilities::ProjectIterativeLine2D(OriginalSlaveGeometry, OriginalMasterGeometry[i_master].Coordinates(), projected_gp_local, SlaveNormal, tolerance, delta_xi);
             
             if (is_inside == true)
-            {
                 auxiliar_xi.push_back(projected_gp_local[0]);
-            }
         }
         
         // In this case one edge of the slave belongs to the master and additionally one node of the master belongs to the slave
         if (auxiliar_xi.size() == 1 && ((auxiliar_coordinates[0] == - 1.0 || auxiliar_coordinates[1] == 1.0)))
         {
             if (std::abs(auxiliar_coordinates[0] + 1.0) < tolerance) // NOTE: Equivalent to == -1.0
-            {
                 auxiliar_coordinates[1] = auxiliar_xi[0];
-            }
             else if (std::abs(auxiliar_coordinates[1] - 1.0) < tolerance) // NOTE: Equivalent to == 1.0
-            {
                 auxiliar_coordinates[0] = auxiliar_xi[0];
-            }
             else
             {
                 KRATOS_WATCH(auxiliar_xi[0]);
@@ -97,13 +91,9 @@ bool ExactMortarIntegrationUtility<2,2, false>::GetExactIntegration(
         else if (auxiliar_xi.size() == 2) // Both nodes of the master belong to the slave (and none of the nodes of the slave belong to the master, the nodes can coincide, there is no other possibility)
         {
             if (std::abs(auxiliar_coordinates[0] + 1.0) < tolerance) // NOTE: Equivalent to == -1.0. In this case the node in the left edge is already assigned 
-            {
                 auxiliar_coordinates[1] = auxiliar_xi[0] < auxiliar_xi[1] ? auxiliar_xi[1] : auxiliar_xi[0]; // We set in the proper position
-            }
             else if (std::abs(auxiliar_coordinates[1] - 1.0) < tolerance) // NOTE: Equivalent to == 1.0. In this case the node in the right edge is already assigned 
-            {
                 auxiliar_coordinates[0] = auxiliar_xi[0] < auxiliar_xi[1] ? auxiliar_xi[0] : auxiliar_xi[1]; // We set in the proper position
-            }
             else // There isn't any coincidence with the edges
             {
                 if (auxiliar_xi[0] < auxiliar_xi[1]) // We check that are in proper order
@@ -131,15 +121,9 @@ bool ExactMortarIntegrationUtility<2,2, false>::GetExactIntegration(
         total_weight = auxiliar_coordinates[1] - auxiliar_coordinates[0];
     }
     
-    if(total_weight < 0.0)
-    {
-        KRATOS_ERROR << "WAAAAAAAAAAAAARNING!!!!!!!!, wrong order of the coordinates: "<< auxiliar_coordinates << std::endl;
-    }
-    else if(total_weight > 2.0)
-    {
-        KRATOS_ERROR << "WAAAAAAAAAAAAARNING!!!!!!!!, impossible, Weight higher than 2: "<< auxiliar_coordinates << std::endl;
-    }
-    
+    KRATOS_ERROR_IF(total_weight < 0.0) << "WAAAAAAAAAAAAARNING!!!!!!!!, wrong order of the coordinates: "<< auxiliar_coordinates << std::endl;
+    KRATOS_ERROR_IF(total_weight > 2.0) << "WAAAAAAAAAAAAARNING!!!!!!!!, impossible, Weight higher than 2: "<< auxiliar_coordinates << std::endl;
+
     // We do the final assignmen
     if (total_weight > std::numeric_limits<double>::epsilon())
     {
@@ -305,12 +289,6 @@ bool ExactMortarIntegrationUtility<3,4, false>::GetExactIntegration(
         PushBackPoints(point_list, all_inside, master_geometry);
         
         return TriangleIntersections<GeometryPointType>(ConditionsPointsSlave, point_list, slave_geometry_not_rotated, slave_geometry, master_geometry, slave_tangent_xi, slave_tangent_eta, slave_center, true);
-        
-//         const bool solution = TriangleIntersections<GeometryNodeType>(ConditionsPointsSlave, point_list, OriginalSlaveGeometry, slave_geometry, master_geometry, slave_tangent_xi, slave_tangent_eta, slave_center, true);
-//         
-//         EnhanceTriangulation(ConditionsPointsSlave);
-//         
-//         return solution;
     }
     else
     {
@@ -324,12 +302,6 @@ bool ExactMortarIntegrationUtility<3,4, false>::GetExactIntegration(
         PushBackPoints(point_list, all_inside, slave_geometry);
         
         return TriangleIntersections<GeometryPointType>(ConditionsPointsSlave, point_list, slave_geometry_not_rotated, slave_geometry, master_geometry, slave_tangent_xi, slave_tangent_eta, slave_center);
-        
-//         const bool solution = TriangleIntersections<GeometryNodeType>(ConditionsPointsSlave, point_list, OriginalSlaveGeometry, slave_geometry, master_geometry, slave_tangent_xi, slave_tangent_eta, slave_center);
-//         
-//         EnhanceTriangulation(ConditionsPointsSlave);
-//         
-//         return solution;
     }
     
     ConditionsPointsSlave.clear();
@@ -387,9 +359,7 @@ bool ExactMortarIntegrationUtility<2,2, true>::GetExactIntegration(
     
     // We check if the element is fully integrated
     if ((auxiliar_coordinates[0] == - 1.0 && auxiliar_coordinates[1] == 1.0) == true)
-    {
         total_weight = 2.0;
-    }
     else // If not then we proceed
     {
         std::vector<double> auxiliar_xi;
@@ -471,15 +441,9 @@ bool ExactMortarIntegrationUtility<2,2, true>::GetExactIntegration(
         total_weight = auxiliar_coordinates[1] - auxiliar_coordinates[0];
     }
     
-    if(total_weight < 0.0)
-    {
-        KRATOS_ERROR << "WAAAAAAAAAAAAARNING!!!!!!!!, wrong order of the coordinates: "<< auxiliar_coordinates << std::endl;
-    }
-    else if(total_weight > 2.0)
-    {
-        KRATOS_ERROR << "WAAAAAAAAAAAAARNING!!!!!!!!, impossible, Weight higher than 2: "<< auxiliar_coordinates << std::endl;
-    }
-    
+    KRATOS_ERROR_IF(total_weight < 0.0) << "WAAAAAAAAAAAAARNING!!!!!!!!, wrong order of the coordinates: "<< auxiliar_coordinates << std::endl;
+    KRATOS_ERROR_IF(total_weight > 2.0) << "WAAAAAAAAAAAAARNING!!!!!!!!, impossible, Weight higher than 2: "<< auxiliar_coordinates << std::endl;
+
     // We do the final assignmen
     if (total_weight > std::numeric_limits<double>::epsilon())
     {
@@ -728,9 +692,7 @@ bool ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::GetExactAreaIntegr
     )
 {        
     ConditionArrayListType conditions_points_slave;
-    
     const bool is_inside = GetExactIntegration(OriginalSlaveGeometry, SlaveNormal, OriginalMasterGeometry, MasterNormal, conditions_points_slave);
-    
     if (is_inside) GetTotalArea(OriginalSlaveGeometry, conditions_points_slave, rArea);
     
     return is_inside;
@@ -785,9 +747,7 @@ bool ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::TestGetExactIntegr
         // Solution save:
         CustomSolution(GP, 0) = integration_points_slave[GP].Coordinate(1);
         if (TDim == 2)
-        {
             CustomSolution(GP, 1) = integration_points_slave[GP].Weight();
-        }
         else
         {
             CustomSolution(GP, 1) = integration_points_slave[GP].Coordinate(2);
@@ -809,12 +769,12 @@ double ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::TestGetExactArea
 {        
     // Initalize values
     double area = 0.0;
-    IndexMap::Pointer indexes_map = SlaveCond->GetValue( INDEX_MAP );
+    IndexSet::Pointer indexes_set = SlaveCond->GetValue( INDEX_SET );
     
-    for (auto it_pair = indexes_map->begin(); it_pair != indexes_map->end(); ++it_pair )
+    for (auto it_pair = indexes_set->begin(); it_pair != indexes_set->end(); ++it_pair )
     {        
         double local_area = 0.0;
-        Condition::Pointer p_master_cond = rMainModelPart.pGetCondition(it_pair->first);
+        Condition::Pointer p_master_cond = rMainModelPart.pGetCondition(*it_pair);
         const bool is_inside = GetExactAreaIntegration(SlaveCond->GetGeometry(), SlaveCond->GetValue(NORMAL), p_master_cond->GetGeometry(), p_master_cond->GetValue(NORMAL), local_area);
         if (is_inside) area += local_area;
     }
@@ -829,29 +789,13 @@ template< unsigned int TDim, unsigned int TNumNodes, bool TBelong>
 void ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::GetIntegrationMethod()
 {
     // Setting the auxiliar integration points
-    if (mIntegrationOrder == 1)
-    {
-        mAuxIntegrationMethod = GeometryData::GI_GAUSS_1;
-    }
-    else if (mIntegrationOrder == 2)
-    {
-        mAuxIntegrationMethod = GeometryData::GI_GAUSS_2;
-    }
-    else if (mIntegrationOrder == 3)
-    {
-        mAuxIntegrationMethod = GeometryData::GI_GAUSS_3;
-    }
-    else if (mIntegrationOrder == 4)
-    {
-        mAuxIntegrationMethod = GeometryData::GI_GAUSS_4;
-    }
-    else if (mIntegrationOrder == 5)
-    {
-        mAuxIntegrationMethod = GeometryData::GI_GAUSS_5;
-    }
-    else
-    {
-        mAuxIntegrationMethod = GeometryData::GI_GAUSS_2;
+	switch (mIntegrationOrder) {
+		case 1: mAuxIntegrationMethod = GeometryData::GI_GAUSS_1;
+		case 2: mAuxIntegrationMethod = GeometryData::GI_GAUSS_2;
+		case 3: mAuxIntegrationMethod = GeometryData::GI_GAUSS_3;
+		case 4: mAuxIntegrationMethod = GeometryData::GI_GAUSS_4;
+		case 5: mAuxIntegrationMethod = GeometryData::GI_GAUSS_5;
+		default: mAuxIntegrationMethod = GeometryData::GI_GAUSS_2;
     }
 }
 
@@ -863,12 +807,12 @@ GeometryNodeType::IntegrationPointsArrayType ExactMortarIntegrationUtility<TDim,
 {
     // Setting the auxiliar integration points
     switch (mIntegrationOrder) {
-    case 1: return Quadrature<TriangleGaussLegendreIntegrationPoints1, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-    case 2: return Quadrature<TriangleGaussLegendreIntegrationPoints2, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-    case 3: return Quadrature<TriangleGaussLegendreIntegrationPoints3, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-    case 4: return Quadrature<TriangleGaussLegendreIntegrationPoints4, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-    case 5: return Quadrature<TriangleGaussLegendreIntegrationPoints5, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-    default: return Quadrature<TriangleGaussLegendreIntegrationPoints2, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+		case 1: return Quadrature<TriangleGaussLegendreIntegrationPoints1, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+		case 2: return Quadrature<TriangleGaussLegendreIntegrationPoints2, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+		case 3: return Quadrature<TriangleGaussLegendreIntegrationPoints3, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+		case 4: return Quadrature<TriangleGaussLegendreIntegrationPoints4, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+		case 5: return Quadrature<TriangleGaussLegendreIntegrationPoints5, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+		default: return Quadrature<TriangleGaussLegendreIntegrationPoints2, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
     }
 }
 
@@ -889,17 +833,10 @@ inline void ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::PushBackPoi
             // We check if the node already exists
             bool add_point = true;
             for (unsigned int iter = 0; iter < PointList.size(); ++iter)
-            {
-                if (CheckPoints(ThisGeometry[i_node], PointList[iter]) == true)
-                {
-                    add_point = false;
-                }
-            }
+                if (CheckPoints(ThisGeometry[i_node], PointList[iter])) add_point = false;
                     
             if (add_point == true) 
-            {
                 PointList.push_back(ThisGeometry[i_node]);
-            }
         }
     }
 }
@@ -922,12 +859,7 @@ inline void ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::PushBackPoi
             // We check if the node already exists
             bool add_point = true;
             for (unsigned int iter = 0; iter < PointList.size(); ++iter)
-            {
-                if (CheckPoints(ThisGeometry[i_node], PointList[iter]) == true)
-                {
-                    add_point = false;
-                }
-            }
+                if (CheckPoints(ThisGeometry[i_node], PointList[iter])) add_point = false;
                     
             if (add_point == true) 
             {
@@ -953,7 +885,6 @@ inline void ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::CheckInside
     for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
     {
         GeometryNodeType::CoordinatesArrayType projected_gp_local;
-    
         AllInside[i_node] = Geometry1.IsInside( Geometry2[i_node].Coordinates( ), projected_gp_local, Tolerance) ;
     }
 }
@@ -981,9 +912,7 @@ inline std::vector<std::size_t> ExactMortarIntegrationUtility<TDim, TNumNodes, T
             v /= norm_2(v);
             n = GetNormalVector2D(v);
             for (unsigned int aux_elem = 0; aux_elem <= (elem - 1); ++aux_elem)
-            {
                 angles[aux_elem] -= angles[elem - 1];
-            }
         }
     }
     
@@ -1015,10 +944,8 @@ inline void ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::ComputeClip
             PointType intersected_point;
             const bool intersected = Clipping2D(
                 intersected_point,
-                Geometry1[i_edge],
-                Geometry1[ip_edge],
-                Geometry2[j_edge],
-                Geometry2[jp_edge]
+                Geometry1[i_edge], Geometry1[ip_edge],
+                Geometry2[j_edge], Geometry2[jp_edge]
                 );
             
             if (intersected == true)
@@ -1101,14 +1028,10 @@ inline bool ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::TriangleInt
             ConditionsPointsSlave[elem] = points_locals;
         }
         
-        if (ConditionsPointsSlave.size() > 0)
-        {                    
+        if (ConditionsPointsSlave.size() > 0)                
             return true;
-        }
         else
-        {
             return false;
-        }
     }
     else // No intersection
     {

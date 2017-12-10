@@ -322,80 +322,6 @@ protected:
     GeometryNodeType::IntegrationPointsArrayType GetIntegrationTriangle();
     
     /**
-     * This function divides the triangles to enhance the integration 
-     * @param ConditionsPointsSlave The list of points from the decomposition 
-     */
-    
-    static inline void EnhanceTriangulation(ConditionArrayListType& ConditionsPointsSlave)
-    {
-        ConditionArrayListType aux_conditions_points_slave = ConditionsPointsSlave;
-        
-        ConditionsPointsSlave.clear();
-        
-        for (unsigned int i_geom = 0; i_geom < aux_conditions_points_slave.size(); i_geom++)
-        {
-            PointType& point1 = aux_conditions_points_slave[i_geom][0];
-            PointType& point2 = aux_conditions_points_slave[i_geom][1];
-            PointType& point3 = aux_conditions_points_slave[i_geom][2];
-            
-            // Aux info
-            std::vector<PointType::Pointer> points_array (3); 
-            points_array[0] = boost::make_shared<PointType>(point1);
-            points_array[1] = boost::make_shared<PointType>(point2);
-            points_array[2] = boost::make_shared<PointType>(point3);
-            TriangleType aux_triangle = TriangleType(points_array);
-            Vector N_aux;
-            array_1d<double, 3> aux_coords = ZeroVector(3);
-            
-            // Compute intermediate points
-            // Point 4
-            aux_coords[0] = 0.5;
-            N_aux = aux_triangle.ShapeFunctionsValues(N_aux, aux_coords);
-            PointType point4;
-            point4.Coordinates() = N_aux[0] * point1.Coordinates() + N_aux[1] * point2.Coordinates();
-
-            // Point 5
-            aux_coords[1] = 0.5;
-            N_aux = aux_triangle.ShapeFunctionsValues(N_aux, aux_coords);
-            PointType point5;
-            point5.Coordinates() = N_aux[1] * point2.Coordinates() + N_aux[2] * point3.Coordinates(); 
-
-            // Point 6
-            aux_coords[0] = 0.0;
-            N_aux = aux_triangle.ShapeFunctionsValues(N_aux, aux_coords);
-            PointType point6;
-            point6.Coordinates() = N_aux[2] * point3.Coordinates() + N_aux[0] * point1.Coordinates();
-
-            // New triangles
-            array_1d<PointType, 3> aux_new_triangle;
-
-            // Triangle 1
-            aux_new_triangle[0] = point1;
-            aux_new_triangle[1] = point4;
-            aux_new_triangle[2] = point6;
-            ConditionsPointsSlave.push_back(aux_new_triangle);
-
-            // Triangle 2
-            aux_new_triangle[0] = point4;
-            aux_new_triangle[1] = point2;
-            aux_new_triangle[2] = point5;
-            ConditionsPointsSlave.push_back(aux_new_triangle);
-
-            // Triangle 3
-            aux_new_triangle[0] = point6;
-            aux_new_triangle[1] = point4;
-            aux_new_triangle[2] = point5;
-            ConditionsPointsSlave.push_back(aux_new_triangle);
-
-            // Triangle 4
-            aux_new_triangle[0] = point6;
-            aux_new_triangle[1] = point5;
-            aux_new_triangle[2] = point3;
-            ConditionsPointsSlave.push_back(aux_new_triangle);
-        }
-    }
-    
-    /**
      * This method checks if the whole array is true
      * @param AllInside The nodes that are inside or not the geometry
      * @return True if all the nodes are inside, false otherwise
@@ -438,9 +364,7 @@ protected:
 //         const double tolerance = std::numeric_limits<double>::epsilon();
 
         if (std::abs(denom) < tolerance) // NOTE: Collinear
-        {
             return false;
-        }
         
         const double s_orig1_dest1_x = PointOrig1.Coordinate(1) - PointDest1.Coordinate(1);
         const double s_orig1_dest1_y = PointOrig1.Coordinate(2) - PointDest1.Coordinate(2);
@@ -457,9 +381,7 @@ protected:
             return true;
         }
         else
-        {
             return false;
-        }
     }
     
     /**
@@ -497,9 +419,7 @@ protected:
     {
         array_1d<double, 3> local_edge = PointOrig2.Coordinates() - PointOrig1.Coordinates();
         if (norm_2(local_edge) > 0.0)
-        {
             local_edge /= norm_2(local_edge);
-        }
         
         const double xi  = inner_prod(Axis1, local_edge);
         const double eta = inner_prod(Axis2, local_edge);
@@ -520,7 +440,6 @@ protected:
         )
     {
         const double tolerance = std::numeric_limits<double>::epsilon();
-        
         return (norm_2(PointDest.Coordinates() - PointOrig.Coordinates()) < tolerance) ? true : false;
     }
     

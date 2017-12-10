@@ -42,7 +42,6 @@ class ALMContactProcess(python_process.PythonProcess):
             "tangent_factor"              : 0.1,
             "type_search"                 : "InRadius",
             "check_gap"                   : true,
-            "hard_clear_after_step"       : false,
             "database_step_update"        : 1,
             "integration_order"           : 3,
             "max_gap_factor"              : 0.0,
@@ -77,7 +76,6 @@ class ALMContactProcess(python_process.PythonProcess):
         self.database_step = 0
         self.frictional_law = self.params["frictional_law"].GetString()
         self.debug_mode = self.params["debug_mode"].GetBool()
-        self.hard_clear_after_step = self.params["hard_clear_after_step"].GetBool()
         
         # Debug
         if (self.debug_mode == True):
@@ -173,10 +171,7 @@ class ALMContactProcess(python_process.PythonProcess):
         self.contact_search.InitializeMortarConditions()
         
     def ExecuteBeforeSolutionLoop(self):
-        if self.params["contact_type"].GetString() == "Frictionless":  
-            self.contact_search.TotalClearALMFrictionlessMortarConditions()
-        else:
-            self.contact_search.TotalClearComponentsMortarConditions()
+        pass
     
     def ExecuteInitializeSolutionStep(self):
         self.database_step += 1
@@ -184,7 +179,9 @@ class ALMContactProcess(python_process.PythonProcess):
         
         if (self.database_step >= self.database_step_update or self.global_step == 1):
             # We solve one linear step with a linear strategy if needed
-            
+            # Clear current pairs
+            self._clear_sets(self.contact_search)
+            # Update database
             self.contact_search.UpdateMortarConditions()
             #self.contact_search.CheckMortarConditions()
                 
@@ -202,25 +199,18 @@ class ALMContactProcess(python_process.PythonProcess):
     def ExecuteAfterOutputStep(self):
         modified = self.main_model_part.Is(KratosMultiphysics.MODIFIED)
         if (modified == False and (self.database_step >= self.database_step_update or self.global_step == 1)):
-            self._clear_sets(self.contact_search, self.hard_clear_after_step)
+            self._clear_sets(self.contact_search)
+            self.database_step = 0
             
     def ExecuteFinalize(self):
         pass
 
-    def _clear_sets(self, contact_search, hard_clear_after_step):
-        if (hard_clear_after_step == True):
-            if self.params["contact_type"].GetString() == "Frictionless":  
-                contact_search.TotalClearALMFrictionlessMortarConditions()
-            else:
-                contact_search.TotalClearComponentsMortarConditions()
+    def _clear_sets(self, contact_search):
+        if self.params["contact_type"].GetString() == "Frictionless":  
+            contact_search.ClearALMFrictionlessMortarConditions()
         else:
-            if self.params["contact_type"].GetString() == "Frictionless":
-                contact_search.PartialClearALMFrictionlessMortarConditions()
-            else:
-                contact_search.PartialClearComponentsMortarConditions()
-                
-        self.database_step = 0
-        
+            contact_search.ClearComponentsMortarConditions()
+
     def _assign_slave_conditions(self):
         if (self.params["assume_master_slave"].GetString() == ""):
             for cond in self.contact_model_part.Conditions:
@@ -401,7 +391,7 @@ class ALMContactProcess(python_process.PythonProcess):
     
     def _reset_search(self):
         self.contact_search.InvertSearch()
-        self.contact_search.TotalResetContactOperators()
+        self.contact_search.ResetContactOperators()
         self.contact_search.CreatePointListMortar()
         self.contact_search.InitializeMortarConditions()
         

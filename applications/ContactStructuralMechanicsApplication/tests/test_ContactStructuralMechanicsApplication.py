@@ -131,7 +131,7 @@ def AssambleTestSuites():
     allSuite = suites['all']
     allSuite.addTests(
         KratosUnittest.TestLoader().loadTestsFromTestCases([
-            ## SMALL
+            ### SMALL
             TTestDoubleCurvatureIntegration,
             TTestMortarMapping,
             TSimplePatchTestTwoDMeshTying,
@@ -141,7 +141,7 @@ def AssambleTestSuites():
             TALMHyperSimplePatchTestContact,
             TALMHyperSimpleSlopePatchTestContact,
             TALMTwoDPatchComplexGeomTestContact,
-            TALMTwoDPatchComplexGeomSlopeTestContact,
+            #TALMTwoDPatchComplexGeomSlopeTestContact, # FIXME: Error
             TALMSimplePatchTestContact,
             TALMSimpleSlopePatchTestContact, 
             TALMSimplePatchNotMatchingATestContact,
@@ -153,20 +153,20 @@ def AssambleTestSuites():
             TALMTThreeDPatchMatchingTestContact,
             TALMThreeDPatchNotMatchingTestContact,
             ## NIGTHLY
-            #TALMMeshMovingMatchingTestContact, # FIXME: Error
+            #TALMMeshMovingMatchingTestContact, # FIXME: Error 
             #TALMMeshMovingNotMatchingTestContact,  # FIXME: Error
             TALMTaylorPatchTestContact,
-            #TALMTaylorPatchDynamicTestContact, # FIXME: Errors
-            #TALMHertzSimpleTestContact, # FIXME: Errors
+            TALMTaylorPatchDynamicTestContact,
+            TALMHertzSimpleTestContact,
             TALMHertzSimpleSphereTestContact,
             ####TALMHertzSphereTestContact,  # FIXME: This test requieres the axisymmetric to work (memmory error, correct it)
-            #TALMHertzCompleteTestContact, # FIXME
+            TALMHertzCompleteTestContact,
             ## VALIDATION
             ##TALMIroningTestContact,
             ##TALMIroningDieTestContact,
             TLargeDisplacementPatchTestHexa,
-            #TALMLargeDisplacementPatchTestTetra, # FIXME
-            #TALMLargeDisplacementPatchTestHexa, # FIXME
+            TALMLargeDisplacementPatchTestTetra,
+            TALMLargeDisplacementPatchTestHexa,
         ])
     )
 

@@ -14,7 +14,7 @@
 #define KRATOS_MAPPING_VARIABLES_H_INCLUDED
 
 // System includes
-#include <unordered_map>
+#include <unordered_set>
 
 // External includes
 
@@ -55,26 +55,26 @@ namespace Kratos
     
     /** @brief Custom Point container to be used by the mapper
     */
-    class IndexMap : public std::unordered_map<IndexType, IndexType>
+    class IndexSet : public std::unordered_set<IndexType>
     {
     public:
 
         ///@name Type Definitions
         ///@{
-        /// Counted pointer of IndexMap
-        KRATOS_CLASS_POINTER_DEFINITION( IndexMap );
+        /// Counted pointer of IndexSet
+        KRATOS_CLASS_POINTER_DEFINITION( IndexSet );
 
-        typedef std::unordered_map<IndexType, IndexType> BaseType;
+        typedef std::unordered_set<IndexType> BaseType;
         
         ///@}
         ///@name Life Cycle
         ///@{
 
         /// Default constructors
-        IndexMap(){}
+        IndexSet(){}
 
         /// Destructor
-        virtual ~IndexMap(){}
+        virtual ~IndexSet(){}
 
         ///@}
         ///@name Operators
@@ -106,7 +106,7 @@ namespace Kratos
         */     
         void AddId(const IndexType IndexOrigin)
         {
-            insert({IndexOrigin, 0});
+            insert({IndexOrigin});
         }
         
         /**
@@ -121,47 +121,6 @@ namespace Kratos
                 erase(set);
             }
         }
-        
-        /**
-        * It adds one new pair
-        * @param IndexOrigin The ID of the paired condition in the base model part
-        * @param IndexDestiny The ID of the paired condition in the auxiliar model part
-        */
-        void AddNewPair(
-            const IndexType IndexOrigin, 
-            const IndexType IndexDestiny
-            )
-        {
-            insert({IndexOrigin, IndexDestiny});
-        }
-        
-        /**
-        * It set updates the auxiliar condition index
-        * @param IndexOrigin The ID of the paired condition in the base model part
-        * @param IndexDestiny The ID of the paired condition in the auxiliar model part
-        */
-        void SetNewAuxiliarIndex(
-            const IndexType IndexOrigin, 
-            const IndexType IndexDestiny
-            )
-        {
-            BaseType::iterator set = find(IndexOrigin);
-            if(set != end())
-            {
-                set->second = IndexDestiny;
-            }
-        }
-        
-        /**
-        * It checks if one particular condition is active
-        * @param IndexOrigin The ID of the paired condition in the base model part
-        * @return  The ID of the paired condition in the auxiliar model part
-        */
-        IndexType GetAuxiliarIndex(const IndexType IndexOrigin) const 
-        {
-            BaseType::const_iterator set = find(IndexOrigin);
-            return (set->second);
-        }
 
         /**
          * Turn back information as a string.
@@ -170,9 +129,7 @@ namespace Kratos
         {
             std::stringstream buffer;
             for ( auto it = begin(); it != end(); ++it )
-            {
-                buffer << "The condition " << (it->first) << " is paired with: " << it->second;
-            }
+                buffer << "The condition " << *it << std::endl;
             return buffer.str();
         }
         
@@ -247,9 +204,9 @@ namespace Kratos
         ///@name Unaccessible methods
         ///@{
         ///@}
-    }; // Class IndexMap 
+    }; // Class IndexSet 
     
-    KRATOS_DEFINE_VARIABLE( IndexMap::Pointer, INDEX_MAP )         // An unordened map of which contains the indexes with the paired 
+    KRATOS_DEFINE_VARIABLE( IndexSet::Pointer, INDEX_SET )         // An unordened map of which contains the indexes with the paired 
     KRATOS_DEFINE_VARIABLE( double, TANGENT_FACTOR )               // The factor between the tangent and normal behaviour
 
 } // namespace Kratos
