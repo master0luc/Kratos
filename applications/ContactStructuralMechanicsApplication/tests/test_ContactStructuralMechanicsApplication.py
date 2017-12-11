@@ -131,7 +131,7 @@ def AssambleTestSuites():
     allSuite = suites['all']
     allSuite.addTests(
         KratosUnittest.TestLoader().loadTestsFromTestCases([
-            #### SMALL
+            ### SMALL
             TTestDoubleCurvatureIntegration,
             TTestMortarMapping,
             TSimplePatchTestTwoDMeshTying,
@@ -149,10 +149,10 @@ def AssambleTestSuites():
             TALMThreeDSimplestPatchMatchingTestContact,
             TALMThreeDSimplestPatchMatchingAdaptativeTestContact,
             TALMThreeDSimplestPatchMatchingSlopeTestContact,
-            #TALMThreeDPatchComplexGeomTestContact, # FIXME: Not working, was using deprecated search
+            TALMThreeDPatchComplexGeomTestContact,
             TALMTThreeDPatchMatchingTestContact,
             TALMThreeDPatchNotMatchingTestContact,
-            ## NIGTHLY
+            # NIGTHLY
             TALMMeshMovingMatchingTestContact, 
             TALMMeshMovingNotMatchingTestContact,
             TALMTaylorPatchTestContact,

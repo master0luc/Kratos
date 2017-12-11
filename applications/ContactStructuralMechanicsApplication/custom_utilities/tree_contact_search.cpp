@@ -504,12 +504,54 @@ inline void TreeContactSearch<TDim, TNumNodes>::AddPotentialPairing(
     IndexSet::Pointer IndexesSet
     )
 {
-    auto& geom = pCondSlave->GetGeometry();
-    for (unsigned int i_node = 0; i_node < geom.size(); ++i_node)
-        geom[i_node].Set(ACTIVE, true);
+    // Some auxiliar values
+    const double active_check_factor = mrMainModelPart.GetProcessInfo()[ACTIVE_CHECK_FACTOR];
+    const double tolerance = std::numeric_limits<double>::epsilon();
     
+    // Slave geometry
+    GeometryType& geom_slave = pCondSlave->GetGeometry();
+    const array_1d<double, 3>& normal_slave = pCondSlave->GetValue(NORMAL);
     for (unsigned int i_point = 0; i_point < NumberOfPointsFound; ++i_point )
-        AddPairing(ComputingModelPart, ConditionId, pCondSlave, PointsFound[i_point]->GetCondition(), IndexesSet);
+    {
+        bool at_least_one_node_potential_contact = false;
+        
+        // Master info
+        Condition::Pointer p_cond_master = PointsFound[i_point]->GetCondition();
+        const array_1d<double, 3>& normal_master = p_cond_master->GetValue(NORMAL);
+        GeometryType& geom_master = p_cond_master->GetGeometry();
+        
+        for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+        {
+            if (geom_slave[i_node].Is(ACTIVE) == false)
+            {
+                Point projected_point;
+                double aux_distance = 0.0;
+                const array_1d<double, 3> normal = geom_slave[i_node].GetValue(NORMAL);
+                if (norm_2(normal) < tolerance)
+                    aux_distance = MortarUtilities::FastProjectDirection(geom_master, geom_slave[i_node], projected_point, normal_master, normal_slave);
+                else
+                    aux_distance = MortarUtilities::FastProjectDirection(geom_master, geom_slave[i_node], projected_point, normal_master, normal);
+                
+                array_1d<double, 3> result;
+                if (aux_distance <= geom_slave[i_node].FastGetSolutionStepValue(NODAL_H) * active_check_factor &&  geom_master.IsInside(projected_point, result, tolerance)) // NOTE: This can be problematic (It depends the way IsInside() and the local_pointCoordinates() are implemented)
+                {
+                    at_least_one_node_potential_contact = true;
+                    geom_slave[i_node].Set(ACTIVE, true);
+                }
+                
+                aux_distance = MortarUtilities::FastProjectDirection(geom_master, geom_slave[i_node], projected_point, normal_master, -normal_master);
+                if (aux_distance <= geom_slave[i_node].FastGetSolutionStepValue(NODAL_H) * active_check_factor &&  geom_master.IsInside(projected_point, result, tolerance)) // NOTE: This can be problematic (It depends the way IsInside() and the local_pointCoordinates() are implemented)
+                {
+                    at_least_one_node_potential_contact = true;
+                    geom_slave[i_node].Set(ACTIVE, true);
+                }
+            }
+            else
+                at_least_one_node_potential_contact = true;
+        }
+    
+        if (at_least_one_node_potential_contact) AddPairing(ComputingModelPart, ConditionId, pCondSlave, p_cond_master, IndexesSet);
+    }
 }
 
 /***********************************************************************************/
@@ -583,36 +625,6 @@ inline void TreeContactSearch<TDim, TNumNodes>::CheckPairing(
         }
         else
             it_node->SetValue(NORMAL_GAP, 0.0);
-    }
-}
-
-/***********************************************************************************/
-/***********************************************************************************/
-
-template<unsigned int TDim, unsigned int TNumNodes>
-inline void TreeContactSearch<TDim, TNumNodes>::CheckAllActivePairing(
-    Condition::Pointer pCondSlave,
-    IndexSet::Pointer IndexesSet
-    )
-{
-    bool active = false;
-    GeometryType& geom = pCondSlave->GetGeometry();
-    for (unsigned int i_node = 0; i_node < geom.size(); ++i_node)
-    {
-        if (geom[i_node].Is(ACTIVE) == true) 
-        {
-            active = true;
-            break;
-        }
-    }
-    
-    if (active == false)
-    {
-        for (auto it_pair = IndexesSet->begin(); it_pair != IndexesSet->end(); ++it_pair )
-        {
-            Condition::Pointer p_cond_master = mrMainModelPart.pGetCondition(*it_pair);
-            IndexesSet->RemoveId(p_cond_master->Id());
-        }
     }
 }
 

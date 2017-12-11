@@ -288,16 +288,6 @@ protected:
         std::size_t& ConditionId
         );
     
-    /**
-     * This method checks the current pairing between two conditions/geometries
-     * @param pCondSlave The pointer to the slave condition
-     * @param IndexesSet The map of indexes considered
-     */
-    inline void CheckAllActivePairing(
-        Condition::Pointer pCondSlave,
-        IndexSet::Pointer IndexesSet
-        );
-    
     /**  
      * Calculates the minimal distance between one node and its center 
      * @return The radius of the geometry 
