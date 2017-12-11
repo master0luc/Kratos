@@ -108,9 +108,6 @@ TreeContactSearch<TDim, TNumNodes>::TreeContactSearch(
 template<unsigned int TDim, unsigned int TNumNodes>
 void TreeContactSearch<TDim, TNumNodes>::InitializeMortarConditions()
 {
-//     // The allocation size
-//     const unsigned int allocation_size = mThisParameters["allocation_size"].GetInt();
-    
     // Iterate in the conditions
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
     const int num_conditions = static_cast<int>(conditions_array.size());
@@ -123,7 +120,7 @@ void TreeContactSearch<TDim, TNumNodes>::InitializeMortarConditions()
         auto it_cond = conditions_array.begin() + i;
 
         if (it_cond->Has(INDEX_SET) == false) it_cond->SetValue(INDEX_SET, IndexSet::Pointer(new IndexSet)); 
-//             it_cond->GetValue(INDEX_SET)->reserve(allocation_size); 
+//             it_cond->GetValue(INDEX_SET)->reserve(mThisParameters["allocation_size"].GetInt()); 
     }
 }
 

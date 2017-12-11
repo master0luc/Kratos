@@ -253,17 +253,13 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
 {    
     // Resizing as needed the LHS
     if ( rCalculationFlags.Is( AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>::COMPUTE_LHS_MATRIX ) ) // Calculation of the matrix is required
-    {
         if ( rLeftHandSideMatrix.size1() != MatrixSize )
             rLeftHandSideMatrix.resize( MatrixSize, MatrixSize, false );
-    }
 
     // Resizing as needed the RHS
     if ( rCalculationFlags.Is( AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>::COMPUTE_RHS_VECTOR ) ) // Calculation of the matrix is required
-    {
         if ( rRightHandSideVector.size() != MatrixSize )
             rRightHandSideVector.resize( MatrixSize, false );
-    }
 }
 
 /***********************************************************************************/
@@ -514,9 +510,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
         
     #ifdef KRATOS_DEBUG
         if (dual_LM == false)
-        {
             std::cout << "WARNING:: NOT USING DUAL LM. Integration area: " << integration_area << "\tOriginal area: " << slave_geometry.Area() << "\tRatio: " << integration_area/slave_geometry.Area() << std::endl;
-        }
     #endif
         
         for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
@@ -581,7 +575,6 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
         // Assemble of the matrix is required
         if ( rLocalSystem.CalculationFlags.Is( AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>::COMPUTE_LHS_MATRIX ) )
         {
-            // Calculate the local contribution
             const bounded_matrix<double, MatrixSize, MatrixSize>& LHS_contact_pair = this->CalculateLocalLHS( rThisMortarConditionMatrices, rDerivativeData, active_inactive);
             rLocalSystem.GetLeftHandSideMatrix() = LHS_contact_pair;
         }
@@ -589,7 +582,6 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
         // Assemble of the vector is required
         if ( rLocalSystem.CalculationFlags.Is( AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>::COMPUTE_RHS_VECTOR ))
         {
-            // Calculate the local contribution
             const array_1d<double, MatrixSize>& RHS_contact_pair = this->CalculateLocalRHS( rThisMortarConditionMatrices, rDerivativeData, active_inactive);
             rLocalSystem.GetRightHandSideVector() = RHS_contact_pair;
         }
@@ -1100,9 +1092,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     const GeometryType::IntegrationPointsArrayType &integration_points = GetGeometry().IntegrationPoints();
         
     if ( rOutput.size() != integration_points.size() )
-    {
         rOutput.resize( integration_points.size() );
-    }
     
     for (unsigned int point_number = 0; point_number < integration_points.size(); ++point_number)
     {
@@ -1127,9 +1117,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     const GeometryType::IntegrationPointsArrayType &integration_points = GetGeometry().IntegrationPoints();
         
     if ( rOutput.size() != integration_points.size() )
-    {
         rOutput.resize( integration_points.size() );
-    }
     
     for (unsigned int point_number = 0; point_number < integration_points.size(); ++point_number)
     {
@@ -1154,9 +1142,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     const GeometryType::IntegrationPointsArrayType &integration_points = GetGeometry().IntegrationPoints();
         
     if ( rOutput.size() != integration_points.size() )
-    {
         rOutput.resize( integration_points.size() );
-    }
     
     for (unsigned int point_number = 0; point_number < integration_points.size(); ++point_number)
     {
