@@ -61,7 +61,7 @@ TreeContactSearch<TDim, TNumNodes>::TreeContactSearch(
         for(int i = 0; i < num_conditions; ++i) 
             (conditions_array.begin() + i)->Set(TO_ERASE, true);
         
-        computing_contact_model_part.RemoveConditions(TO_ERASE);
+        mrMainModelPart.RemoveConditionsFromAllLevels(TO_ERASE);
     }
     
     // Updating the base condition
@@ -370,8 +370,6 @@ void TreeContactSearch<TDim, TNumNodes>::UpdateMortarConditions()
 
     // We map the Coordinates to the slave side from the master
     if (mCheckGap == true) CheckPairing(computing_contact_model_part, condition_id);
-    
-    mrMainModelPart.RemoveConditions(TO_ERASE);
 }
 
 /***********************************************************************************/
@@ -676,7 +674,7 @@ void TreeContactSearch<TDim, TNumNodes>::ResetContactOperators()
     for(int i = 0; i < num_computing_conditions; ++i) 
         (computing_conditions_array.begin() + i)->Set(TO_ERASE, true);
     
-    computing_contact_model_part.RemoveConditions(TO_ERASE);
+    mrMainModelPart.RemoveConditionsFromAllLevels(TO_ERASE);
 }
 
 /***********************************************************************************/
