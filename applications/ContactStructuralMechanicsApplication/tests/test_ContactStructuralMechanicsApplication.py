@@ -131,7 +131,7 @@ def AssambleTestSuites():
     allSuite = suites['all']
     allSuite.addTests(
         KratosUnittest.TestLoader().loadTestsFromTestCases([
-            ### SMALL
+            #### SMALL
             TTestDoubleCurvatureIntegration,
             TTestMortarMapping,
             TSimplePatchTestTwoDMeshTying,
@@ -153,8 +153,8 @@ def AssambleTestSuites():
             TALMTThreeDPatchMatchingTestContact,
             TALMThreeDPatchNotMatchingTestContact,
             ## NIGTHLY
-            #TALMMeshMovingMatchingTestContact, # FIXME: Error 
-            #TALMMeshMovingNotMatchingTestContact,  # FIXME: Error
+            TALMMeshMovingMatchingTestContact, 
+            TALMMeshMovingNotMatchingTestContact,
             TALMTaylorPatchTestContact,
             TALMTaylorPatchDynamicTestContact,
             TALMHertzSimpleTestContact,

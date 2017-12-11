@@ -24,10 +24,9 @@
         "contact_settings":
         {
             "mortar_type"                    : "ALMContactFrictionless",
-            "contact_tolerance"              : 0.0e0,
             "ensure_contact"                 : true
         },
-        "block_builder"                      : true,
+        "block_builder"                      : false,
         "line_search"                        : false,
         "clear_storage"                      : true,
         "reform_dofs_at_each_step"           : true,
