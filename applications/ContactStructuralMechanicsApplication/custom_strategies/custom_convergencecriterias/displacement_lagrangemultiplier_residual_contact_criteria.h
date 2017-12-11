@@ -217,8 +217,8 @@ public:
             mDispCurrentResidualNorm = disp_residual_solution_norm;
             mLMCurrentResidualNorm = lm_residual_solution_norm;
             
-            TDataType residual_disp_ratio; 
-            TDataType residual_lm_ratio;
+            TDataType residual_disp_ratio = 1.0;
+            TDataType residual_lm_ratio = 1.0;
             
             // We initialize the solution
             if (mInitialResidualIsSet == false)
@@ -236,10 +236,7 @@ public:
             // We calculate the ratio of the LM
             residual_lm_ratio = mLMCurrentResidualNorm/mLMInitialResidualNorm;
 
-            if (mEnsureContact == true)
-            {
-                KRATOS_ERROR_IF(residual_lm_ratio == 0.0) << "WARNING::CONTACT LOST::ARE YOU SURE YOU ARE SUPPOSED TO HAVE CONTACT?" << std::endl;
-            }
+            KRATOS_ERROR_IF(mEnsureContact == true && residual_lm_ratio == 0.0) << "WARNING::CONTACT LOST::ARE YOU SURE YOU ARE SUPPOSED TO HAVE CONTACT?" << std::endl;
             
             // We calculate the absolute norms
             const TDataType residual_disp_abs = mDispCurrentResidualNorm/disp_dof_num;

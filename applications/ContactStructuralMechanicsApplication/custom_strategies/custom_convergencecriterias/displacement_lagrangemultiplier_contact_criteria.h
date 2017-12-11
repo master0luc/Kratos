@@ -218,11 +218,7 @@ public:
             if(lm_increase_norm == 0.0) lm_increase_norm = 1.0;
             if(disp_solution_norm == 0.0) disp_solution_norm = 1.0;
 
-            if(lm_solution_norm == 0.0)
-            {
-                lm_solution_norm = 1.0;
-                KRATOS_ERROR_IF(mEnsureContact) << "WARNING::CONTACT LOST::ARE YOU SURE YOU ARE SUPPOSED TO HAVE CONTACT?" << std::endl;
-            }
+            KRATOS_ERROR_IF(mEnsureContact == true && lm_solution_norm == 0.0) << "WARNING::CONTACT LOST::ARE YOU SURE YOU ARE SUPPOSED TO HAVE CONTACT?" << std::endl;
             
             TDataType disp_ratio = std::sqrt(disp_increase_norm/disp_solution_norm);
             TDataType lm_ratio = std::sqrt(lm_increase_norm/lm_solution_norm);

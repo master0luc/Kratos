@@ -137,8 +137,8 @@ public:
       ,mTableIsInitialized(rOther.mTableIsInitialized)
       ,mComputeConditionNumber(rOther.mComputeConditionNumber)
      {
-         BaseType::mpFirstCriterion   =  rOther.mpFirstCriterion;
-         BaseType::mpSecondCriterion  =  rOther.mpSecondCriterion;      
+         BaseType::mpFirstCriterion  = rOther.mpFirstCriterion;
+         BaseType::mpSecondCriterion = rOther.mpSecondCriterion;      
      }
 
     /** Destructor.
@@ -168,15 +168,10 @@ public:
         ) override
     {
         if (rModelPart.GetCommunicator().MyPID() == 0 && this->GetEchoLevel() > 0)
-        {
             if (mpTable != nullptr)
-            {
-                const unsigned int nl_iteration = rModelPart.GetProcessInfo()[NL_ITERATION_NUMBER];
-                mpTable->AddToRow<unsigned int>(nl_iteration);
-            }
-        }
+                mpTable->AddToRow<unsigned int>(rModelPart.GetProcessInfo()[NL_ITERATION_NUMBER]);
         
-        bool criterion_result = BaseType::PostCriteria(rModelPart,rDofSet,A,Dx,b);
+        bool criterion_result = BaseType::PostCriteria(rModelPart, rDofSet, A, Dx, b);
         
         if (mComputeConditionNumber == true)
         {
@@ -198,10 +193,8 @@ public:
         }
         
         if (criterion_result == true && rModelPart.GetCommunicator().MyPID() == 0 && this->GetEchoLevel() > 0)
-        {
             if (mpTable != nullptr)
                 mpTable->PrintFooter();
-        }
         
         return criterion_result;
     }
@@ -214,19 +207,13 @@ public:
     void Initialize(ModelPart& rModelPart) override
     {
         if (mpTable != nullptr && mTableIsInitialized == false)
-        {
-            auto& table = mpTable->GetTable();
-            table.AddColumn("ITER", 4);
-            mTableIsInitialized = true;
-        }
+            (mpTable->GetTable()).AddColumn("ITER", 4);
         
+        mTableIsInitialized = true;
         BaseType::Initialize(rModelPart);
          
         if (mpTable != nullptr && mComputeConditionNumber == true)
-        {
-            auto& table = mpTable->GetTable();
-            table.AddColumn("COND.NUM.", 10);
-        }
+            (mpTable->GetTable()).AddColumn("COND.NUM.", 10);
     }
 
     /**
@@ -250,13 +237,9 @@ public:
         {
             std::cout.precision(4);
             if (mPrintingOutput == false)
-            {
                 std::cout << "\n\n" << BOLDFONT("CONVERGENCE CHECK") << "\tSTEP: " << rModelPart.GetProcessInfo()[TIME_STEPS] << "\tTIME: " << std::scientific << rModelPart.GetProcessInfo()[TIME] << "\tDELTA TIME: " << std::scientific << rModelPart.GetProcessInfo()[DELTA_TIME] << std::endl;
-            }
             else
-            {
                 std::cout << "\n\n" << "CONVERGENCE CHECK" << "\tSTEP: " << rModelPart.GetProcessInfo()[TIME_STEPS] << "\tTIME: " << std::scientific << rModelPart.GetProcessInfo()[TIME] << "\tDELTA TIME: " << std::scientific << rModelPart.GetProcessInfo()[DELTA_TIME] << std::endl;
-            }
                 
             if (mpTable != nullptr)
                 mpTable->PrintHeader();
