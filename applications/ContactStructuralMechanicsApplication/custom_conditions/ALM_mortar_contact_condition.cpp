@@ -253,7 +253,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
 {    
     // Resizing as needed the LHS
     if ( rCalculationFlags.Is( AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>::COMPUTE_LHS_MATRIX ) ) // Calculation of the matrix is required
-        if ( rLeftHandSideMatrix.size1() != MatrixSize )
+        if ( rLeftHandSideMatrix.size1() != MatrixSize || rLeftHandSideMatrix.size2() != MatrixSize )
             rLeftHandSideMatrix.resize( MatrixSize, MatrixSize, false );
 
     // Resizing as needed the RHS
