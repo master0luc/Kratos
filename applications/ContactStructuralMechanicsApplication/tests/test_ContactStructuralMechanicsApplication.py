@@ -141,7 +141,7 @@ def AssambleTestSuites():
             TALMHyperSimplePatchTestContact,
             TALMHyperSimpleSlopePatchTestContact,
             TALMTwoDPatchComplexGeomTestContact,
-            #TALMTwoDPatchComplexGeomSlopeTestContact, # FIXME: Error
+            TALMTwoDPatchComplexGeomSlopeTestContact,
             TALMSimplePatchTestContact,
             TALMSimpleSlopePatchTestContact, 
             TALMSimplePatchNotMatchingATestContact,
