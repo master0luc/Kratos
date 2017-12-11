@@ -150,20 +150,17 @@ public:
         // Set to zero the weighted gap
         ResetWeightedGap(rModelPart);
         
-        ConditionsArrayType& conditions_array = rModelPart.GetSubModelPart("Contact").Conditions();
-
-        auto& r_process_info = rModelPart.GetProcessInfo();
+        ConditionsArrayType& conditions_array = rModelPart.GetSubModelPart("ComputingContact").Conditions();
+        
+    #ifdef KRATOS_DEBUG
+        if (conditions_array.size() == 0) std::cout << "WARNING:: YOUR COMPUTING CONTACT MODEL PART IS EMPTY" << std::endl;
+    #endif
         
     #ifdef _OPENMP
         #pragma omp parallel for 
     #endif
-        for(int i = 0; i < static_cast<int>(conditions_array.size()); i++) 
-        {
-            auto it_cond = conditions_array.begin() + i;
-            
-            if (it_cond->Is(ACTIVE))
-                it_cond->AddExplicitContribution(r_process_info);
-        }
+        for(int i = 0; i < static_cast<int>(conditions_array.size()); i++)
+            (conditions_array.begin() + i)->AddExplicitContribution(rModelPart.GetProcessInfo());
         
         return true;
     }

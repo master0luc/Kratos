@@ -164,12 +164,11 @@ public:
         const array_1d<double,3> zero_vector(0.0);
         
         NodesArrayType& nodes_array = rModelPart.GetSubModelPart("Contact").Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size());
 
     #ifdef _OPENMP
         #pragma omp parallel for 
     #endif
-        for(int i = 0; i < num_nodes; ++i) 
+        for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i) 
         {
             auto it_node = nodes_array.begin() + i;
             

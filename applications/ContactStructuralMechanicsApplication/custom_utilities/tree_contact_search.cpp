@@ -579,12 +579,11 @@ inline void TreeContactSearch<TDim, TNumNodes>::CheckPairing(
             // We compute the gap
             const array_1d<double, 3>& normal = it_node->FastGetSolutionStepValue(NORMAL);
             const auto& components_gap = ( it_node->Coordinates() - it_node->GetValue(AUXILIAR_COORDINATES));
-            double& weighted_gap = it_node->FastGetSolutionStepValue(WEIGHTED_GAP);
-            weighted_gap = inner_prod(components_gap, - normal); 
+            const double gap = inner_prod(components_gap, - normal);
             
             // We activate if the node is close enough
             const double active_check_length = it_node->FastGetSolutionStepValue(NODAL_H) * active_check_factor;
-            if (weighted_gap < active_check_length) it_node->Set(ACTIVE);
+            if (gap < active_check_length) it_node->Set(ACTIVE);
         }
     }
 }
