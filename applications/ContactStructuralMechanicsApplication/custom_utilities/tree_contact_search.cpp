@@ -80,13 +80,16 @@ TreeContactSearch<TDim, TNumNodes>::TreeContactSearch(
     }
     
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
-    const int num_nodes = static_cast<int>(nodes_array.size());
     
 #ifdef _OPENMP
     #pragma omp parallel for 
 #endif
-    for(int i = 0; i < num_nodes; ++i) 
-        (nodes_array.begin() + i)->Set(ACTIVE, false);
+    for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i) 
+    {
+        auto it_node = nodes_array.begin() + i;
+        it_node->Set(ACTIVE, false);
+        if (mCheckGap) it_node->SetValue(NORMAL_GAP, 0.0);
+    }
     
     // Iterate in the conditions
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
@@ -186,7 +189,6 @@ void TreeContactSearch<TDim, TNumNodes>::CreatePointListMortar()
     
     // Iterate in the conditions
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
-    const int num_conditions = static_cast<int>(conditions_array.size());
 
     // Creating a buffer for parallel vector fill
     const int num_threads = OpenMPUtils::GetNumThreads();
@@ -201,7 +203,7 @@ void TreeContactSearch<TDim, TNumNodes>::CreatePointListMortar()
     #ifdef _OPENMP
         #pragma omp for
     #endif
-        for(int i = 0; i < num_conditions; ++i) 
+        for(int i = 0; i < static_cast<int>(conditions_array.size()); ++i) 
         {
             auto it_cond = conditions_array.begin() + i;
             
@@ -216,9 +218,7 @@ void TreeContactSearch<TDim, TNumNodes>::CreatePointListMortar()
         #pragma omp single
         {
             for( auto& point_buffer : points_buffer)
-            {
                 std::move(point_buffer.begin(),point_buffer.end(),back_inserter(mPointListDestination));
-            }
         }
 #ifdef _OPENMP
     }
@@ -227,9 +227,7 @@ void TreeContactSearch<TDim, TNumNodes>::CreatePointListMortar()
 #ifdef KRATOS_DEBUG
     // NOTE: We check the list
     for (unsigned int i_point = 0; i_point < mPointListDestination.size(); ++i_point )
-    {
         mPointListDestination[i_point]->Check();
-    }
 //     std::cout << "The list is properly built" << std::endl;
 #endif
 }
@@ -580,11 +578,14 @@ inline void TreeContactSearch<TDim, TNumNodes>::CheckPairing(
             const array_1d<double, 3>& normal = it_node->FastGetSolutionStepValue(NORMAL);
             const auto& components_gap = ( it_node->Coordinates() - it_node->GetValue(AUXILIAR_COORDINATES));
             const double gap = inner_prod(components_gap, - normal);
+            it_node->SetValue(NORMAL_GAP, gap);
             
             // We activate if the node is close enough
             const double active_check_length = it_node->FastGetSolutionStepValue(NODAL_H) * active_check_factor;
             if (gap < active_check_length) it_node->Set(ACTIVE);
         }
+        else
+            it_node->SetValue(NORMAL_GAP, 0.0);
     }
 }
 

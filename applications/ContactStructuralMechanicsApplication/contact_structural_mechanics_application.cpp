@@ -92,6 +92,7 @@ void KratosContactStructuralMechanicsApplication::Register()
     KRATOS_REGISTER_VARIABLE( WEIGHTED_FRICTION )                               // The integrated friction coefficient
     KRATOS_REGISTER_VARIABLE( WEIGHTED_SCALAR_RESIDUAL )                        // The integrated scalar residual  
     KRATOS_REGISTER_3D_VARIABLE_WITH_COMPONENTS( WEIGHTED_VECTOR_RESIDUAL )     // The integrated vector residual    
+    KRATOS_REGISTER_VARIABLE( NORMAL_GAP )                                      // The normal gap employed in contact formulation
     
     /* For ALM mortar condition */
     KRATOS_REGISTER_VARIABLE( AUGMENTED_NORMAL_CONTACT_PRESSURE )               // The resultant augmented pressure in the normal direction

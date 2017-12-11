@@ -55,6 +55,7 @@ BOOST_PYTHON_MODULE(KratosContactStructuralMechanicsApplication)
     /* Mortar contact */
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( INTEGRATION_ORDER_CONTACT )                   // The integration order considered
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( ACTIVE_CHECK_FACTOR )                         // The factor employed to search an active/inactive node
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE( NORMAL_GAP )                                  // The normal gap employed in contact formulation
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( WEIGHTED_GAP )                                // The integrated gap employed in mortar formulation
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( WEIGHTED_SLIP )                               // The integrated slip employed in mortar formulation
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( WEIGHTED_SCALAR_RESIDUAL )                    // The integrated scalar residual  
