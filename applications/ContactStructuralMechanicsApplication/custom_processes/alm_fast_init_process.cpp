@@ -23,9 +23,6 @@ void ALMFastInit::Execute()
 {
     KRATOS_TRY;
     
-    // We initialize the zero vector
-    const array_1d<double, 3> zero_vector(3, 0.0);
-    
     // We differentiate between frictional or frictionless
     const bool is_frictional = mrThisModelPart.Is(SLIP);
     
@@ -36,7 +33,7 @@ void ALMFastInit::Execute()
     NodesArrayType& nodes_array = mrThisModelPart.Nodes();
     
 #ifdef _OPENMP
-    #pragma omp parallel for firstprivate(zero_vector)
+    #pragma omp parallel for
 #endif
     for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i) 
     {
@@ -63,10 +60,10 @@ void ALMFastInit::Execute()
     ConditionsArrayType& conditions_array = mrThisModelPart.Conditions();
     
 #ifdef _OPENMP
-    #pragma omp parallel for firstprivate(zero_vector)
+    #pragma omp parallel for
 #endif
     for(int i = 0; i < static_cast<int>(conditions_array.size()); ++i)
-        (conditions_array.begin() + i)->SetValue(NORMAL, zero_vector); // The normal and tangents vectors
+        (conditions_array.begin() + i)->SetValue(NORMAL, ZeroVector(3)); // The normal and tangents vectors
 
 
     KRATOS_CATCH("");

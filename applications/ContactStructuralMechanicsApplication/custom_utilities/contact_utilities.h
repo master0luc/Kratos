@@ -113,9 +113,6 @@ public:
     {
         // Tolerance
         const double tolerance = std::numeric_limits<double>::epsilon();
-
-        // Initialize normal vectors
-        const array_1d<double,3> zero_vect = ZeroVector(3);
         
         NodesArrayType& nodes_array = rModelPart.Nodes();
         const int num_nodes = static_cast<int>(nodes_array.size()); 
@@ -124,19 +121,15 @@ public:
         #pragma omp parallel for
     #endif
         for(int i = 0; i < num_nodes; ++i) 
-        {
-            auto it_node = nodes_array.begin() + i;
-            it_node->FastGetSolutionStepValue(NORMAL) = zero_vect;
-        }
+            noalias((nodes_array.begin() + i)->FastGetSolutionStepValue(NORMAL)) = ZeroVector(3);
         
         // Sum all the nodes normals
         ConditionsArrayType& conditions_array = rModelPart.Conditions();
-        const int num_conditions = static_cast<int>(conditions_array.size());
         
     #ifdef _OPENMP
         #pragma omp parallel for
     #endif
-        for(int i = 0; i < num_conditions; ++i) 
+        for(int i = 0; i < static_cast<int>(conditions_array.size()); ++i) 
         {
             auto it_cond = conditions_array.begin() + i;
             GeometryType& this_geometry = it_cond->GetGeometry();
@@ -206,9 +199,7 @@ public:
         const Vector new_delta_disp_center = prod(trans(new_delta_disp), N);
         
         for (unsigned int i = 0; i < new_delta_disp_center.size(); ++i)
-        {
             center.Coordinates()[i] += new_delta_disp_center[i];
-        }
         
         return center.Coordinates();
     }
@@ -237,9 +228,7 @@ public:
         { 
             const array_1d<double, 3> value = Nodes[i_node].FastGetSolutionStepValue(rVarName, Step); 
             for (unsigned int i_dof = 0; i_dof < dim; i_dof++) 
-            { 
                 var_matrix(i_node, i_dof) = value[i_dof]; 
-            } 
         } 
          
         return var_matrix; 
