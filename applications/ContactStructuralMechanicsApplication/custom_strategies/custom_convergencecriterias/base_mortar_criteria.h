@@ -117,10 +117,7 @@ public:
     {
         // We update the normals if necessary
         if (static_cast<NormalDerivativesComputation>(rModelPart.GetProcessInfo()[CONSIDER_NORMAL_VARIATION]) != NO_DERIVATIVES_COMPUTATION)
-        {
-            // Update normal of the conditions
-            ContactUtilities::ComputeNodesMeanNormalModelPart( rModelPart.GetSubModelPart("Contact") ); 
-        }
+            ContactUtilities::ComputeNodesMeanNormalModelPart( rModelPart.GetSubModelPart("Contact") ); // Update normal of the conditions
         
         // We recalculate the penalty parameter
         if (rModelPart.GetProcessInfo()[ADAPT_PENALTY] == true)
@@ -154,14 +151,13 @@ public:
         ResetWeightedGap(rModelPart);
         
         ConditionsArrayType& conditions_array = rModelPart.GetSubModelPart("Contact").Conditions();
-        const int num_conditions = static_cast<int>(conditions_array.size());
 
         auto& r_process_info = rModelPart.GetProcessInfo();
         
     #ifdef _OPENMP
         #pragma omp parallel for 
     #endif
-        for(int i = 0; i < num_conditions; i++) 
+        for(int i = 0; i < static_cast<int>(conditions_array.size()); i++) 
         {
             auto it_cond = conditions_array.begin() + i;
             
@@ -244,17 +240,12 @@ protected:
     virtual void ResetWeightedGap(ModelPart& rModelPart)
     {       
         NodesArrayType& nodes_array = rModelPart.GetSubModelPart("Contact").Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size());
 
     #ifdef _OPENMP
         #pragma omp parallel for 
     #endif
-        for(int i = 0; i < num_nodes; i++) 
-        {
-            auto it_node = nodes_array.begin() + i;
-            
-            it_node->FastGetSolutionStepValue(WEIGHTED_GAP) = 0.0;
-        }
+        for(int i = 0; i < static_cast<int>(nodes_array.size()); i++)
+            (nodes_array.begin() + i)->FastGetSolutionStepValue(WEIGHTED_GAP) = 0.0;
     }
     
     ///@}

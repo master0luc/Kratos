@@ -25,7 +25,6 @@
         "contact_settings":
         {
             "mortar_type"                    : "ALMContactFrictionless",
-            "contact_tolerance"              : 0.0e0,
             "ensure_contact"                 : true
         },
         "block_builder"                      : true,

@@ -76,7 +76,7 @@ public:
     
     typedef ModelPart::NodesContainerType                                 NodesArrayType;
     
-    typedef boost::shared_ptr<TableStreamUtility>                TablePrinterPointerType;
+    typedef TableStreamUtility::Pointer                          TablePrinterPointerType;
 
     ///@}
     ///@name Life Cycle
@@ -84,11 +84,9 @@ public:
     
     /// Default constructors
     ALMFrictionlessMortarConvergenceCriteria(
-        double Tolerance = std::numeric_limits<double>::epsilon(),
         TablePrinterPointerType pTable = nullptr,
         const bool PrintingOutput = false 
         ) : BaseMortarConvergenceCriteria< TSparseSpace, TDenseSpace >(),
-        mTolerance(Tolerance),
         mpTable(pTable),
         mPrintingOutput(PrintingOutput),
         mTableIsInitialized(false)
@@ -135,39 +133,36 @@ public:
         // Defining the convergence
         unsigned int is_converged = 0;
         
-//         const double& epsilon = rModelPart.GetProcessInfo()[INITIAL_PENALTY]; 
-        const double& scale_factor = rModelPart.GetProcessInfo()[SCALE_FACTOR]; 
+//         const double epsilon = rModelPart.GetProcessInfo()[INITIAL_PENALTY]; 
+        const double scale_factor = rModelPart.GetProcessInfo()[SCALE_FACTOR]; 
         
         NodesArrayType& nodes_array = rModelPart.GetSubModelPart("Contact").Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size());
 
     #ifdef _OPENMP
         #pragma omp parallel for 
     #endif
-        for(int i = 0; i < num_nodes; i++) 
+        for(int i = 0; i < static_cast<int>(nodes_array.size()); i++) 
         {
             auto it_node = nodes_array.begin() + i;
             
-            const double& epsilon = it_node->GetValue(INITIAL_PENALTY);
+            const double epsilon = it_node->GetValue(INITIAL_PENALTY);
             
             // Check if the node is slave
             bool node_is_slave = true;
-            if ((it_node)->IsDefined(SLAVE))
-            {
-                node_is_slave = (it_node)->Is(SLAVE);
-            }
+            if (it_node->IsDefined(SLAVE))
+                node_is_slave = it_node->Is(SLAVE);
             
             if (node_is_slave == true)
             {
-                const double augmented_normal_pressure = scale_factor * (it_node)->FastGetSolutionStepValue(NORMAL_CONTACT_STRESS) + epsilon * (it_node)->FastGetSolutionStepValue(WEIGHTED_GAP);     
+                const double augmented_normal_pressure = scale_factor * it_node->FastGetSolutionStepValue(NORMAL_CONTACT_STRESS) + epsilon * it_node->FastGetSolutionStepValue(WEIGHTED_GAP);     
                     
-                (it_node)->SetValue(AUGMENTED_NORMAL_CONTACT_PRESSURE, augmented_normal_pressure); // NOTE: This value is purely for debugging interest (to see the "effective" pressure)
+                it_node->SetValue(AUGMENTED_NORMAL_CONTACT_PRESSURE, augmented_normal_pressure); // NOTE: This value is purely for debugging interest (to see the "effective" pressure)
 
-                if (augmented_normal_pressure < mTolerance * scale_factor) // NOTE: This could be conflictive (< or <=)
+                if (augmented_normal_pressure < 0.0) // NOTE: This could be conflictive (< or <=)
                 {
-                    if ((it_node)->Is(ACTIVE) == false )
+                    if (it_node->Is(ACTIVE) == false )
                     {
-                        (it_node)->Set(ACTIVE, true);
+                        it_node->Set(ACTIVE, true);
                     #ifdef _OPENMP
                         #pragma omp atomic
                     #endif
@@ -176,9 +171,9 @@ public:
                 }
                 else
                 {
-                    if ((it_node)->Is(ACTIVE) == true )
+                    if (it_node->Is(ACTIVE) == true )
                     {
-                        (it_node)->Set(ACTIVE, false);
+                        it_node->Set(ACTIVE, false);
                     #ifdef _OPENMP
                         #pragma omp atomic
                     #endif
@@ -298,8 +293,6 @@ private:
     ///@}
     ///@name Member Variables
     ///@{
-    
-    double mTolerance;               // Tolerance considered in contact check
     
     TablePrinterPointerType mpTable; // Pointer to the fancy table 
     bool mPrintingOutput;            // If the colors and bold are printed

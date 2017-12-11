@@ -76,7 +76,7 @@ public:
     
     typedef ModelPart::NodesContainerType                                 NodesArrayType;
     
-    typedef boost::shared_ptr<TableStreamUtility>                TablePrinterPointerType;
+    typedef TableStreamUtility::Pointer                          TablePrinterPointerType;
 
     ///@}
     ///@name Life Cycle
@@ -84,11 +84,9 @@ public:
     
     /// Default constructors
     ALMFrictionalMortarConvergenceCriteria(        
-        double Tolerance = std::numeric_limits<double>::epsilon(),
         TablePrinterPointerType pTable = nullptr,
         const bool PrintingOutput = false
         ) : BaseMortarConvergenceCriteria< TSparseSpace, TDenseSpace >(),
-        mTolerance(Tolerance),
         mpTable(pTable),
         mPrintingOutput(PrintingOutput),
         mTableIsInitialized(false)
@@ -159,9 +157,9 @@ public:
         unsigned int is_converged_active = 0;
         unsigned int is_converged_slip = 0;
         
-//         const double& epsilon = rModelPart.GetProcessInfo()[INITIAL_PENALTY]; 
-        const double& scale_factor = rModelPart.GetProcessInfo()[SCALE_FACTOR];
-        const double& tangent_factor = rModelPart.GetProcessInfo()[TANGENT_FACTOR];
+//         const double epsilon = rModelPart.GetProcessInfo()[INITIAL_PENALTY]; 
+        const double scale_factor = rModelPart.GetProcessInfo()[SCALE_FACTOR];
+        const double tangent_factor = rModelPart.GetProcessInfo()[TANGENT_FACTOR];
         
         const array_1d<double,3> zero_vector(0.0);
         
@@ -175,14 +173,12 @@ public:
         {
             auto it_node = nodes_array.begin() + i;
             
-            const double& epsilon = it_node->GetValue(INITIAL_PENALTY); 
+            const double epsilon = it_node->GetValue(INITIAL_PENALTY); 
             
             // Check if the node is slave
             bool node_is_slave = true;
             if (it_node->IsDefined(SLAVE))
-            {
                 node_is_slave = it_node->Is(SLAVE);
-            }
             
             if (node_is_slave == true)
             {
@@ -194,7 +190,7 @@ public:
                 
                 it_node->SetValue(AUGMENTED_NORMAL_CONTACT_PRESSURE, augmented_normal_pressure); // NOTE: This value is purely for debugging interest (to see the "effective" pressure)
                 
-                if (augmented_normal_pressure < mTolerance * scale_factor) // NOTE: This could be conflictive (< or <=)
+                if (augmented_normal_pressure < 0.0) // NOTE: This could be conflictive (< or <=)
                 {
                     if (it_node->Is(ACTIVE) == false )
                     {
@@ -210,10 +206,10 @@ public:
                     const double lambda_tangent = norm_2(tangent_lagrange_multiplier); 
                     
                     // The friction coefficient
-                    const double& mu = it_node->GetValue(WEIGHTED_FRICTION);
+                    const double mu = it_node->GetValue(WEIGHTED_FRICTION);
                     
                     // Finally we compute the augmented tangent pressure
-                    const double& gt = it_node->FastGetSolutionStepValue(WEIGHTED_SLIP);
+                    const double gt = it_node->FastGetSolutionStepValue(WEIGHTED_SLIP);
                     const double augmented_tangent_pressure = std::abs(scale_factor * lambda_tangent + tangent_factor * epsilon * gt) + mu * augmented_normal_pressure;
                     
                     it_node->SetValue(AUGMENTED_TANGENT_CONTACT_PRESSURE, augmented_tangent_pressure); // NOTE: This value is purely for debugging interest (to see the "effective" pressure)
@@ -229,7 +225,7 @@ public:
                     }
                     else
                     {
-                        if (it_node->Is(SLIP) == false )
+                        if (it_node->Is(SLIP) == false)
                         {
                             it_node->Set(SLIP, true);
                         #ifdef _OPENMP
@@ -383,12 +379,11 @@ protected:
     void ResetWeightedGap(ModelPart& rModelPart) override
     {       
         NodesArrayType& nodes_array = rModelPart.GetSubModelPart("Contact").Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size());
 
     #ifdef _OPENMP
         #pragma omp parallel for 
     #endif
-        for(int i = 0; i < num_nodes; ++i) 
+        for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i) 
         {
             auto it_node = nodes_array.begin() + i;
             
@@ -417,8 +412,6 @@ private:
     ///@}
     ///@name Member Variables
     ///@{
-    
-    double mTolerance;               // Tolerance considered in contact check
     
     TablePrinterPointerType mpTable; // Pointer to the fancy table 
     bool mPrintingOutput;            // If the colors and bold are printed

@@ -30,16 +30,15 @@ void ALMFastInit::Execute()
     const bool is_frictional = mrThisModelPart.Is(SLIP);
     
     // We initialize the penalty parameter
-    const double& epsilon = mrThisModelPart.GetProcessInfo()[INITIAL_PENALTY];
+    const double epsilon = mrThisModelPart.GetProcessInfo()[INITIAL_PENALTY];
     
-    // We iterate over the node
+    // We iterate over the nodes
     NodesArrayType& nodes_array = mrThisModelPart.Nodes();
-    const int num_nodes = static_cast<int>(nodes_array.size());
     
 #ifdef _OPENMP
     #pragma omp parallel for firstprivate(zero_vector)
 #endif
-    for(int i = 0; i < num_nodes; ++i) 
+    for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i) 
     {
         auto it_node = nodes_array.begin() + i;
         
@@ -62,18 +61,13 @@ void ALMFastInit::Execute()
     
     // Now we iterate over the conditions
     ConditionsArrayType& conditions_array = mrThisModelPart.Conditions();
-    const int num_conditions = static_cast<int>(conditions_array.size());
     
 #ifdef _OPENMP
     #pragma omp parallel for firstprivate(zero_vector)
 #endif
-    for(int i = 0; i < num_conditions; ++i) 
-    {
-        auto it_cond = conditions_array.begin() + i;
-        
-        // The normal and tangents vectors
-        it_cond->SetValue(NORMAL, zero_vector);
-    }
+    for(int i = 0; i < static_cast<int>(conditions_array.size()); ++i)
+        (conditions_array.begin() + i)->SetValue(NORMAL, zero_vector); // The normal and tangents vectors
+
 
     KRATOS_CATCH("");
 } // class ALMFastInit

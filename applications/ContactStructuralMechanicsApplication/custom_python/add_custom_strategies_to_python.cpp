@@ -148,9 +148,8 @@ void  AddCustomStrategiesToPython()
             (
             "ALMFrictionlessMortarConvergenceCriteria", 
             init< >())
-            .def(init<double>())
-            .def(init<double, TablePrinterPointerType>())
-            .def(init<double, TablePrinterPointerType, bool>())
+            .def(init<TablePrinterPointerType>())
+            .def(init<TablePrinterPointerType, bool>())
             ;
             
     // Dual set strategy for SSNM Convergence Criterion (frictional case)
@@ -159,9 +158,8 @@ void  AddCustomStrategiesToPython()
             (
             "ALMFrictionalMortarConvergenceCriteria", 
             init< >())
-            .def(init<double>())
-            .def(init<double, TablePrinterPointerType>())
-            .def(init<double, TablePrinterPointerType, bool>())
+            .def(init<TablePrinterPointerType>())
+            .def(init<TablePrinterPointerType, bool>())
             ;
             
     // Displacement and lagrange multiplier Convergence Criterion

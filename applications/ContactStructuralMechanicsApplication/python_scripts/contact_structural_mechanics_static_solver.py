@@ -35,7 +35,6 @@ class StaticMechanicalSolver(structural_mechanics_static_solver.StaticMechanical
             "contact_settings" :
             {
                 "mortar_type"                            : "",
-                "contact_tolerance"                      : 0.0e0,
                 "condn_convergence_criterion"            : false,
                 "fancy_convergence_criterion"            : true,
                 "print_convergence_criterion"            : false,
@@ -134,7 +133,6 @@ class StaticMechanicalSolver(structural_mechanics_static_solver.StaticMechanical
         conv_params.AddValue("contact_residual_relative_tolerance",self.contact_settings["contact_residual_relative_tolerance"])
         conv_params.AddValue("contact_residual_absolute_tolerance",self.contact_settings["contact_residual_absolute_tolerance"])
         conv_params.AddValue("mortar_type",self.contact_settings["mortar_type"])
-        conv_params.AddValue("contact_tolerance",self.contact_settings["contact_tolerance"])
         conv_params.AddValue("condn_convergence_criterion",self.contact_settings["condn_convergence_criterion"])
         conv_params.AddValue("fancy_convergence_criterion",self.contact_settings["fancy_convergence_criterion"])
         conv_params.AddValue("print_convergence_criterion",self.contact_settings["print_convergence_criterion"])

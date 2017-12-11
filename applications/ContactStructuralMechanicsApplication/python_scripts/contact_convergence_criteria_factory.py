@@ -24,7 +24,6 @@ class convergence_criterion:
             CD_AT = convergence_criterion_parameters["contact_displacement_absolute_tolerance"].GetDouble()
             CR_RT = convergence_criterion_parameters["contact_residual_relative_tolerance"].GetDouble()
             CR_AT = convergence_criterion_parameters["contact_residual_absolute_tolerance"].GetDouble()
-            contact_tolerance = convergence_criterion_parameters["contact_tolerance"].GetDouble()
             condn_convergence_criterion = convergence_criterion_parameters["condn_convergence_criterion"].GetBool()
             fancy_convergence_criterion = convergence_criterion_parameters["fancy_convergence_criterion"].GetBool()
             print_convergence_criterion = convergence_criterion_parameters["print_convergence_criterion"].GetBool()
@@ -84,14 +83,14 @@ class convergence_criterion:
             # Adding the mortar criteria
             if  (convergence_criterion_parameters["mortar_type"].GetString() == "ALMContactFrictionless"):
                 if (fancy_convergence_criterion == True):
-                    Mortar = ContactStructuralMechanicsApplication.ALMFrictionlessMortarConvergenceCriteria(contact_tolerance, table, print_convergence_criterion)
+                    Mortar = ContactStructuralMechanicsApplication.ALMFrictionlessMortarConvergenceCriteria(table, print_convergence_criterion)
                 else:
-                    Mortar = ContactStructuralMechanicsApplication.ALMFrictionlessMortarConvergenceCriteria(contact_tolerance)
+                    Mortar = ContactStructuralMechanicsApplication.ALMFrictionlessMortarConvergenceCriteria()
             elif  (convergence_criterion_parameters["mortar_type"].GetString() == "ALMContactFrictional"):
                 if (fancy_convergence_criterion == True):
-                    Mortar = ContactStructuralMechanicsApplication.ALMFrictionalMortarConvergenceCriteria(contact_tolerance, table, print_convergence_criterion)
+                    Mortar = ContactStructuralMechanicsApplication.ALMFrictionalMortarConvergenceCriteria(table, print_convergence_criterion)
                 else:
-                    Mortar = ContactStructuralMechanicsApplication.ALMFrictionalMortarConvergenceCriteria(contact_tolerance)
+                    Mortar = ContactStructuralMechanicsApplication.ALMFrictionalMortarConvergenceCriteria()
             elif ("MeshTying" in convergence_criterion_parameters["mortar_type"].GetString()):
                 if (fancy_convergence_criterion == True):
                     Mortar = ContactStructuralMechanicsApplication.MeshTyingMortarConvergenceCriteria(table)
