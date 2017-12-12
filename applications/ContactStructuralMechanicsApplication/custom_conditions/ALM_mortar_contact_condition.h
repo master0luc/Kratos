@@ -209,16 +209,6 @@ public:
     * Called at the end of each iteration
     */
     void FinalizeNonLinearIteration(ProcessInfo& rCurrentProcessInfo) override;
-    
-    /**
-    * Initialize System Matrices
-    */
-    
-    void InitializeSystemMatrices( 
-        MatrixType& rLeftHandSideMatrix,
-        VectorType& rRightHandSideVector,
-        Flags& rCalculationFlags
-        );
 
     /**
     * Initialize Mass Matrix
@@ -427,40 +417,13 @@ public:
 protected:
     ///@name Protected static Member Variables
     ///@{
-    
-   /**
-    * This struct is used to store the flags and components of the local system
-    */
-    struct LocalSystem
-    {
-    private:
-        // For calculation local system with compacted LHS and RHS
-        MatrixType *mpLeftHandSideMatrix;
-        VectorType *mpRightHandSideVector;
-
-    public:
-        // Calculation flags
-        Flags  CalculationFlags;
-
-        /**
-        * Sets the value of a specified pointer variable
-        */
-        void SetLeftHandSideMatrix( MatrixType& rLeftHandSideMatrix ) { mpLeftHandSideMatrix = &rLeftHandSideMatrix; };
-
-        void SetRightHandSideVector( VectorType& rRightHandSideVector ) { mpRightHandSideVector = &rRightHandSideVector; };
-
-        /**
-        * Returns the value of a specified pointer variable
-        */
-        MatrixType& GetLeftHandSideMatrix() { return *mpLeftHandSideMatrix; };
-
-        VectorType& GetRightHandSideVector() { return *mpRightHandSideVector; };
-    };
 
     ///@}
     ///@name Protected member Variables
     ///@{
-
+    
+    Flags  mCalculationFlags;                            // Calculation flags
+    
     IntegrationMethod mThisIntegrationMethod;            // Integration order of the element
     
     unsigned int mIntegrationOrder;                      // The integration order to consider
@@ -521,7 +484,8 @@ protected:
      */
     
     void CalculateConditionSystem( 
-        LocalSystem& rLocalSystem,
+        MatrixType& rLeftHandSideMatrix,
+        VectorType& rRightHandSideVector,
         const ProcessInfo& CurrentProcessInfo 
         );
     

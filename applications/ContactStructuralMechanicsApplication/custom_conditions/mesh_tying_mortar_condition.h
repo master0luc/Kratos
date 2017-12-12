@@ -192,15 +192,6 @@ public:
     * Called at the end of each iteration
     */
     void FinalizeNonLinearIteration(ProcessInfo& rCurrentProcessInfo) override;
-    
-    /**
-    * Initialize System Matrices
-    */
-    void InitializeSystemMatrices( 
-        MatrixType& rLeftHandSideMatrix,
-        VectorType& rRightHandSideVector,
-        Flags& rCalculationFlags
-        );
 
     /**
     * Initialize Mass Matrix
@@ -368,35 +359,6 @@ protected:
     ///@name Protected static Member Variables
     ///@{
     
-   /**
-    * This struct is used to store the flags and components of the local system
-    */
-    struct LocalSystem
-    {
-    private:
-        // For calculation local system with compacted LHS and RHS
-        MatrixType *mpLeftHandSideMatrix;
-        VectorType *mpRightHandSideVector;
-
-    public:
-        // Calculation flags
-        Flags  CalculationFlags;
-
-        /**
-        * Sets the value of a specified pointer variable
-        */
-        void SetLeftHandSideMatrix( MatrixType& rLeftHandSideMatrix ) { mpLeftHandSideMatrix = &rLeftHandSideMatrix; };
-
-        void SetRightHandSideVector( VectorType& rRightHandSideVector ) { mpRightHandSideVector = &rRightHandSideVector; };
-
-        /**
-        * Returns the value of a specified pointer variable
-        */
-        MatrixType& GetLeftHandSideMatrix() { return *mpLeftHandSideMatrix; };
-
-        VectorType& GetRightHandSideVector() { return *mpRightHandSideVector; };
-    };
-
     /** 
      * This data will be used to compute teh derivatives
      */ 
@@ -469,6 +431,8 @@ protected:
     ///@name Protected member Variables
     ///@{
 
+    Flags  mCalculationFlags;                              // Calculation flags
+    
     MortarConditionMatrices mrThisMortarConditionMatrices; // The mortar operators
    
     unsigned int mIntegrationOrder;                        // The integration order to consider
@@ -520,12 +484,13 @@ protected:
         MatrixType& rLeftHandSideMatrix,
         ProcessInfo& rCurrentProcessInfo 
         ) override;
-
+        
     /**
      * Calculates the condition contribution
      */
     void CalculateConditionSystem( 
-        LocalSystem& rLocalSystem,
+        MatrixType& rLeftHandSideMatrix,
+        VectorType& rRightHandSideVector,
         const ProcessInfo& CurrentProcessInfo 
         );
     
@@ -563,22 +528,6 @@ protected:
     /********************************************************************************/
 
     /*
-     * Calculation and addition of the matrices of the LHS of a contact pair
-     */
-    
-    void CalculateAndAddLHS( 
-        LocalSystem& rLocalSystem,
-        const bounded_matrix<double, MatrixSize, MatrixSize>& LHS_contact_pair
-        )
-    {
-        /* SINGLE LHS MATRIX */
-        MatrixType& rLeftHandSideMatrix = rLocalSystem.GetLeftHandSideMatrix( );      
-        
-        // Assemble in the correct position
-        rLeftHandSideMatrix = LHS_contact_pair;
-    }
-
-    /*
      * Calculates the local contibution of the LHS
      */
     
@@ -586,22 +535,6 @@ protected:
         const MortarConditionMatrices& rMortarConditionMatrices,
         const DofData& rDofData
         );
-    
-    /*
-     * Calculation and addition fo the vectors of the RHS of a contact pair
-     */
-
-    void CalculateAndAddRHS( 
-        LocalSystem& rLocalSystem,
-        const array_1d<double, MatrixSize>& RHS_contact_pair
-        )
-    {
-        /* SINGLE RHS VECTOR */
-        VectorType& rRightHandSideVector = rLocalSystem.GetRightHandSideVector();
-        
-        // Assemble
-        rRightHandSideVector = RHS_contact_pair;
-    }
     
     /*
      * Calculates the local contibution of the LHS

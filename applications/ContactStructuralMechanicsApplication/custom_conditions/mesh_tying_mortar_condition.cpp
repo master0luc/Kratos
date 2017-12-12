@@ -243,22 +243,20 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateLocalSystem(
 {
     KRATOS_TRY;
 
-    // Create local system components
-    LocalSystem LocalSystem;
-
     // Calculation flags
-    LocalSystem.CalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX, true );
-    LocalSystem.CalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR, true );
-
-    // Initialize sizes for the system components:
-    this->InitializeSystemMatrices( rLeftHandSideMatrix, rRightHandSideVector, LocalSystem.CalculationFlags );
+    mCalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX, true );
+    mCalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR, true );
     
-    // Set Variables to Local system components
-    LocalSystem.SetLeftHandSideMatrix( rLeftHandSideMatrix );
-    LocalSystem.SetRightHandSideVector( rRightHandSideVector );
-
+    // Resizing as needed the LHS
+    if ( rLeftHandSideMatrix.size1() != MatrixSize || rLeftHandSideMatrix.size2() != MatrixSize )
+            rLeftHandSideMatrix.resize( MatrixSize, MatrixSize, false );
+    
+    // Resizing as needed the RHS
+    if ( rRightHandSideVector.size() != MatrixSize )
+        rRightHandSideVector.resize( MatrixSize, false );
+    
     // Calculate condition system
-    this->CalculateConditionSystem( LocalSystem, rCurrentProcessInfo );
+    CalculateConditionSystem(rLeftHandSideMatrix, rRightHandSideVector, rCurrentProcessInfo );
 
     KRATOS_CATCH( "" );
 }
@@ -272,23 +270,19 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateLeftHandSide
     ProcessInfo& rCurrentProcessInfo 
     )
 {
-    // Create local system components
-    LocalSystem LocalSystem;
-
     // Calculation flags
-    LocalSystem.CalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX, true );
+    mCalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX, true );
+    mCalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR, false);
 
-    VectorType RightHandSideVector = Vector( );
-
-    // Initialize sizes for the system components:
-    this->InitializeSystemMatrices( rLeftHandSideMatrix, RightHandSideVector, LocalSystem.CalculationFlags );
-
-    // Set Variables to Local system components
-    LocalSystem.SetLeftHandSideMatrix( rLeftHandSideMatrix );
-    LocalSystem.SetRightHandSideVector( RightHandSideVector );
+    // Resizing as needed the LHS
+    if ( rLeftHandSideMatrix.size1() != MatrixSize || rLeftHandSideMatrix.size2() != MatrixSize )
+        rLeftHandSideMatrix.resize( MatrixSize, MatrixSize, false );
+    
+    // Creating an auxiliar vector
+    VectorType aux_right_hand_side_vector = Vector();
 
     // Calculate condition system
-    this->CalculateConditionSystem( LocalSystem, rCurrentProcessInfo );
+    CalculateConditionSystem(rLeftHandSideMatrix, aux_right_hand_side_vector, rCurrentProcessInfo );
 }
 
 /***********************************************************************************/
@@ -300,52 +294,19 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateRightHandSid
     ProcessInfo& rCurrentProcessInfo 
     )
 {
-    // Create local system components
-    LocalSystem LocalSystem;
-
     // Calculation flags
-    LocalSystem.CalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR, true);
+    mCalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX, false);
+    mCalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR, true);
 
-    MatrixType LeftHandSideMatrix = Matrix( );
-
-    // Initialize size for the system components
-    this->InitializeSystemMatrices( LeftHandSideMatrix, rRightHandSideVector,LocalSystem.CalculationFlags);
-
-    //Set Variables to Local system components
-    LocalSystem.SetLeftHandSideMatrix( LeftHandSideMatrix );
-    LocalSystem.SetRightHandSideVector( rRightHandSideVector );
+    // Creating an auxiliar matrix
+    MatrixType aux_left_hand_side_matrix = Matrix();
+    
+    // Resizing as needed the RHS
+    if ( rRightHandSideVector.size() != MatrixSize )
+        rRightHandSideVector.resize( MatrixSize, false );
 
     // Calculate condition system
-    this->CalculateConditionSystem( LocalSystem, rCurrentProcessInfo );
-}
-
-/***********************************************************************************/
-/***********************************************************************************/
-
-template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
-void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::InitializeSystemMatrices( 
-    MatrixType& rLeftHandSideMatrix,
-    VectorType& rRightHandSideVector,
-    Flags& rCalculationFlags 
-    )
-{    
-    // Resizing as needed the LHS
-    if ( rCalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX ) ) // Calculation of the matrix is required
-    {
-        if ( rLeftHandSideMatrix.size1() != MatrixSize )
-        {
-            rLeftHandSideMatrix.resize( MatrixSize, MatrixSize, false );
-        }
-    }
-
-    // Resizing as needed the RHS
-    if ( rCalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR ) ) // Calculation of the matrix is required
-    {
-        if ( rRightHandSideVector.size() != MatrixSize )
-        {
-            rRightHandSideVector.resize( MatrixSize, false );
-        }
-    }
+    CalculateConditionSystem(aux_left_hand_side_matrix, rRightHandSideVector, rCurrentProcessInfo );
 }
 
 /***********************************************************************************/
@@ -385,7 +346,8 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateDampingMatri
 
 template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
 void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::CalculateConditionSystem( 
-    LocalSystem& rLocalSystem,
+    MatrixType& rLeftHandSideMatrix,
+    VectorType& rRightHandSideVector,
     const ProcessInfo& rCurrentProcessInfo
     )
 {
@@ -401,19 +363,19 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::CalculateConditionS
     rDofData.UpdateMasterPair(this->GetPairedGeometry());
     
     // Assemble of the matrix is required
-    if ( rLocalSystem.CalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX ) )
+    if ( mCalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX ) )
     {
         // Calculate the local contribution
         const bounded_matrix<double, MatrixSize, MatrixSize>& LHS_contact_pair = this->CalculateLocalLHS( mrThisMortarConditionMatrices, rDofData);
-        rLocalSystem.GetLeftHandSideMatrix() = LHS_contact_pair;
+        rLeftHandSideMatrix = LHS_contact_pair;
     }
     
     // Assemble of the vector is required
-    if ( rLocalSystem.CalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR ))
+    if ( mCalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR ))
     {
         // Calculate the local contribution
         const array_1d<double, MatrixSize>& RHS_contact_pair = this->CalculateLocalRHS( mrThisMortarConditionMatrices, rDofData);
-        rLocalSystem.GetRightHandSideVector() = RHS_contact_pair;
+        rRightHandSideVector = RHS_contact_pair;
     }
         
     KRATOS_CATCH( "" );
