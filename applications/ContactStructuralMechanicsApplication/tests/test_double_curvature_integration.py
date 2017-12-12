@@ -73,7 +73,7 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
         {
             "search_factor"               : 3.5,
             "allocation_size"             : 1000,
-            "check_gap"                   : false, 
+            "check_gap"                   : "NoCheck", 
             "type_search"                 : "InRadius"
         }
         """)

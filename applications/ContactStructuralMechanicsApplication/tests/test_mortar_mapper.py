@@ -67,6 +67,10 @@ class TestMortarMapping(KratosUnittest.TestCase):
         interface_parameters = KratosMultiphysics.Parameters("""{"simplify_geometry": false}""")
         Preprocess.GenerateInterfacePart3D(self.main_model_part, self.mapping_model_part, interface_parameters)
             
+        # We compute NODAL_H that can be used in the search and some values computation
+        find_nodal_h = KratosMultiphysics.FindNodalHProcess(self.mapping_model_part)
+        find_nodal_h.Execute()
+            
         # We copy the conditions to the ContactSubModelPart
         for cond in self.mapping_model_part.Conditions:
             interface_model_part.AddCondition(cond)    
@@ -83,7 +87,7 @@ class TestMortarMapping(KratosUnittest.TestCase):
         {
             "search_factor"               : 3.5,
             "allocation_size"             : 1000,
-            "check_gap"                   : false,
+            "check_gap"                   : "NoCheck",
             "type_search"                 : "InRadius"
         }
         """)
@@ -142,7 +146,7 @@ class TestMortarMapping(KratosUnittest.TestCase):
         self.mortar_mapping_double.Execute()
         self.mortar_mapping_vector.Execute()
         
-        ## DEBUG
+        ### DEBUG
         #self.__post_process()
         
         import from_json_check_result_process
@@ -223,7 +227,7 @@ class TestMortarMapping(KratosUnittest.TestCase):
                                                     "MultiFileFlag": "SingleFile"
                                                 },        
                                                 "nodal_results"       : ["DISPLACEMENT","NORMAL","TEMPERATURE"],
-                                                "nodal_nonhistorical_results": ["NODAL_AREA"],
+                                                "nodal_nonhistorical_results": ["NODAL_AREA","NODAL_MAUX","NODAL_VAUX"],
                                                 "nodal_flags_results": ["MASTER","SLAVE"]
                                             }
                                         }

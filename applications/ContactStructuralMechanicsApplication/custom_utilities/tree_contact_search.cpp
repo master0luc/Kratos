@@ -35,7 +35,7 @@ TreeContactSearch<TDim, TNumNodes>::TreeContactSearch(
         "bucket_size"                          : 4, 
         "search_factor"                        : 2.0, 
         "type_search"                          : "InRadius", 
-        "check_gap"                            : true, 
+        "check_gap"                            : "MappingCheck", 
         "condition_name"                       : "",  
         "final_string"                         : "",  
         "inverted_search"                      : false
@@ -43,7 +43,7 @@ TreeContactSearch<TDim, TNumNodes>::TreeContactSearch(
     
     mThisParameters.ValidateAndAssignDefaults(DefaultParameters);
     
-    mCheckGap = mThisParameters["check_gap"].GetBool();
+    mCheckGap = ConvertCheckGap(mThisParameters["check_gap"].GetString());
     mInvertedSearch = mThisParameters["inverted_search"].GetBool();
     
     // Check if the computing contact submodelpart
@@ -88,7 +88,7 @@ TreeContactSearch<TDim, TNumNodes>::TreeContactSearch(
     {
         auto it_node = nodes_array.begin() + i;
         it_node->Set(ACTIVE, false);
-        if (mCheckGap) it_node->SetValue(NORMAL_GAP, 0.0);
+        if (mCheckGap == MappingCheck) it_node->SetValue(NORMAL_GAP, 0.0);
     }
     
     // Iterate in the conditions
@@ -348,7 +348,7 @@ void TreeContactSearch<TDim, TNumNodes>::UpdateMortarConditions()
                 IndexSet::Pointer indexes_set = it_cond->GetValue(INDEX_SET);
                 
                 // If not active we check if can be potentially in contact
-                if (mCheckGap == true)
+                if (mCheckGap == MappingCheck)
                 {
                     for (unsigned int i_point = 0; i_point < number_points_found; ++i_point )
                     {
@@ -364,7 +364,7 @@ void TreeContactSearch<TDim, TNumNodes>::UpdateMortarConditions()
     }
 
     // We map the Coordinates to the slave side from the master
-    if (mCheckGap == true) CheckPairing(computing_contact_model_part, condition_id);
+    if (mCheckGap == MappingCheck) CheckPairing(computing_contact_model_part, condition_id);
 }
 
 /***********************************************************************************/
@@ -511,43 +511,55 @@ inline void TreeContactSearch<TDim, TNumNodes>::AddPotentialPairing(
     // Slave geometry
     GeometryType& geom_slave = pCondSlave->GetGeometry();
     const array_1d<double, 3>& normal_slave = pCondSlave->GetValue(NORMAL);
+    
     for (unsigned int i_point = 0; i_point < NumberOfPointsFound; ++i_point )
     {
         bool at_least_one_node_potential_contact = false;
         
-        // Master info
+        // Master condition
         Condition::Pointer p_cond_master = PointsFound[i_point]->GetCondition();
-        const array_1d<double, 3>& normal_master = p_cond_master->GetValue(NORMAL);
-        GeometryType& geom_master = p_cond_master->GetGeometry();
         
-        for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+        if (mCheckGap == DirectCheck)
         {
-            if (geom_slave[i_node].Is(ACTIVE) == false)
+            // Master geometry
+            const array_1d<double, 3>& normal_master = p_cond_master->GetValue(NORMAL);
+            GeometryType& geom_master = p_cond_master->GetGeometry();
+            
+            for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
             {
-                Point projected_point;
-                double aux_distance = 0.0;
-                const array_1d<double, 3> normal = geom_slave[i_node].GetValue(NORMAL);
-                if (norm_2(normal) < tolerance)
-                    aux_distance = MortarUtilities::FastProjectDirection(geom_master, geom_slave[i_node], projected_point, normal_master, normal_slave);
+                if (geom_slave[i_node].Is(ACTIVE) == false)
+                {
+                    Point projected_point;
+                    double aux_distance = 0.0;
+                    const array_1d<double, 3> normal = geom_slave[i_node].GetValue(NORMAL);
+                    if (norm_2(normal) < tolerance)
+                        aux_distance = MortarUtilities::FastProjectDirection(geom_master, geom_slave[i_node], projected_point, normal_master, normal_slave);
+                    else
+                        aux_distance = MortarUtilities::FastProjectDirection(geom_master, geom_slave[i_node], projected_point, normal_master, normal);
+                    
+                    array_1d<double, 3> result;
+                    if (aux_distance <= geom_slave[i_node].FastGetSolutionStepValue(NODAL_H) * active_check_factor &&  geom_master.IsInside(projected_point, result, tolerance)) // NOTE: This can be problematic (It depends the way IsInside() and the local_pointCoordinates() are implemented)
+                    {
+                        at_least_one_node_potential_contact = true;
+                        geom_slave[i_node].Set(ACTIVE, true);
+                    }
+                    
+                    aux_distance = MortarUtilities::FastProjectDirection(geom_master, geom_slave[i_node], projected_point, normal_master, -normal_master);
+                    if (aux_distance <= geom_slave[i_node].FastGetSolutionStepValue(NODAL_H) * active_check_factor &&  geom_master.IsInside(projected_point, result, tolerance)) // NOTE: This can be problematic (It depends the way IsInside() and the local_pointCoordinates() are implemented)
+                    {
+                        at_least_one_node_potential_contact = true;
+                        geom_slave[i_node].Set(ACTIVE, true);
+                    }
+                }
                 else
-                    aux_distance = MortarUtilities::FastProjectDirection(geom_master, geom_slave[i_node], projected_point, normal_master, normal);
-                
-                array_1d<double, 3> result;
-                if (aux_distance <= geom_slave[i_node].FastGetSolutionStepValue(NODAL_H) * active_check_factor &&  geom_master.IsInside(projected_point, result, tolerance)) // NOTE: This can be problematic (It depends the way IsInside() and the local_pointCoordinates() are implemented)
-                {
                     at_least_one_node_potential_contact = true;
-                    geom_slave[i_node].Set(ACTIVE, true);
-                }
-                
-                aux_distance = MortarUtilities::FastProjectDirection(geom_master, geom_slave[i_node], projected_point, normal_master, -normal_master);
-                if (aux_distance <= geom_slave[i_node].FastGetSolutionStepValue(NODAL_H) * active_check_factor &&  geom_master.IsInside(projected_point, result, tolerance)) // NOTE: This can be problematic (It depends the way IsInside() and the local_pointCoordinates() are implemented)
-                {
-                    at_least_one_node_potential_contact = true;
-                    geom_slave[i_node].Set(ACTIVE, true);
-                }
             }
-            else
-                at_least_one_node_potential_contact = true;
+        }
+        else
+        {
+            at_least_one_node_potential_contact = true;
+            for (unsigned int i_node = 0; i_node < TNumNodes; ++i_node)
+                geom_slave[i_node].Set(ACTIVE, true);
         }
     
         if (at_least_one_node_potential_contact) AddPairing(ComputingModelPart, ConditionId, pCondSlave, p_cond_master, IndexesSet);
@@ -702,6 +714,22 @@ SearchTreeType TreeContactSearch<TDim, TNumNodes>::ConvertSearchTree(const std::
         return Kdop;
     else
         return KdtreeInRadius;
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+template<unsigned int TDim, unsigned int TNumNodes>
+CheckGap TreeContactSearch<TDim, TNumNodes>::ConvertCheckGap(const std::string& str)
+{
+    if(str == "NoCheck") 
+        return NoCheck;
+    else if(str == "DirectCheck") 
+        return DirectCheck;
+    else if (str == "MappingCheck")
+        return MappingCheck;
+    else
+        return MappingCheck;
 }
 
 /***********************************************************************************/

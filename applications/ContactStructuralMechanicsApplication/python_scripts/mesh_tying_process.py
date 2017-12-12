@@ -33,7 +33,7 @@ class MeshTyingProcess(python_process.PythonProcess):
             "max_number_results"          : 1000,
             "bucket_size"                 : 4,
             "type_search"                 : "InRadius",
-            "check_gap"                   : true,
+            "check_gap"                   : "CheckMapping",
             "integration_order"           : 2
         }
         """)

@@ -47,6 +47,8 @@ namespace Kratos
     
     enum CheckResult {Fail = 0, AlreadyInTheMap = 1, OK = 2};
     
+    enum CheckGap {NoCheck = 0, DirectCheck = 1, MappingCheck = 2};
+    
 ///@}
 ///@name  Functions
 ///@{
@@ -303,6 +305,14 @@ protected:
     
     SearchTreeType ConvertSearchTree(const std::string& str);
     
+    /**
+     * This converts the framework string to an enum
+     * @param str The string
+     * @return CheckGap: The equivalent enum
+     */
+    
+    CheckGap ConvertCheckGap(const std::string& str);
+    
     ///@}
     ///@name Protected Operations
     ///@{
@@ -331,7 +341,7 @@ private:
   
     ModelPart& mrMainModelPart;                      // The main model part
     Parameters mThisParameters;                      // The configuration parameters
-    bool mCheckGap;                                  // If the gap is checked during the search
+    CheckGap mCheckGap;                              // If the gap is checked during the search
     bool mInvertedSearch;                            // The search will be done inverting the way master and slave/master is assigned
     std::string mConditionName;                      // The name of the condition to be created
     bool mCreateAuxiliarConditions;                  // If the auxiliar conditions are created or not

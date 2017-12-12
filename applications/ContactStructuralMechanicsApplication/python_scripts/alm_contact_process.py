@@ -41,7 +41,7 @@ class ALMContactProcess(python_process.PythonProcess):
             "scale_factor"                : 1.0e0,
             "tangent_factor"              : 0.1,
             "type_search"                 : "InRadius",
-            "check_gap"                   : true,
+            "check_gap"                   : "CheckMapping",
             "database_step_update"        : 1,
             "integration_order"           : 3,
             "max_gap_factor"              : 0.0,
