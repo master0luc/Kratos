@@ -207,7 +207,10 @@ public:
     void Initialize(ModelPart& rModelPart) override
     {
         if (mpTable != nullptr && mTableIsInitialized == false)
+        {
+            (mpTable->GetTable()).SetBold(!mPrintingOutput);
             (mpTable->GetTable()).AddColumn("ITER", 4);
+        }
         
         mTableIsInitialized = true;
         BaseType::Initialize(rModelPart);
