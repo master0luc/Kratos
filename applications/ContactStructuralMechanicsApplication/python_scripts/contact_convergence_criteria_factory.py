@@ -100,7 +100,50 @@ class convergence_criterion:
             Mortar.SetEchoLevel(echo_level)
 
             if (fancy_convergence_criterion == True):
-                self.mechanical_convergence_criterion = ContactStructuralMechanicsApplication.MortarAndConvergenceCriteria(self.mechanical_convergence_criterion, Mortar, table, print_convergence_criterion, condn_convergence_criterion)
+                
+                if (condn_convergence_criterion == True):
+                    # Construct the solver
+                    import eigen_solver_factory
+                    settings_max = KratosMultiphysics.Parameters("""
+                    {
+                        "solver_type"             : "power_iteration_highest_eigenvalue_solver",
+                        "max_iteration"           : 10000,
+                        "tolerance"               : 1e-9,
+                        "required_eigen_number"   : 1,
+                        "verbosity"               : 0,
+                        "linear_solver_settings"  : {
+                            "solver_type"             : "SuperLUSolver",
+                            "max_iteration"           : 500,
+                            "tolerance"               : 1e-9,
+                            "scaling"                 : false,
+                            "verbosity"               : 0
+                        }
+                    }
+                    """)
+                    eigen_solver_max = eigen_solver_factory.ConstructSolver(settings_max)
+                    settings_min = KratosMultiphysics.Parameters("""
+                    {
+                        "solver_type"             : "power_iteration_eigenvalue_solver",
+                        "max_iteration"           : 10000,
+                        "tolerance"               : 1e-9,
+                        "required_eigen_number"   : 1,
+                        "verbosity"               : 0,
+                        "linear_solver_settings"  : {
+                            "solver_type"             : "SuperLUSolver",
+                            "max_iteration"           : 500,
+                            "tolerance"               : 1e-9,
+                            "scaling"                 : false,
+                            "verbosity"               : 0
+                        }
+                    }
+                    """)
+                    eigen_solver_min = eigen_solver_factory.ConstructSolver(settings_min)
+                    
+                    condition_number_utility = KratosMultiphysics.ConditionNumberUtility(eigen_solver_max, eigen_solver_min)
+                else:
+                    condition_number_utility = None
+                
+                self.mechanical_convergence_criterion = ContactStructuralMechanicsApplication.MortarAndConvergenceCriteria(self.mechanical_convergence_criterion, Mortar, table, print_convergence_criterion, condition_number_utility)
             else:
                 self.mechanical_convergence_criterion = ContactStructuralMechanicsApplication.MortarAndConvergenceCriteria(self.mechanical_convergence_criterion, Mortar)
             self.mechanical_convergence_criterion.SetEchoLevel(echo_level)

@@ -57,6 +57,7 @@ void  AddCustomStrategiesToPython()
 {
     typedef TableStreamUtility::Pointer TablePrinterPointerType;
     typedef ProcessFactoryUtility::Pointer ProcessesListType;
+    typedef ConditionNumberUtility::Pointer ConditionNumberUtilityPointerType;
     
     typedef UblasSpace<double, CompressedMatrix, Vector> SparseSpaceType;
     typedef UblasSpace<double, Matrix, Vector> LocalSpaceType;
@@ -130,7 +131,7 @@ void  AddCustomStrategiesToPython()
             init<ConvergenceCriteriaPointer, ConvergenceCriteriaPointer>())
             .def(init<ConvergenceCriteriaPointer, ConvergenceCriteriaPointer,TablePrinterPointerType>())
             .def(init<ConvergenceCriteriaPointer, ConvergenceCriteriaPointer,TablePrinterPointerType, bool>())
-            .def(init<ConvergenceCriteriaPointer, ConvergenceCriteriaPointer,TablePrinterPointerType, bool, bool>())
+            .def(init<ConvergenceCriteriaPointer, ConvergenceCriteriaPointer,TablePrinterPointerType, bool, ConditionNumberUtilityPointerType>())
             ;
             
     // Weighted residual values update

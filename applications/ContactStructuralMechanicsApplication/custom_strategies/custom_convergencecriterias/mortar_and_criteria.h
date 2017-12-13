@@ -22,8 +22,7 @@
 #include "utilities/table_stream_utility.h"
 #include "solving_strategies/convergencecriterias/and_criteria.h"
 #include "utilities/color_utilities.h"
-#include "utilities/svd_utils.h"
-#include "linear_solvers/linear_solver.h"
+#include "utilities/condition_number_utility.h"
 
 namespace Kratos
 {
@@ -83,27 +82,29 @@ public:
 
     KRATOS_CLASS_POINTER_DEFINITION(MortarAndConvergenceCriteria );
 
-    typedef And_Criteria< TSparseSpace, TDenseSpace >            BaseType;
+    typedef And_Criteria< TSparseSpace, TDenseSpace >                BaseType;
 
-    typedef TSparseSpace                                  SparseSpaceType;
+    typedef TSparseSpace                                      SparseSpaceType;
 
-    typedef typename TSparseSpace::MatrixType            SparseMatrixType;
+    typedef typename TSparseSpace::MatrixType                SparseMatrixType;
 
-    typedef typename TSparseSpace::VectorType            SparseVectorType;
+    typedef typename TSparseSpace::VectorType                SparseVectorType;
 
-    typedef typename TDenseSpace::MatrixType              DenseMatrixType;
+    typedef typename TDenseSpace::MatrixType                  DenseMatrixType;
 
-    typedef typename TDenseSpace::VectorType              DenseVectorType;
+    typedef typename TDenseSpace::VectorType                  DenseVectorType;
     
-    typedef typename BaseType::TDataType                        TDataType;
+    typedef typename BaseType::TDataType                            TDataType;
 
-    typedef typename BaseType::DofsArrayType                DofsArrayType;
+    typedef typename BaseType::DofsArrayType                    DofsArrayType;
 
-    typedef typename BaseType::TSystemMatrixType        TSystemMatrixType;
+    typedef typename BaseType::TSystemMatrixType            TSystemMatrixType;
 
-    typedef typename BaseType::TSystemVectorType        TSystemVectorType;
+    typedef typename BaseType::TSystemVectorType            TSystemVectorType;
     
-    typedef TableStreamUtility::Pointer           TablePrinterPointerType;
+    typedef TableStreamUtility::Pointer               TablePrinterPointerType;
+    
+    typedef ConditionNumberUtility::Pointer ConditionNumberUtilityPointerType;
 
     ///@}
     ///@name Life Cycle
@@ -117,12 +118,12 @@ public:
         typename ConvergenceCriteria < TSparseSpace, TDenseSpace >::Pointer pSecondCriterion,
         TablePrinterPointerType pTable = nullptr,
         const bool PrintingOutput = false,
-        const bool ComputeConditionNumber = false
+        ConditionNumberUtilityPointerType pConditionNumberUtility = nullptr
         )
         :And_Criteria< TSparseSpace, TDenseSpace >(pFirstCriterion, pSecondCriterion),
         mpTable(pTable),
         mPrintingOutput(PrintingOutput),
-        mComputeConditionNumber(ComputeConditionNumber),
+        mpConditionNumberUtility(pConditionNumberUtility),
         mTableIsInitialized(false)
     {
     }
@@ -135,7 +136,7 @@ public:
       ,mpTable(rOther.mpTable)
       ,mPrintingOutput(rOther.mPrintingOutput)
       ,mTableIsInitialized(rOther.mTableIsInitialized)
-      ,mComputeConditionNumber(rOther.mComputeConditionNumber)
+      ,mpConditionNumberUtility(rOther.mpConditionNumberUtility)
      {
          BaseType::mpFirstCriterion  = rOther.mpFirstCriterion;
          BaseType::mpSecondCriterion = rOther.mpSecondCriterion;      
@@ -173,9 +174,10 @@ public:
         
         bool criterion_result = BaseType::PostCriteria(rModelPart, rDofSet, A, Dx, b);
         
-        if (mComputeConditionNumber == true)
+        if (mpConditionNumberUtility != nullptr)
         {
-            const double condition_number = SVDUtils<double>::SVDConditionNumber(A); // TODO: Use the new power iteration solver when avalaible
+            TSystemMatrixType copy_A; // NOTE: Can not be const 
+            const double condition_number = mpConditionNumberUtility->GetConditionNumberInternally(copy_A);
             
             if (mpTable != nullptr)
             {
@@ -215,7 +217,7 @@ public:
         mTableIsInitialized = true;
         BaseType::Initialize(rModelPart);
          
-        if (mpTable != nullptr && mComputeConditionNumber == true)
+        if (mpTable != nullptr && mpConditionNumberUtility != nullptr)
             (mpTable->GetTable()).AddColumn("COND.NUM.", 10);
     }
 
@@ -328,10 +330,10 @@ private:
     ///@name Member Variables
     ///@{
     
-    TablePrinterPointerType mpTable;                 // Pointer to the fancy table 
-    bool mPrintingOutput;                            // If the colors and bold are printed
-    bool mComputeConditionNumber;                    // If the condition number is computed
-    bool mTableIsInitialized;                        // If the table is already initialized
+    TablePrinterPointerType mpTable;                            // Pointer to the fancy table 
+    bool mPrintingOutput;                                       // If the colors and bold are printed
+    ConditionNumberUtilityPointerType mpConditionNumberUtility; // The utility to compute the condition number
+    bool mTableIsInitialized;                                   // If the table is already initialized
     
     ///@}
     ///@name Private Operators
