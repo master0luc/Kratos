@@ -575,6 +575,9 @@ inline void TreeContactSearch<TDim, TNumNodes>::CheckPairing(
     std::size_t& ConditionId
     )
 {
+    // Some auxiliar values
+    const double tolerance = std::numeric_limits<double>::epsilon();
+    
     // Iterate over the nodes
     ModelPart& contact_model_part = mrMainModelPart.GetSubModelPart("Contact");
     NodesArrayType& nodes_array = contact_model_part.Nodes();
@@ -627,13 +630,14 @@ inline void TreeContactSearch<TDim, TNumNodes>::CheckPairing(
         {
             // We compute the gap
             const array_1d<double, 3>& normal = it_node->FastGetSolutionStepValue(NORMAL);
-            const auto& components_gap = ( it_node->Coordinates() - it_node->GetValue(AUXILIAR_COORDINATES));
+            const array_1d<double, 3>& auxiliar_coordinates = it_node->GetValue(AUXILIAR_COORDINATES);
+            const array_1d<double, 3>& components_gap = ( it_node->Coordinates() - auxiliar_coordinates);
             const double gap = inner_prod(components_gap, - normal);
             it_node->SetValue(NORMAL_GAP, gap);
             
             // We activate if the node is close enough
             const double active_check_length = it_node->FastGetSolutionStepValue(NODAL_H) * active_check_factor;
-            if (gap < active_check_length) it_node->Set(ACTIVE);
+            if (gap < active_check_length && norm_2(auxiliar_coordinates) > tolerance) it_node->Set(ACTIVE);
         }
         else
             it_node->SetValue(NORMAL_GAP, 0.0);
