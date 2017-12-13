@@ -556,6 +556,16 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
             rRightHandSideVector = RHS_contact_pair;
         }
     }
+    else //If not inside we fill we zero the local matrices
+    {
+        // Assemble of the matrix is required
+        if ( mCalculationFlags.Is( AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>::COMPUTE_LHS_MATRIX ) )
+            rLeftHandSideMatrix = ZeroMatrix(MatrixSize, MatrixSize);
+        
+        // Assemble of the vector is required
+        if ( mCalculationFlags.Is( AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>::COMPUTE_RHS_VECTOR ))
+            rRightHandSideVector = ZeroVector(MatrixSize);
+    }
     
     KRATOS_CATCH( "" );
 }
