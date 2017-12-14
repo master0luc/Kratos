@@ -208,6 +208,7 @@ namespace Kratos
     
     KRATOS_DEFINE_VARIABLE( IndexSet::Pointer, INDEX_SET )         // An unordened map of which contains the indexes with the paired 
     KRATOS_DEFINE_VARIABLE( double, TANGENT_FACTOR )               // The factor between the tangent and normal behaviour
+    KRATOS_DEFINE_3D_VARIABLE_WITH_COMPONENTS( DELTA_COORDINATES ) // Delta coordinates used to map
 
 } // namespace Kratos
 

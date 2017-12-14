@@ -25,12 +25,13 @@ namespace Kratos
 
 namespace Python
 {
-    using namespace boost::python;
+using namespace boost::python;
 
-    void  AddMappingVariablesToPython()
-    {
-        KRATOS_REGISTER_IN_PYTHON_VARIABLE(TANGENT_FACTOR)
-    }
+void  AddMappingVariablesToPython()
+{
+    KRATOS_REGISTER_IN_PYTHON_VARIABLE(TANGENT_FACTOR)                       // The factor between the tangent and normal behaviour
+    KRATOS_REGISTER_IN_PYTHON_3D_VARIABLE_WITH_COMPONENTS(DELTA_COORDINATES) // Delta coordinates used to map
+}
 }  // namespace Python.
 } // Namespace Kratos
 
