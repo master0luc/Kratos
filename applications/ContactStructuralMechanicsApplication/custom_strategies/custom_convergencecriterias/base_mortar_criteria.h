@@ -19,6 +19,7 @@
 /* Project includes */
 #include "includes/define.h"
 #include "includes/model_part.h"
+#include "utilities/mortar_utilities.h"
 #include "custom_processes/aalm_adapt_penalty_value_process.h"
 #include "solving_strategies/convergencecriterias/convergence_criteria.h"
 
@@ -117,7 +118,7 @@ public:
     {
         // We update the normals if necessary
         if (static_cast<NormalDerivativesComputation>(rModelPart.GetProcessInfo()[CONSIDER_NORMAL_VARIATION]) != NO_DERIVATIVES_COMPUTATION)
-            ContactUtilities::ComputeNodesMeanNormalModelPart( rModelPart.GetSubModelPart("Contact") ); // Update normal of the conditions
+            MortarUtilities::ComputeNodesMeanNormalModelPart( rModelPart.GetSubModelPart("Contact") ); // Update normal of the conditions
         
         // We recalculate the penalty parameter
         if (rModelPart.GetProcessInfo()[ADAPT_PENALTY] == true)
@@ -193,7 +194,7 @@ public:
         ) override
     { 
         // Update normal of the conditions
-        ContactUtilities::ComputeNodesMeanNormalModelPart( rModelPart.GetSubModelPart("Contact") );  
+        MortarUtilities::ComputeNodesMeanNormalModelPart( rModelPart.GetSubModelPart("Contact") );  
     }
     
     ///@}

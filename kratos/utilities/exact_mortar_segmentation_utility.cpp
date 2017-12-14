@@ -789,13 +789,13 @@ template< unsigned int TDim, unsigned int TNumNodes, bool TBelong>
 void ExactMortarIntegrationUtility<TDim, TNumNodes, TBelong>::GetIntegrationMethod()
 {
     // Setting the auxiliar integration points
-	switch (mIntegrationOrder) {
-		case 1: mAuxIntegrationMethod = GeometryData::GI_GAUSS_1;
-		case 2: mAuxIntegrationMethod = GeometryData::GI_GAUSS_2;
-		case 3: mAuxIntegrationMethod = GeometryData::GI_GAUSS_3;
-		case 4: mAuxIntegrationMethod = GeometryData::GI_GAUSS_4;
-		case 5: mAuxIntegrationMethod = GeometryData::GI_GAUSS_5;
-		default: mAuxIntegrationMethod = GeometryData::GI_GAUSS_2;
+    switch (mIntegrationOrder) {
+        case 1: mAuxIntegrationMethod = GeometryData::GI_GAUSS_1;
+        case 2: mAuxIntegrationMethod = GeometryData::GI_GAUSS_2;
+        case 3: mAuxIntegrationMethod = GeometryData::GI_GAUSS_3;
+        case 4: mAuxIntegrationMethod = GeometryData::GI_GAUSS_4;
+        case 5: mAuxIntegrationMethod = GeometryData::GI_GAUSS_5;
+        default: mAuxIntegrationMethod = GeometryData::GI_GAUSS_2;
     }
 }
 
@@ -807,12 +807,12 @@ GeometryNodeType::IntegrationPointsArrayType ExactMortarIntegrationUtility<TDim,
 {
     // Setting the auxiliar integration points
     switch (mIntegrationOrder) {
-		case 1: return Quadrature<TriangleGaussLegendreIntegrationPoints1, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-		case 2: return Quadrature<TriangleGaussLegendreIntegrationPoints2, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-		case 3: return Quadrature<TriangleGaussLegendreIntegrationPoints3, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-		case 4: return Quadrature<TriangleGaussLegendreIntegrationPoints4, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-		case 5: return Quadrature<TriangleGaussLegendreIntegrationPoints5, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
-		default: return Quadrature<TriangleGaussLegendreIntegrationPoints2, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+        case 1: return Quadrature<TriangleGaussLegendreIntegrationPoints1, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+        case 2: return Quadrature<TriangleGaussLegendreIntegrationPoints2, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+        case 3: return Quadrature<TriangleGaussLegendreIntegrationPoints3, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+        case 4: return Quadrature<TriangleGaussLegendreIntegrationPoints4, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+        case 5: return Quadrature<TriangleGaussLegendreIntegrationPoints5, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
+        default: return Quadrature<TriangleGaussLegendreIntegrationPoints2, 2, IntegrationPoint<3> >::GenerateIntegrationPoints();
     }
 }
 

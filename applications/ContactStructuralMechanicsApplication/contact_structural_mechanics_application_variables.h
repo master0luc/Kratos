@@ -21,6 +21,7 @@
 #include "includes/define.h"
 #include "includes/kratos_application.h"
 #include "includes/variables.h"
+#include "includes/mapping_variables.h"
 
 namespace Kratos
 {
