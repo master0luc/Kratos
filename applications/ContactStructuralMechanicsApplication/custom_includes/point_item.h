@@ -165,24 +165,15 @@ public:
     
     /**
      * This function updates the database, using as base for the coordinates the condition center
-     * @param DeltaTime The increment in the time scheme
+     * @param Dynamic If the problem is dynamic or static
      */
 
-    void UpdatePoint(const double DeltaTime)
+    void UpdatePoint(const bool Dynamic)
     {        
-//         bool update_coordinates = false;
-//         if (mpOriginCond->GetGeometry()[0].SolutionStepsDataHas(VELOCITY_X) == true && DeltaTime > 0.0)
-//         {
-//             update_coordinates = true;
-//         }
-//         if (update_coordinates == true)
-//         {
-//             this->Coordinates() = ContactUtilities::GetHalfJumpCenter(mpOriginCond->GetGeometry(), DeltaTime); // NOTE: Center in half delta time
-//         }
-//         else
-//         {
+        if (Dynamic == true)
+            this->Coordinates() = ContactUtilities::GetHalfJumpCenter(mpOriginCond->GetGeometry()); // NOTE: Center in half delta time
+        else
             this->Coordinates() = mpOriginCond->GetGeometry().Center().Coordinates(); // NOTE: Real center
-//         }
     }
 
 protected:
