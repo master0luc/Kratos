@@ -42,7 +42,8 @@ SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::SimpleMortarMapperP
         "relative_convergence_tolerance"   : 1.0e-4,
         "max_number_iterations"            : 10,
         "integration_order"                : 2,
-        "inverted_master_slave_pairing"    : false
+        "inverted_master_slave_pairing"    : false,
+        "use_predicted_position"           : false
     })" );
     
     mThisParameters.ValidateAndAssignDefaults(DefaultParameters);
@@ -74,7 +75,8 @@ SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::SimpleMortarMapperP
         "relative_convergence_tolerance"   : 1.0e-4,
         "max_number_iterations"            : 10,
         "integration_order"                : 2,
-        "inverted_master_slave_pairing"    : false
+        "inverted_master_slave_pairing"    : false,
+        "use_predicted_position"           : false
     })" );
     
     mThisParameters.ValidateAndAssignDefaults(DefaultParameters);
@@ -485,6 +487,22 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteExplici
 {
     KRATOS_TRY;
 
+    // If the position of the geometry has been updated
+    const bool predicted_position = mThisParameters["use_predicted_position"].GetBool();
+    
+    // We update the coordinates
+    if (predicted_position == true)
+    {
+        NodesArrayType& update_nodes_array = mrThisModelPart.Nodes();
+        
+        #pragma omp parallel for
+        for(int i = 0; i < static_cast<int>(update_nodes_array.size()); ++i) 
+            noalias((update_nodes_array.begin() + i)->Coordinates()) += (update_nodes_array.begin() + i)->GetValue(DELTA_COORDINATES);
+    }
+    
+    // Calculate the mean of the normal in all the nodes
+    MortarUtilities::ComputeNodesMeanNormalModelPart(mrThisModelPart); 
+    
     // Defining tolerance
     const double relative_convergence_tolerance = mThisParameters["relative_convergence_tolerance"].GetDouble();
     const double absolute_convergence_tolerance = mThisParameters["absolute_convergence_tolerance"].GetDouble();
@@ -646,6 +664,19 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteExplici
         iteration += 1;
     }
     
+    // We revert the coordinates to the original position
+    if (predicted_position == true)
+    {
+        NodesArrayType& update_nodes_array = mrThisModelPart.Nodes();
+        
+        #pragma omp parallel for
+        for(int i = 0; i < static_cast<int>(update_nodes_array.size()); ++i) 
+            noalias((update_nodes_array.begin() + i)->Coordinates()) -= (update_nodes_array.begin() + i)->GetValue(DELTA_COORDINATES);
+        
+        // Calculate the mean of the normal in all the nodes
+        MortarUtilities::ComputeNodesMeanNormalModelPart(mrThisModelPart); 
+    }
+    
     KRATOS_CATCH("");
 }
 
@@ -657,6 +688,22 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteImplici
 {
     KRATOS_TRY;
 
+    // If the position of the geometry has been updated
+    const bool predicted_position = mThisParameters["use_predicted_position"].GetBool();
+    
+    // We update the coordinates
+    if (predicted_position == true)
+    {
+        NodesArrayType& update_nodes_array = mrThisModelPart.Nodes();
+        
+        #pragma omp parallel for
+        for(int i = 0; i < static_cast<int>(update_nodes_array.size()); ++i) 
+            noalias((update_nodes_array.begin() + i)->Coordinates()) += (update_nodes_array.begin() + i)->GetValue(DELTA_COORDINATES);
+    }
+    
+    // Calculate the mean of the normal in all the nodes
+    MortarUtilities::ComputeNodesMeanNormalModelPart(mrThisModelPart); 
+    
     // Defining tolerance
     const double relative_convergence_tolerance = mThisParameters["relative_convergence_tolerance"].GetDouble();
     const double absolute_convergence_tolerance = mThisParameters["absolute_convergence_tolerance"].GetDouble();
@@ -676,9 +723,7 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteImplici
     std::vector<bool> is_converged(variable_size, false);
     MatrixType A(system_size, system_size);
     for (std::size_t i = 0; i < system_size; ++i)
-    {
         A.push_back(i, i, 0.0); 
-    }
     const VectorType zero_vector = ZeroVector(system_size);
     std::vector<VectorType> b(variable_size, zero_vector);
     std::vector<double> norm_b0(variable_size, 0.0);
@@ -795,6 +840,19 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteImplici
         }
         
         iteration += 1;
+    }
+    
+    // We revert the coordinates to the original position
+    if (predicted_position == true)
+    {
+        NodesArrayType& update_nodes_array = mrThisModelPart.Nodes();
+        
+        #pragma omp parallel for
+        for(int i = 0; i < static_cast<int>(update_nodes_array.size()); ++i) 
+            noalias((update_nodes_array.begin() + i)->Coordinates()) -= (update_nodes_array.begin() + i)->GetValue(DELTA_COORDINATES);
+        
+        // Calculate the mean of the normal in all the nodes
+        MortarUtilities::ComputeNodesMeanNormalModelPart(mrThisModelPart); 
     }
     
     KRATOS_CATCH(""); 

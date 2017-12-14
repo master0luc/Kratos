@@ -230,7 +230,12 @@ protected:
     ///@}
     ///@name Protected Operators
     ///@{
-            
+         
+    /**
+     * This method initializes the acceleraction when there is a volume acceleration
+     */
+    inline void InitializeAcceleration();
+    
     /**
      * It check the conditions if they are correctly detected
      * @return ConditionPointers1: A vector containing the pointers to the conditions 

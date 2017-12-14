@@ -105,84 +105,46 @@ public:
     }
     
     /**
-     * It computes the mean of the normal in the condition in all the nodes
-     * @param rModelPart The model part to compute
+     * It calculates the center updated in u_n+1 or u_n+1/2
+     * @param rThisModelPart The modelpart to update
+     * @param DeltaTime The increment of time considered
      */
     
-    static inline void ComputeNodesMeanNormalModelPart(ModelPart& rModelPart) 
+    static inline void ComputeStepJump(
+        ModelPart& rThisModelPart,
+        const double DeltaTime,
+        const bool HalfJump = true
+        )
     {
-        // Tolerance
-        const double tolerance = std::numeric_limits<double>::epsilon();
+        // Time constants 
+        const double velocity_constant = HalfJump ? 0.25 : 0.5;     
+        const double acceleration_constant = HalfJump ? 0.125 : 0.25;
         
-        NodesArrayType& nodes_array = rModelPart.Nodes();
-        const int num_nodes = static_cast<int>(nodes_array.size()); 
-        
-    #ifdef _OPENMP
-        #pragma omp parallel for
-    #endif
-        for(int i = 0; i < num_nodes; ++i) 
-            noalias((nodes_array.begin() + i)->FastGetSolutionStepValue(NORMAL)) = ZeroVector(3);
-        
-        // Sum all the nodes normals
-        ConditionsArrayType& conditions_array = rModelPart.Conditions();
-        
-    #ifdef _OPENMP
-        #pragma omp parallel for
-    #endif
-        for(int i = 0; i < static_cast<int>(conditions_array.size()); ++i) 
-        {
-            auto it_cond = conditions_array.begin() + i;
-            GeometryType& this_geometry = it_cond->GetGeometry();
-            
-            // Aux coordinates
-            CoordinatesArrayType aux_coords;
-            aux_coords = this_geometry.PointLocalCoordinates(aux_coords, this_geometry.Center());
-            
-            it_cond->SetValue(NORMAL, this_geometry.UnitNormal(aux_coords));
-            
-            const unsigned int number_nodes = this_geometry.PointsNumber();
-            
-            for (unsigned int i = 0; i < number_nodes; ++i)
-            {
-                auto& this_node = this_geometry[i];
-                aux_coords = this_geometry.PointLocalCoordinates(aux_coords, this_node.Coordinates());
-                const array_1d<double, 3>& normal = this_geometry.UnitNormal(aux_coords);
-                auto& aux_normal = this_node.FastGetSolutionStepValue(NORMAL);
-                for (unsigned int index = 0; index < 3; ++index)
-                {
-                #ifdef _OPENMP
-                    #pragma omp atomic
-                #endif
-                    aux_normal[index] += normal[index];
-                }
-            }
-        }
-
+        // Iterate over the nodes
+        NodesArrayType& nodes_array = rThisModelPart.Nodes();
+    
+        // We compute the half jump
     #ifdef _OPENMP
         #pragma omp parallel for 
     #endif
-        for(int i = 0; i < num_nodes; ++i) 
+        for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i) 
         {
             auto it_node = nodes_array.begin() + i;
-
-            array_1d<double, 3>& normal = it_node->FastGetSolutionStepValue(NORMAL);
-            const double norm_normal = norm_2(normal);
-            if (norm_normal > tolerance) normal /= norm_normal;
-            else KRATOS_ERROR << "WARNING:: ZERO NORM NORMAL IN NODE: " << it_node->Id() << std::endl;
+            array_1d<double, 3> new_delta_disp = velocity_constant * DeltaTime * (it_node->FastGetSolutionStepValue(VELOCITY) + it_node->FastGetSolutionStepValue(VELOCITY, 1)) + acceleration_constant * std::pow(DeltaTime, 2) * it_node->FastGetSolutionStepValue(ACCELERATION);
+            if (it_node->IsFixed(DISPLACEMENT_X)) new_delta_disp[0] = 0.0;
+            if (it_node->IsFixed(DISPLACEMENT_Y)) new_delta_disp[1] = 0.0;
+            if (it_node->IsFixed(DISPLACEMENT_Z)) new_delta_disp[2] = 0.0;
+            it_node->SetValue(DELTA_COORDINATES, new_delta_disp);
         }
     }
-
+    
     /**
      * It calculates the center updated in u_n+1/2
      * @param ThisGeometry The geometry to calculate
-     * @param DeltaTime The increment of time considered
      * @return point: The center in u_n+1/2 (Newmark)
      */
     
-    static inline array_1d<double, 3> GetHalfJumpCenter(
-        GeometryType& ThisGeometry,
-        const double DeltaTime
-        )
+    static inline array_1d<double, 3> GetHalfJumpCenter(GeometryType& ThisGeometry)
     {
         PointType center = ThisGeometry.Center();
         
@@ -194,9 +156,11 @@ public:
         ThisGeometry.PointLocalCoordinates( local_point, center.Coordinates() );
         ThisGeometry.ShapeFunctionsValues( N, local_point );
         
-        const Matrix new_delta_disp = 0.25 * DeltaTime * (GetVariableMatrix(ThisGeometry, VELOCITY, 0) + GetVariableMatrix(ThisGeometry, VELOCITY, 1)) + 0.125 * DeltaTime * DeltaTime * GetVariableMatrix(ThisGeometry, ACCELERATION, 1);
-        
-        const Vector new_delta_disp_center = prod(trans(new_delta_disp), N);
+    #ifdef KRATOS_DEBUG
+        KRATOS_ERROR_IF(ThisGeometry[0].Has(DELTA_COORDINATES) == false) << "WARNING:: Please call ComputeStepJump() first" << std::endl;
+    #endif
+
+        const Vector new_delta_disp_center = prod(trans(GetVariableMatrix(ThisGeometry, DELTA_COORDINATES)), N);
         
         for (unsigned int i = 0; i < new_delta_disp_center.size(); ++i)
             center.Coordinates()[i] += new_delta_disp_center[i];
@@ -215,8 +179,7 @@ public:
      
     static inline Matrix GetVariableMatrix( 
         const GeometryType& Nodes, 
-        const Variable<array_1d<double,3> >& rVarName, 
-        const unsigned int Step 
+        const Variable<array_1d<double,3> >& rVarName
         ) 
     { 
         /* DEFINITIONS */         
@@ -226,7 +189,7 @@ public:
          
         for (unsigned int i_node = 0; i_node < num_nodes; i_node++) 
         { 
-            const array_1d<double, 3> value = Nodes[i_node].FastGetSolutionStepValue(rVarName, Step); 
+            const array_1d<double, 3> value = Nodes[i_node].GetValue(rVarName); 
             for (unsigned int i_dof = 0; i_dof < dim; i_dof++) 
                 var_matrix(i_node, i_dof) = value[i_dof]; 
         } 

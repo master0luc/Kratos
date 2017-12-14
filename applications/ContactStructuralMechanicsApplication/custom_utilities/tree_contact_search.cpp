@@ -14,6 +14,8 @@
 // External includes
 
 // Project includes
+#include "utilities/mortar_utilities.h"
+
 /* Custom utilities */
 #include "custom_utilities/contact_utilities.h"
 #include "custom_utilities/tree_contact_search.h"
@@ -79,6 +81,7 @@ TreeContactSearch<TDim, TNumNodes>::TreeContactSearch(
         mConditionName.append(mThisParameters["final_string"].GetString());
     }
     
+    // We iterate over the nodes
     NodesArrayType& nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
     
 #ifdef _OPENMP
@@ -107,7 +110,7 @@ TreeContactSearch<TDim, TNumNodes>::TreeContactSearch(
 
 template<unsigned int TDim, unsigned int TNumNodes>
 void TreeContactSearch<TDim, TNumNodes>::InitializeMortarConditions()
-{
+{    
     // Iterate in the conditions
     ConditionsArrayType& conditions_array = mrMainModelPart.GetSubModelPart("Contact").Conditions();
     const int num_conditions = static_cast<int>(conditions_array.size());
@@ -235,14 +238,21 @@ void TreeContactSearch<TDim, TNumNodes>::CreatePointListMortar()
 template<unsigned int TDim, unsigned int TNumNodes>
 void TreeContactSearch<TDim, TNumNodes>::UpdatePointListMortar()
 {
-    const double delta_time = mrMainModelPart.GetProcessInfo()[DELTA_TIME];
+    // We initialize the acceleration
+    if (mrMainModelPart.GetProcessInfo()[TIME_STEPS] == 1) 
+        InitializeAcceleration();
     
-    const int num_points = static_cast<int>(mPointListDestination.size());
+    // We check if we are in a dynamic or static case
+    const bool dynamic = mrMainModelPart.NodesBegin()->SolutionStepsDataHas(VELOCITY_X); 
+    const double delta_time = (dynamic) ? mrMainModelPart.GetProcessInfo()[DELTA_TIME] : 0.0;
+    
+    // We compute the delta displacement
+    ContactUtilities::ComputeStepJump(mrMainModelPart.GetSubModelPart("Contact"), delta_time);
     
 #ifdef _OPENMP
     #pragma omp parallel for 
 #endif
-    for(int i = 0; i < num_points; ++i) mPointListDestination[i]->UpdatePoint(delta_time);
+    for(int i = 0; i < static_cast<int>(mPointListDestination.size()); ++i) mPointListDestination[i]->UpdatePoint(dynamic);
 }
 
 /***********************************************************************************/
@@ -255,16 +265,14 @@ void TreeContactSearch<TDim, TNumNodes>::UpdateMortarConditions()
     UpdatePointListMortar();
     
     // Calculate the mean of the normal in all the nodes
-    ContactUtilities::ComputeNodesMeanNormalModelPart(mrMainModelPart.GetSubModelPart("Contact")); 
+    MortarUtilities::ComputeNodesMeanNormalModelPart(mrMainModelPart.GetSubModelPart("Contact")); 
     
     // We get the computing model part
     std::size_t condition_id = ReorderConditionsIds();
     ModelPart& computing_contact_model_part = mrMainModelPart.GetSubModelPart("ComputingContact"); 
     
-    const double delta_time = mrMainModelPart.GetProcessInfo()[DELTA_TIME];
-    
     // We check if we are in a dynamic or static case
-    const bool dynamic = false; // mrMainModelPart.NodesBegin()->SolutionStepsDataHas(VELOCITY_X); // FIXME: The mapping should update the position too
+    const bool dynamic = mrMainModelPart.NodesBegin()->SolutionStepsDataHas(VELOCITY_X);
     
     // Some auxiliar values
     const unsigned int allocation_size = mThisParameters["allocation_size"].GetInt();           // Allocation size for the vectors and max number of potential results 
@@ -299,7 +307,7 @@ void TreeContactSearch<TDim, TNumNodes>::UpdateMortarConditions()
             if (type_search == KdtreeInRadius)
             {
                 GeometryType& geometry = it_cond->GetGeometry();
-                const Point& center = dynamic ? ContactUtilities::GetHalfJumpCenter(geometry, delta_time) : geometry.Center(); // NOTE: Center in half delta time or real center
+                const Point& center = dynamic ? ContactUtilities::GetHalfJumpCenter(geometry) : geometry.Center(); // NOTE: Center in half delta time or real center
                 
                 const double search_radius = search_factor * Radius(it_cond->GetGeometry());
 
@@ -437,6 +445,53 @@ void TreeContactSearch<TDim, TNumNodes>::InvertSearch()
     mInvertedSearch = !mInvertedSearch;
 }
 
+/***********************************************************************************/
+/***********************************************************************************/
+
+template<unsigned int TDim, unsigned int TNumNodes>
+inline void TreeContactSearch<TDim, TNumNodes>::InitializeAcceleration()
+{
+    // We iterate over the nodes
+    NodesArrayType& nodes_array = mrMainModelPart.Nodes();
+
+    // We check if we are in a dynamic or static case
+    const bool dynamic = mrMainModelPart.NodesBegin()->SolutionStepsDataHas(VELOCITY_X);
+    if (dynamic == true)
+    {
+        array_1d<double, 3> volume_acceleration = ZeroVector(3);
+        auto& r_props = mrMainModelPart.rProperties();
+        for (auto& prop : r_props)
+        {
+            if (prop.Has(VOLUME_ACCELERATION) == true)
+            {
+                volume_acceleration = prop.GetValue(VOLUME_ACCELERATION);
+                if (norm_2(volume_acceleration) > 0.0) break;
+            }
+        }
+        
+        // Initialize the acceleration when VOLUME_ACCELERATION to be able to predict position in the first step
+    #ifdef _OPENMP
+        #pragma omp parallel for 
+    #endif
+        for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i)
+        {
+            auto it_node = nodes_array.begin() + i;
+            const array_1d<double, 3>& nodal_volume_acceleration = it_node->FastGetSolutionStepValue(VOLUME_ACCELERATION);
+            if (norm_2(volume_acceleration) > 0.0)
+            {
+                if (!it_node->IsFixed(ACCELERATION_X)) it_node->FastGetSolutionStepValue(ACCELERATION_X) = volume_acceleration[0];
+                if (!it_node->IsFixed(ACCELERATION_Y)) it_node->FastGetSolutionStepValue(ACCELERATION_Y) = volume_acceleration[1];
+                if (!it_node->IsFixed(ACCELERATION_Z)) it_node->FastGetSolutionStepValue(ACCELERATION_Z) = volume_acceleration[2];
+            }
+            else if (norm_2(nodal_volume_acceleration) > 0.0)
+            {
+                if (!it_node->IsFixed(ACCELERATION_X)) it_node->FastGetSolutionStepValue(ACCELERATION_X) = nodal_volume_acceleration[0];
+                if (!it_node->IsFixed(ACCELERATION_Y)) it_node->FastGetSolutionStepValue(ACCELERATION_Y) = nodal_volume_acceleration[1];
+                if (!it_node->IsFixed(ACCELERATION_Z)) it_node->FastGetSolutionStepValue(ACCELERATION_Z) = nodal_volume_acceleration[2];
+            }
+        }
+    }
+}
 /***********************************************************************************/
 /***********************************************************************************/
 
@@ -595,9 +650,9 @@ inline void TreeContactSearch<TDim, TNumNodes>::CheckPairing(
             it_node->SetValue(AUXILIAR_COORDINATES, ZeroVector(3));
     }
     
-    Parameters mapping_parameters = Parameters(R"({"inverted_search": false })" );
-    mapping_parameters["inverted_search"].SetBool(mThisParameters["inverted_search"].GetBool());
-    auto mapper = SimpleMortarMapperProcess<TDim, TNumNodes, Variable<array_1d<double, 3>>, NonHistorical>(contact_model_part, AUXILIAR_COORDINATES);
+    Parameters mapping_parameters = Parameters(R"({"inverted_master_slave_pairing": false, "use_predicted_position": true})" );
+    mapping_parameters["inverted_master_slave_pairing"].SetBool(mThisParameters["inverted_search"].GetBool());
+    auto mapper = SimpleMortarMapperProcess<TDim, TNumNodes, Variable<array_1d<double, 3>>, NonHistorical>(contact_model_part, AUXILIAR_COORDINATES, mapping_parameters);
     mapper.Execute();
     
     // Iterate in the conditions
@@ -638,6 +693,7 @@ inline void TreeContactSearch<TDim, TNumNodes>::CheckPairing(
             // We activate if the node is close enough
             const double active_check_length = it_node->FastGetSolutionStepValue(NODAL_H) * active_check_factor;
             if (gap < active_check_length && norm_2(auxiliar_coordinates) > tolerance) it_node->Set(ACTIVE);
+            else if (norm_2(auxiliar_coordinates) < tolerance) it_node->SetValue(NORMAL_GAP, 0.0);
         }
         else
             it_node->SetValue(NORMAL_GAP, 0.0);

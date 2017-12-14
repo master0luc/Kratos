@@ -223,7 +223,7 @@ private:
     TVarType mDestinationVariable;                // The destiny variable to map
     
     unsigned int mEchoLevel;                      // The verbosity level
-    bool mInvertedPairing;                        // The if the master/slaves are paired inverted
+    bool mInvertedPairing;                        // The if the master/slaves are paired inverted            
     Parameters mThisParameters;                   // The configuration parameters
     
     LinearSolverType::Pointer mpThisLinearSolver; // The linear solver used to compute the solution
