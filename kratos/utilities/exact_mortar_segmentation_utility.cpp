@@ -127,8 +127,8 @@ bool ExactMortarIntegrationUtility<2, 2, false>::GetExactIntegration(
     if (total_weight > std::numeric_limits<double>::epsilon()) {
         ConditionsPointsSlave.resize(1);
         array_1d<PointType, 2> list_points;
-        list_points[0].Coordinate(1) = auxiliar_coordinates[0];
-        list_points[1].Coordinate(1) = auxiliar_coordinates[1];
+        list_points[0].Coordinates()[0] = auxiliar_coordinates[0];
+        list_points[1].Coordinates()[0] = auxiliar_coordinates[1];
         ConditionsPointsSlave[0] = list_points;
 
         return true;
@@ -469,9 +469,9 @@ bool ExactMortarIntegrationUtility<2, 2, true>::GetExactIntegration(
     if (total_weight > std::numeric_limits<double>::epsilon()) {
         ConditionsPointsSlave.resize(1);
         array_1d<PointBelong<2>, 2> list_points;
-        list_points[0].Coordinate(1) = auxiliar_coordinates[0];
+        list_points[0].Coordinates()[0] = auxiliar_coordinates[0];
         list_points[0].SetBelong(auxiliar_belong[0]);
-        list_points[1].Coordinate(1) = auxiliar_coordinates[1];
+        list_points[1].Coordinates()[0] = auxiliar_coordinates[1];
         list_points[1].SetBelong(auxiliar_belong[1]);
         ConditionsPointsSlave[0] = list_points;
 
@@ -713,7 +713,8 @@ bool ExactMortarIntegrationUtility<TDim, TNumNodes,
             
             const double det_J = decomp_geom.DeterminantOfJacobian( local_point_decomp ) * (TDim == 2 ? 2.0 : 1.0);
             
-            IntegrationPointsSlave.push_back( IntegrationPointType( local_point_parent.Coordinate(1), local_point_parent.Coordinate(2), weight * det_J )); // TODO: Change push_back for a fix operation
+            const array_1d<double, 3>& coordinates = local_point_parent.Coordinates();
+            IntegrationPointsSlave.push_back( IntegrationPointType( coordinates[0], coordinates[1], weight * det_J )); // TODO: Change push_back for a fix operation
         }
     }
 
@@ -780,12 +781,13 @@ bool ExactMortarIntegrationUtility<TDim, TNumNodes,
     for (unsigned int GP = 0; GP < integration_points_slave.size(); GP++)
     {
         // Solution save:
-        CustomSolution(GP, 0) = integration_points_slave[GP].Coordinate(1);
+        const array_1d<double, 3>& coordinates_gp = integration_points_slave[GP].Coordinates();
+        CustomSolution(GP, 0) = coordinates_gp[0];
         if (TDim == 2)
             CustomSolution(GP, 1) = integration_points_slave[GP].Weight();
         else
         {
-            CustomSolution(GP, 1) = integration_points_slave[GP].Coordinate(2);
+            CustomSolution(GP, 1) = coordinates_gp[1];
             CustomSolution(GP, 2) = integration_points_slave[GP].Weight();
         }
     }
@@ -953,7 +955,7 @@ inline void ExactMortarIntegrationUtility<TDim, TNumNodes,
     GeometryPointType& Geometry1, GeometryPointType& Geometry2,
     const PointType& RefCenter) {
     // We consider the Z coordinate constant
-    const double z_ref = RefCenter.Coordinate(3);
+    const double z_ref = RefCenter.Coordinates()[2];
 
     // We find the intersection in each side
     for (unsigned int i_edge = 0; i_edge < TNumNodes; ++i_edge) {
@@ -973,7 +975,7 @@ inline void ExactMortarIntegrationUtility<TDim, TNumNodes,
             if (intersected == true)
             {
                 // Set the coordinate
-                intersected_point.Coordinate(3) = z_ref;
+                intersected_point.Coordinates()[2] = z_ref;
 
                 // Ititialize the check
                 bool add_point = true;

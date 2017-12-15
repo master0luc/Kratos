@@ -352,14 +352,20 @@ class KRATOS_API(KRATOS_CORE) ExactMortarIntegrationUtility {
     static inline bool Clipping2D(PointType& PointIntersection,
         const PointType& PointOrig1, const PointType& PointOrig2,
         const PointType& PointDest1, const PointType& PointDest2) {
+        
+        const array_1d<double, 3>& coord_point_orig1 = PointOrig1.Coordinates();
+        const array_1d<double, 3>& coord_point_orig2 = PointOrig2.Coordinates();
+        const array_1d<double, 3>& coord_point_dest1 = PointDest1.Coordinates();
+        const array_1d<double, 3>& coord_point_dest2 = PointDest2.Coordinates();
+        
         const double s_orig1_orig2_x =
-            PointOrig2.Coordinate(1) - PointOrig1.Coordinate(1);
+            coord_point_orig2[0] - coord_point_orig1[0];
         const double s_orig1_orig2_y =
-            PointOrig2.Coordinate(2) - PointOrig1.Coordinate(2);
+            coord_point_orig2[1] - coord_point_orig1[1];
         const double s_dest1_dest2_x =
-            PointDest2.Coordinate(1) - PointDest1.Coordinate(1);
+            coord_point_dest2[0] - coord_point_dest1[0];
         const double s_dest1_dest2_y =
-            PointDest2.Coordinate(2) - PointDest1.Coordinate(2);
+            coord_point_dest2[1] - coord_point_dest1[1];
 
         const double denom = s_orig1_orig2_x * s_dest1_dest2_y -
                              s_dest1_dest2_x * s_orig1_orig2_y;
@@ -370,8 +376,8 @@ class KRATOS_API(KRATOS_CORE) ExactMortarIntegrationUtility {
         if (std::abs(denom) < tolerance) // NOTE: Collinear
             return false;
         
-        const double s_orig1_dest1_x = PointOrig1.Coordinate(1) - PointDest1.Coordinate(1);
-        const double s_orig1_dest1_y = PointOrig1.Coordinate(2) - PointDest1.Coordinate(2);
+        const double s_orig1_dest1_x = coord_point_orig1[0] - coord_point_dest1[0];
+        const double s_orig1_dest1_y = coord_point_orig1[1] - coord_point_dest1[1];
         
         const double s = (s_orig1_orig2_x * s_orig1_dest1_y - s_orig1_orig2_y * s_orig1_dest1_x)/denom;
         
@@ -379,8 +385,8 @@ class KRATOS_API(KRATOS_CORE) ExactMortarIntegrationUtility {
         
         if (s >= -tolerance && s <= (1.0 + tolerance) && t >= -tolerance && t <= (1.0 + tolerance))
         {
-            PointIntersection.Coordinate(1) = PointOrig1.Coordinate(1) + t * s_orig1_orig2_x; 
-            PointIntersection.Coordinate(2) = PointOrig1.Coordinate(2) + t * s_orig1_orig2_y; 
+            PointIntersection.Coordinates()[0] = coord_point_orig1[0] + t * s_orig1_orig2_x; 
+            PointIntersection.Coordinates()[1] = coord_point_orig1[1] + t * s_orig1_orig2_y; 
             
             return true;
         }
