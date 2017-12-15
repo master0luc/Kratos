@@ -281,7 +281,7 @@ public:
                 {      
                     current_time += aux_delta_time;
                     inner_iteration += 1;
-                    this_process_info[TIME_STEPS] += 1;
+                    this_process_info[STEP] += 1;
                     
                     if (inner_iteration == 1)
                     {
@@ -681,7 +681,7 @@ protected:
     {
         if (mConvergenceCriteriaEchoLevel != 0)
         {
-            std::cout << "STEP: " << StrategyBaseType::GetModelPart().GetProcessInfo()[TIME_STEPS] << "\t NON LINEAR ITERATION: " << StrategyBaseType::GetModelPart().GetProcessInfo()[NL_ITERATION_NUMBER] << "\t TIME: " << StrategyBaseType::GetModelPart().GetProcessInfo()[TIME] << "\t DELTA TIME: " << StrategyBaseType::GetModelPart().GetProcessInfo()[DELTA_TIME]  << std::endl;
+            std::cout << "STEP: " << StrategyBaseType::GetModelPart().GetProcessInfo()[STEP] << "\t NON LINEAR ITERATION: " << StrategyBaseType::GetModelPart().GetProcessInfo()[NL_ITERATION_NUMBER] << "\t TIME: " << StrategyBaseType::GetModelPart().GetProcessInfo()[TIME] << "\t DELTA TIME: " << StrategyBaseType::GetModelPart().GetProcessInfo()[DELTA_TIME]  << std::endl;
         }
     }
     

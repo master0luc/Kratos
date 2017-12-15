@@ -239,7 +239,7 @@ template<unsigned int TDim, unsigned int TNumNodes>
 void TreeContactSearch<TDim, TNumNodes>::UpdatePointListMortar()
 {
     // We initialize the acceleration
-    if (mrMainModelPart.GetProcessInfo()[TIME_STEPS] == 1) 
+    if (mrMainModelPart.GetProcessInfo()[STEP] == 1) 
         InitializeAcceleration();
     
     // We check if we are in a dynamic or static case
@@ -272,7 +272,7 @@ void TreeContactSearch<TDim, TNumNodes>::UpdateMortarConditions()
     ModelPart& computing_contact_model_part = mrMainModelPart.GetSubModelPart("ComputingContact"); 
     
     // We check if we are in a dynamic or static case
-    const bool dynamic = mrMainModelPart.NodesBegin()->SolutionStepsDataHas(VELOCITY_X);
+    const bool dynamic = mrMainModelPart.NodesBegin()->SolutionStepsDataHas(VELOCITY_X); // TODO: Think about using the dynamic search in two steps, one with delta_t/2 and other with delta_t
     
     // Some auxiliar values
     const unsigned int allocation_size = mThisParameters["allocation_size"].GetInt();           // Allocation size for the vectors and max number of potential results 

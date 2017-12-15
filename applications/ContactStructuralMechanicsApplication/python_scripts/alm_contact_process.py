@@ -175,7 +175,7 @@ class ALMContactProcess(python_process.PythonProcess):
     
     def ExecuteInitializeSolutionStep(self):
         self.database_step += 1
-        self.global_step = self.main_model_part.ProcessInfo[KratosMultiphysics.TIME_STEPS]
+        self.global_step = self.main_model_part.ProcessInfo[KratosMultiphysics.STEP]
         
         if (self.database_step >= self.database_step_update or self.global_step == 1):
             # We solve one linear step with a linear strategy if needed
