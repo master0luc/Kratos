@@ -691,9 +691,16 @@ inline void TreeContactSearch<TDim, TNumNodes>::CheckPairing(
             it_node->SetValue(NORMAL_GAP, gap);
             
             // We activate if the node is close enough
-            const double active_check_length = it_node->FastGetSolutionStepValue(NODAL_H) * active_check_factor;
-            if (gap < active_check_length && norm_2(auxiliar_coordinates) > tolerance) it_node->Set(ACTIVE);
-            else if (norm_2(auxiliar_coordinates) < tolerance) it_node->SetValue(NORMAL_GAP, 0.0);
+            if (norm_2(auxiliar_coordinates) > tolerance)
+            {
+            #ifdef KRATOS_DEBUG
+                KRATOS_ERROR_IF(!(it_node->SolutionStepsDataHas(NODAL_H)) << "WARNING:: NODAL_H not added" << std::endl; 
+            #endif
+                const double auxiliar_length = it_node->FastGetSolutionStepValue(NODAL_H) * active_check_factor;
+                if (gap < auxiliar_length) it_node->Set(ACTIVE);
+            }
+            else
+                it_node->SetValue(NORMAL_GAP, 0.0);
         }
         else
             it_node->SetValue(NORMAL_GAP, 0.0);
