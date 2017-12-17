@@ -44,7 +44,7 @@ Condition::Pointer MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Create(
     NodesArrayType const& rThisNodes,
     PropertiesType::Pointer pProperties ) const
 {
-    return Condition::Pointer( new MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>( NewId, this->GetGeometry().Create( rThisNodes ), pProperties ));
+    return boost::make_shared< MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor> >( NewId, this->GetGeometry().Create( rThisNodes ), pProperties );
 }
 
 /***********************************************************************************/
@@ -56,7 +56,7 @@ Condition::Pointer MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Create(
     GeometryType::Pointer pGeom,
     PropertiesType::Pointer pProperties) const
 {
-    return Condition::Pointer( new MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>( NewId, pGeom, pProperties ));
+    return boost::make_shared< MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor> >( NewId, pGeom, pProperties );
 }
 
 /***********************************************************************************/
@@ -69,7 +69,7 @@ Condition::Pointer MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Create(
     PropertiesType::Pointer pProperties,
     GeometryType::Pointer pMasterGeom) const
 {
-    return Condition::Pointer( new MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>( NewId, pGeom, pProperties, pMasterGeom));
+    return boost::make_shared< MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor> >( NewId, pGeom, pProperties, pMasterGeom);
 }
 
 /************************************* DESTRUCTOR **********************************/

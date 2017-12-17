@@ -31,7 +31,7 @@ Condition::Pointer AugmentedLagrangianMethodFrictionlessMortarContactCondition<T
     NodesArrayType const& rThisNodes,
     PropertiesPointerType pProperties ) const
 {
-    return Condition::Pointer( new AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation >( NewId, this->GetGeometry().Create( rThisNodes ), pProperties ));
+    return boost::make_shared< AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation > >( NewId, this->GetGeometry().Create( rThisNodes ), pProperties );
 }
 
 /***********************************************************************************/
@@ -43,7 +43,7 @@ Condition::Pointer AugmentedLagrangianMethodFrictionlessMortarContactCondition<T
     GeometryPointerType pGeom,
     PropertiesPointerType pProperties) const
 {
-    return Condition::Pointer( new  AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation >( NewId, pGeom, pProperties ));
+    return boost::make_shared<  AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation > >( NewId, pGeom, pProperties );
 }
 
 /***********************************************************************************/
@@ -56,7 +56,7 @@ Condition::Pointer AugmentedLagrangianMethodFrictionlessMortarContactCondition<T
     PropertiesType::Pointer pProperties,
     GeometryType::Pointer pMasterGeom) const
 {
-    return Condition::Pointer( new  AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation >( NewId, pGeom, pProperties, pMasterGeom ));
+    return boost::make_shared<  AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation > >( NewId, pGeom, pProperties, pMasterGeom );
 }
 
 /************************************* DESTRUCTOR **********************************/
