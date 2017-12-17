@@ -122,7 +122,7 @@ void TreeContactSearch<TDim, TNumNodes>::InitializeMortarConditions()
     {
         auto it_cond = conditions_array.begin() + i;
 
-        if (it_cond->Has(INDEX_SET) == false) it_cond->SetValue(INDEX_SET, IndexSet::Pointer(new IndexSet)); 
+        if (it_cond->Has(INDEX_SET) == false) it_cond->SetValue(INDEX_SET, boost::make_shared<IndexSet>()); 
 //             it_cond->GetValue(INDEX_SET)->reserve(mThisParameters["allocation_size"].GetInt()); 
     }
 }
@@ -679,8 +679,9 @@ inline void TreeContactSearch<TDim, TNumNodes>::CheckPairing(
     #pragma omp parallel for 
 #endif
     for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i) 
-    {
+    {        
         auto it_node = nodes_array.begin() + i;
+
         if (it_node->Is(SLAVE) == !mInvertedSearch)
         {
             // We compute the gap
