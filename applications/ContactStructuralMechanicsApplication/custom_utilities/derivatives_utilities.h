@@ -1189,6 +1189,9 @@ private:
         const array_1d<double, 3>& ThisNormal
         )
     {
+        // Tolerance
+        const double tolerance = std::numeric_limits<double>::epsilon();
+        
         bounded_matrix<double, 3, TNumNodes> X;
         for(unsigned int i = 0; i < TNumNodes; ++i)
         {
@@ -1199,9 +1202,13 @@ private:
         
         const bounded_matrix<double, 3, 2> DN = prod(X, rDNDe);
         
-        double det_j;
         const bounded_matrix<double, 2, 2> J = prod(trans(DN),DN);
-        const bounded_matrix<double, 2, 2> invJ = MathUtils<double>::InvertMatrix<2>(J, det_j);
+        double det_j = MathUtils<double>::DetMat<bounded_matrix<double, 2, 2>>(J);
+        const bounded_matrix<double, 2, 2> invJ = (std::abs(det_j) < tolerance) ? ZeroMatrix(2,2) : MathUtils<double>::InvertMatrix<2>(J, det_j);
+        
+    #ifdef KRATOS_DEBUG
+        if (std::abs(det_j) < tolerance) std:::cout << "WARNING: CANNOT INVERT JACOBIAN TO COMPUTE DELTA COORDINATES" << std::endl;
+    #endif
         
         const array_1d<double, 2> res = prod(trans(DN), DeltaPoint);
         noalias(rResult) = prod(invJ, res);
@@ -1213,11 +1220,14 @@ private:
 //             L(i, 2) = ThisNormal[i];
 //         }
 // 
-//         double det_L;
-//         const bounded_matrix<double, 3, 3> invL = MathUtils<double>::InvertMatrix<3>(L, det_L);
+//         double det_L = MathUtils<double>::DetMat<bounded_matrix<double, 3, 3>>(L);
+//         const bounded_matrix<double, 3, 3> invL = (std::abs(det_L) < tolerance) ? ZeroMatrix(3,3) : MathUtils<double>::InvertMatrix<3>(L, det_L);
 //         array_1d<double, 3> aux = prod(invL, DeltaPoint);
 //         rResult[0] = aux[0];
 //         rResult[1] = aux[1];
+//         #ifdef KRATOS_DEBUG
+//             if (std::abs(det_L) < tolerance) std:::cout << "WARNING: CANNOT INVERT JACOBIAN TO COMPUTE DELTA COORDINATES" << std::endl;
+//         #endif
     }
     
     ///@}
