@@ -47,6 +47,10 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
             node.Set(KratosMultiphysics.SLAVE, True)
             node.SetSolutionStepValue(KratosMultiphysics.VOLUME_ACCELERATION_X, -9.81)
         del(node)
+        model_part_master = self.main_model_part.GetSubModelPart("Parts_Parts_Auto2")
+        for node in model_part_master.Nodes:
+            node.Set(KratosMultiphysics.MASTER, True)
+        del(node)
         
         self.main_model_part.ProcessInfo[KratosMultiphysics.STEP] = 1 
         self.main_model_part.ProcessInfo[KratosMultiphysics.DELTA_TIME] = 0.5 
@@ -84,6 +88,7 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
         {
             "search_factor"               : 3.5,
             "allocation_size"             : 1000,
+            "check_gap"                   : "MappingCheck",
             "type_search"                 : "InRadius"
         }
         """)
