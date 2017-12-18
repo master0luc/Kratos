@@ -146,14 +146,14 @@ public:
     
     static inline array_1d<double, 3> GetHalfJumpCenter(GeometryType& ThisGeometry)
     {
-        PointType center = ThisGeometry.Center();
+        array_1d<double, 3> center = (ThisGeometry.Center()).Coordinates();
         
         // Initialize variables
         Vector N;
         GeometryType::CoordinatesArrayType local_point;
         
         // Get shape functions
-        ThisGeometry.PointLocalCoordinates( local_point, center.Coordinates() );
+        ThisGeometry.PointLocalCoordinates( local_point, center );
         ThisGeometry.ShapeFunctionsValues( N, local_point );
         
     #ifdef KRATOS_DEBUG
@@ -163,9 +163,9 @@ public:
         const Vector new_delta_disp_center = prod(trans(GetVariableMatrix(ThisGeometry, DELTA_COORDINATES)), N);
         
         for (unsigned int i = 0; i < new_delta_disp_center.size(); ++i)
-            center.Coordinates()[i] += new_delta_disp_center[i];
+            center[i] += new_delta_disp_center[i];
         
-        return center.Coordinates();
+        return center;
     }
     
          

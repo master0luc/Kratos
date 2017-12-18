@@ -22,7 +22,6 @@
 #include "includes/define.h"
 #include "includes/model_part.h"
 #include "includes/variables.h"
-#include "custom_utilities/contact_utilities.h"
 #include "solving_strategies/strategies/solving_strategy.h"
 #include "solving_strategies/strategies/line_search_strategy.h"
 #include "utilities/openmp_utils.h"

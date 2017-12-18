@@ -17,9 +17,6 @@
 /* Mortar includes */
 #include "custom_conditions/ALM_frictionless_mortar_contact_condition.h"
 
-/* Utilities */
-#include "custom_utilities/contact_utilities.h"
-
 namespace Kratos 
 {
 /************************************* OPERATIONS **********************************/

@@ -16,7 +16,6 @@
 // Project includes
 #include "utilities/math_utils.h"
 #include "contact_structural_mechanics_application_variables.h"
-#include "custom_utilities/contact_utilities.h"
 #include "custom_processes/alm_variables_calculation_process.h"
 
 namespace Kratos

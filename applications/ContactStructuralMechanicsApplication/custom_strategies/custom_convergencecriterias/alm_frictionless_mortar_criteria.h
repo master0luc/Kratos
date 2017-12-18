@@ -17,7 +17,6 @@
 /* External includes */
 
 /* Project includes */
-#include "custom_utilities/contact_utilities.h"
 #include "utilities/table_stream_utility.h"
 #include "custom_strategies/custom_convergencecriterias/base_mortar_criteria.h"
 #include "utilities/color_utilities.h"

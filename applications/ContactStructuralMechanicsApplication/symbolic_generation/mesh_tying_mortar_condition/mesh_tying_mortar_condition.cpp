@@ -20,10 +20,6 @@
 /* Additional includes */
 #include <algorithm>
 
-/* Utilities */
-#include "custom_utilities/contact_utilities.h"
-#include "utilities/math_utils.h"
-
 namespace Kratos 
 {
 /**
@@ -88,13 +84,13 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
 {
     KRATOS_TRY;
     
+    BaseType::Initialize();
+    
     mIntegrationOrder = GetProperties().Has(INTEGRATION_ORDER_CONTACT) ? GetProperties().GetValue(INTEGRATION_ORDER_CONTACT) : 2;
     
     // The slave geometry
     GeometryType& slave_geometry = this->GetGeometry();
-    Point::CoordinatesArrayType aux_coords;
-    aux_coords = slave_geometry.PointLocalCoordinates(aux_coords, slave_geometry.Center());
-    const array_1d<double, 3>& normal_slave = slave_geometry.UnitNormal(aux_coords);
+    const array_1d<double, 3>& normal_slave = this->GetValue(NORMAL);
     
     // Create and initialize condition variables:
     GeneralVariables rVariables;
@@ -104,8 +100,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
     
     // The master geometry
     GeometryType& master_geometry = this->GetPairedGeometry();
-    aux_coords = master_geometry.PointLocalCoordinates(aux_coords, master_geometry.Center());
-    const array_1d<double, 3>& master_normal = master_geometry.UnitNormal(aux_coords);
+    const array_1d<double, 3>& normal_master = this->GetValue(PAIRED_NORMAL);
     // Initialize general variables for the current master element
     rVariables.Initialize();
     
@@ -117,7 +112,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
     
     // Reading integration points
     ConditionArrayListType conditions_points_slave;
-    const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, master_normal, conditions_points_slave);
+    const bool is_inside = integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, normal_master, conditions_points_slave);
     
     double integration_area;
     integration_utility.GetTotalArea(slave_geometry, conditions_points_slave, integration_area);
@@ -132,7 +127,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
         // Initialize the mortar operators
         mrThisMortarConditionMatrices.Initialize();
         
-        const bool dual_LM = CalculateAe(master_normal, rDofData, rVariables, conditions_points_slave, this_integration_method);
+        const bool dual_LM = CalculateAe(normal_master, rDofData, rVariables, conditions_points_slave, this_integration_method);
             
         for (unsigned int i_geom = 0; i_geom < conditions_points_slave.size(); ++i_geom)
         {
@@ -163,7 +158,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::Initialize( )
                     slave_geometry.PointLocalCoordinates(local_point_parent, gp_global);
                     
                     // Calculate the kinematic variables
-                    this->CalculateKinematics( rVariables, rDofData, master_normal, local_point_decomp, local_point_parent, decomp_geom, dual_LM);
+                    this->CalculateKinematics( rVariables, rDofData, normal_master, local_point_decomp, local_point_parent, decomp_geom, dual_LM);
                     
                     const double integration_weight = integration_points_slave[point_number].Weight();
 
@@ -244,22 +239,20 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateLocalSystem(
 {
     KRATOS_TRY;
 
-    // Create local system components
-    LocalSystem LocalSystem;
-
     // Calculation flags
-    LocalSystem.CalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX, true );
-    LocalSystem.CalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR, true );
-
-    // Initialize sizes for the system components:
-    this->InitializeSystemMatrices( rLeftHandSideMatrix, rRightHandSideVector, LocalSystem.CalculationFlags );
+    mCalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX, true );
+    mCalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR, true );
     
-    // Set Variables to Local system components
-    LocalSystem.SetLeftHandSideMatrix( rLeftHandSideMatrix );
-    LocalSystem.SetRightHandSideVector( rRightHandSideVector );
-
+    // Resizing as needed the LHS
+    if ( rLeftHandSideMatrix.size1() != MatrixSize || rLeftHandSideMatrix.size2() != MatrixSize )
+            rLeftHandSideMatrix.resize( MatrixSize, MatrixSize, false );
+    
+    // Resizing as needed the RHS
+    if ( rRightHandSideVector.size() != MatrixSize )
+        rRightHandSideVector.resize( MatrixSize, false );
+    
     // Calculate condition system
-    this->CalculateConditionSystem( LocalSystem, rCurrentProcessInfo );
+    CalculateConditionSystem(rLeftHandSideMatrix, rRightHandSideVector, rCurrentProcessInfo );
 
     KRATOS_CATCH( "" );
 }
@@ -273,23 +266,19 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateLeftHandSide
     ProcessInfo& rCurrentProcessInfo 
     )
 {
-    // Create local system components
-    LocalSystem LocalSystem;
-
     // Calculation flags
-    LocalSystem.CalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX, true );
+    mCalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX, true );
+    mCalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR, false);
 
-    VectorType RightHandSideVector = Vector( );
-
-    // Initialize sizes for the system components:
-    this->InitializeSystemMatrices( rLeftHandSideMatrix, RightHandSideVector, LocalSystem.CalculationFlags );
-
-    // Set Variables to Local system components
-    LocalSystem.SetLeftHandSideMatrix( rLeftHandSideMatrix );
-    LocalSystem.SetRightHandSideVector( RightHandSideVector );
+    // Resizing as needed the LHS
+    if ( rLeftHandSideMatrix.size1() != MatrixSize || rLeftHandSideMatrix.size2() != MatrixSize )
+        rLeftHandSideMatrix.resize( MatrixSize, MatrixSize, false );
+    
+    // Creating an auxiliar vector
+    VectorType aux_right_hand_side_vector = Vector();
 
     // Calculate condition system
-    this->CalculateConditionSystem( LocalSystem, rCurrentProcessInfo );
+    CalculateConditionSystem(rLeftHandSideMatrix, aux_right_hand_side_vector, rCurrentProcessInfo );
 }
 
 /***********************************************************************************/
@@ -301,52 +290,19 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateRightHandSid
     ProcessInfo& rCurrentProcessInfo 
     )
 {
-    // Create local system components
-    LocalSystem LocalSystem;
-
     // Calculation flags
-    LocalSystem.CalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR, true);
+    mCalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX, false);
+    mCalculationFlags.Set( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR, true);
 
-    MatrixType LeftHandSideMatrix = Matrix( );
-
-    // Initialize size for the system components
-    this->InitializeSystemMatrices( LeftHandSideMatrix, rRightHandSideVector,LocalSystem.CalculationFlags);
-
-    //Set Variables to Local system components
-    LocalSystem.SetLeftHandSideMatrix( LeftHandSideMatrix );
-    LocalSystem.SetRightHandSideVector( rRightHandSideVector );
+    // Creating an auxiliar matrix
+    MatrixType aux_left_hand_side_matrix = Matrix();
+    
+    // Resizing as needed the RHS
+    if ( rRightHandSideVector.size() != MatrixSize )
+        rRightHandSideVector.resize( MatrixSize, false );
 
     // Calculate condition system
-    this->CalculateConditionSystem( LocalSystem, rCurrentProcessInfo );
-}
-
-/***********************************************************************************/
-/***********************************************************************************/
-
-template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
-void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::InitializeSystemMatrices( 
-    MatrixType& rLeftHandSideMatrix,
-    VectorType& rRightHandSideVector,
-    Flags& rCalculationFlags 
-    )
-{    
-    // Resizing as needed the LHS
-    if ( rCalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX ) ) // Calculation of the matrix is required
-    {
-        if ( rLeftHandSideMatrix.size1() != MatrixSize )
-        {
-            rLeftHandSideMatrix.resize( MatrixSize, MatrixSize, false );
-        }
-    }
-
-    // Resizing as needed the RHS
-    if ( rCalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR ) ) // Calculation of the matrix is required
-    {
-        if ( rRightHandSideVector.size() != MatrixSize )
-        {
-            rRightHandSideVector.resize( MatrixSize, false );
-        }
-    }
+    CalculateConditionSystem(aux_left_hand_side_matrix, rRightHandSideVector, rCurrentProcessInfo );
 }
 
 /***********************************************************************************/
@@ -386,7 +342,8 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateDampingMatri
 
 template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
 void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::CalculateConditionSystem( 
-    LocalSystem& rLocalSystem,
+    MatrixType& rLeftHandSideMatrix,
+    VectorType& rRightHandSideVector,
     const ProcessInfo& rCurrentProcessInfo
     )
 {
@@ -402,19 +359,19 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::CalculateConditionS
     rDofData.UpdateMasterPair(this->GetPairedGeometry());
     
     // Assemble of the matrix is required
-    if ( rLocalSystem.CalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX ) )
+    if ( mCalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_LHS_MATRIX ) )
     {
         // Calculate the local contribution
         const bounded_matrix<double, MatrixSize, MatrixSize>& LHS_contact_pair = this->CalculateLocalLHS( mrThisMortarConditionMatrices, rDofData);
-        rLocalSystem.GetLeftHandSideMatrix() = LHS_contact_pair;
+        rLeftHandSideMatrix = LHS_contact_pair;
     }
     
     // Assemble of the vector is required
-    if ( rLocalSystem.CalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR ))
+    if ( mCalculationFlags.Is( MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::COMPUTE_RHS_VECTOR ))
     {
         // Calculate the local contribution
         const array_1d<double, MatrixSize>& RHS_contact_pair = this->CalculateLocalRHS( mrThisMortarConditionMatrices, rDofData);
-        rLocalSystem.GetRightHandSideVector() = RHS_contact_pair;
+        rRightHandSideVector = RHS_contact_pair;
     }
         
     KRATOS_CATCH( "" );
@@ -425,7 +382,7 @@ void MeshTyingMortarCondition<TDim, TNumNodesElem, TTensor>::CalculateConditionS
 
 template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
 bool MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateAe(
-    const array_1d<double, 3>& MasterNormal,
+    const array_1d<double, 3>& NormalMaster,
     DofData& rDofData,
     GeneralVariables& rVariables,
     ConditionArrayListType& ConditionsPointsSlave,
@@ -478,7 +435,7 @@ bool MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateAe(
                 decomp_geom.GlobalCoordinates(gp_global, local_point_decomp);
                 slave_geometry.PointLocalCoordinates(local_point_parent, gp_global);
                 
-                this->CalculateKinematics( rVariables, rDofData, MasterNormal, local_point_decomp, local_point_parent, decomp_geom, false);
+                this->CalculateKinematics( rVariables, rDofData, NormalMaster, local_point_decomp, local_point_parent, decomp_geom, false);
                 
                 // Integrate
                 const double integration_weight = integration_points_slave[point_number].Weight();
@@ -531,8 +488,8 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::InitializeDofData(Dof
 template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
 void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateKinematics( 
     GeneralVariables& rVariables,
-    const DofData rDofData,
-    const array_1d<double, 3> MasterNormal,
+    const DofData& rDofData,
+    const array_1d<double, 3>& NormalMaster,
     const PointType& LocalPointDecomp,
     const PointType& LocalPointParent,
     GeometryPointType& GeometryDecomp,
@@ -550,7 +507,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateKinematics(
     KRATOS_ERROR_IF(rVariables.DetjSlave < 0.0) << "WARNING:: CONDITION ID: " << this->Id() << " INVERTED. DETJ: " << rVariables.DetjSlave << std::endl;
     
     /// MASTER CONDITION ///
-    this->MasterShapeFunctionValue( rVariables, MasterNormal, LocalPointParent);
+    this->MasterShapeFunctionValue( rVariables, NormalMaster, LocalPointParent);
 }
  
 /***********************************************************************************/
@@ -560,7 +517,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::CalculateKinematics(
 template< unsigned int TDim, unsigned int TNumNodesElem, TensorValue TTensor>
 void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::MasterShapeFunctionValue(
     GeneralVariables& rVariables,
-    const array_1d<double, 3> MasterNormal,
+    const array_1d<double, 3>& NormalMaster,
     const PointType& LocalPoint
     )
 {    
@@ -571,7 +528,7 @@ void MeshTyingMortarCondition<TDim,TNumNodesElem,TTensor>::MasterShapeFunctionVa
     
     GeometryType::CoordinatesArrayType slave_gp_global;
     this->GetGeometry( ).GlobalCoordinates( slave_gp_global, LocalPoint );
-    MortarUtilities::FastProjectDirection( master_geometry, slave_gp_global, projected_gp_global, MasterNormal, -gp_normal ); // The opposite direction
+    MortarUtilities::FastProjectDirection( master_geometry, slave_gp_global, projected_gp_global, NormalMaster, -gp_normal ); // The opposite direction
     
     GeometryType::CoordinatesArrayType projected_gp_local;
     

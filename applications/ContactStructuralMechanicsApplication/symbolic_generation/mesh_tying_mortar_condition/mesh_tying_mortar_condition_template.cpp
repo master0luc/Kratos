@@ -20,10 +20,6 @@
 /* Additional includes */
 #include <algorithm>
 
-/* Utilities */
-#include "custom_utilities/contact_utilities.h"
-#include "utilities/math_utils.h"
-
 namespace Kratos 
 {
 /**

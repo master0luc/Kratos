@@ -17,6 +17,7 @@
 // External includes
 
 // Project includes
+#include "contact_structural_mechanics_application_variables.h"
 #include "custom_conditions/paired_condition.h"
 #include "utilities/math_utils.h"
 #include "includes/kratos_flags.h"
@@ -25,7 +26,6 @@
 
 /* Utilities */
 #include "utilities/exact_mortar_segmentation_utility.h"
-#include "custom_utilities/contact_utilities.h"
 #include "custom_utilities/derivatives_utilities.h"
 #include "custom_utilities/logging_settings.hpp"
 
