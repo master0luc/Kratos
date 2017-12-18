@@ -53,6 +53,7 @@ KRATOS_DEFINE_VARIABLE( double, ACTIVE_CHECK_FACTOR )                           
 KRATOS_DEFINE_VARIABLE( GeometryType::Pointer, PAIRED_GEOMETRY )                     // The paired geometry with the current condition
 KRATOS_DEFINE_VARIABLE( Vector3, PAIRED_NORMAL )                                     // The normal of the paired geometry
 KRATOS_DEFINE_3D_VARIABLE_WITH_COMPONENTS( AUXILIAR_COORDINATES )                    // Auxiliar coordinates used to map
+KRATOS_DEFINE_3D_VARIABLE_WITH_COMPONENTS( DELTA_COORDINATES )                       // Delta coordinates used to map
 KRATOS_DEFINE_VARIABLE( double, NORMAL_GAP )                                         // The normal gap employed in contact formulation
 
 /* Weighted values */

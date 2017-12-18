@@ -85,6 +85,8 @@ void KratosContactStructuralMechanicsApplication::Register()
     KRATOS_REGISTER_VARIABLE( PAIRED_GEOMETRY )                                 // The paired geometry with the current condition
     KRATOS_REGISTER_VARIABLE( PAIRED_NORMAL )                                   // The normal of the paired geometry
     KRATOS_REGISTER_3D_VARIABLE_WITH_COMPONENTS( AUXILIAR_COORDINATES )         // Auxiliar coordinates used to map
+    KRATOS_REGISTER_3D_VARIABLE_WITH_COMPONENTS( DELTA_COORDINATES )            // Delta coordinates used to map
+    
     
     /* Weighted values */
     KRATOS_REGISTER_VARIABLE( WEIGHTED_GAP )                                    // The integrated gap employed in mortar formulation

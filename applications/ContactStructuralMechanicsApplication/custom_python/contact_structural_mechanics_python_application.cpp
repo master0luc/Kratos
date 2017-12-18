@@ -54,6 +54,7 @@ BOOST_PYTHON_MODULE(KratosContactStructuralMechanicsApplication)
     // CONTACT
     /* Mortar contact */
     KRATOS_REGISTER_IN_PYTHON_3D_VARIABLE_WITH_COMPONENTS( AUXILIAR_COORDINATES )     // Auxiliar coordinates used to map
+    KRATOS_REGISTER_IN_PYTHON_3D_VARIABLE_WITH_COMPONENTS( DELTA_COORDINATES )        // Delta coordinates used to map
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( INTEGRATION_ORDER_CONTACT )                   // The integration order considered
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( ACTIVE_CHECK_FACTOR )                         // The factor employed to search an active/inactive node
     KRATOS_REGISTER_IN_PYTHON_VARIABLE( NORMAL_GAP )                                  // The normal gap employed in contact formulation

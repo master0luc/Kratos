@@ -424,7 +424,7 @@ class ALMContactProcess(python_process.PythonProcess):
         gid_io.WriteNodalResults(ContactStructuralMechanicsApplication.WEIGHTED_GAP, self.main_model_part.Nodes, label, 0)
         gid_io.WriteNodalResultsNonHistorical(ContactStructuralMechanicsApplication.NORMAL_GAP, self.main_model_part.Nodes, label)
         gid_io.WriteNodalResultsNonHistorical(ContactStructuralMechanicsApplication.AUXILIAR_COORDINATES, self.main_model_part.Nodes, label)
-        gid_io.WriteNodalResultsNonHistorical(KratosMultiphysics.DELTA_COORDINATES, self.main_model_part.Nodes, label)
+        gid_io.WriteNodalResultsNonHistorical(ContactStructuralMechanicsApplication.DELTA_COORDINATES, self.main_model_part.Nodes, label)
         
         gid_io.FinalizeResults()
         
