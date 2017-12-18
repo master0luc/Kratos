@@ -8,7 +8,7 @@ import KratosMultiphysics.KratosUnittest as KratosUnittest
 
 import os
 
-class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
+class TestDynamicSearch(KratosUnittest.TestCase):
     def setUp(self):
         pass
     
@@ -51,9 +51,9 @@ class TestDoubleCurvatureIntegration(KratosUnittest.TestCase):
         for node in model_part_slave.Nodes:
             node.Set(KratosMultiphysics.SLAVE, True)
             # DEBUG
-            node.X -= 9.81 / 32.0
-            node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_X, -9.81 / 32.0)
-            #node.SetSolutionStepValue(KratosMultiphysics.VOLUME_ACCELERATION_X, -9.81)
+            #node.X -= 9.81 / 32.0
+            #node.SetSolutionStepValue(KratosMultiphysics.DISPLACEMENT_X, -9.81 / 32.0)
+            node.SetSolutionStepValue(KratosMultiphysics.VOLUME_ACCELERATION_X, -9.81)
         del(node)
         model_part_master = self.main_model_part.GetSubModelPart("Parts_Parts_Auto2")
         for node in model_part_master.Nodes:

@@ -20,9 +20,6 @@
 #include "includes/condition.h"
 #include "geometries/point.h"
 
-/* Custom utilities */
-#include "custom_utilities/contact_utilities.h"
-
 namespace Kratos
 {
 ///@name Kratos Globals
@@ -76,7 +73,7 @@ public:
     PointItem(Condition::Pointer pCond):
         mpOriginCond(pCond)
     {
-        UpdatePoint(0.0);
+        UpdatePoint();
     }
     
     PointItem(
@@ -165,15 +162,11 @@ public:
     
     /**
      * This function updates the database, using as base for the coordinates the condition center
-     * @param Dynamic If the problem is dynamic or static
      */
 
-    void UpdatePoint(const bool Dynamic)
-    {        
-        if (Dynamic == true)
-            this->Coordinates() = ContactUtilities::GetHalfJumpCenter(mpOriginCond->GetGeometry()); // NOTE: Center in half delta time
-        else
-            this->Coordinates() = mpOriginCond->GetGeometry().Center().Coordinates(); // NOTE: Real center
+    void UpdatePoint()
+    {
+        this->Coordinates() = mpOriginCond->GetGeometry().Center().Coordinates();
     }
 
 protected:

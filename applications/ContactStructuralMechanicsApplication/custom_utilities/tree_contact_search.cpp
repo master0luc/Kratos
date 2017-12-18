@@ -249,10 +249,19 @@ void TreeContactSearch<TDim, TNumNodes>::UpdatePointListMortar()
     // We compute the delta displacement
     ContactUtilities::ComputeStepJump(mrMainModelPart.GetSubModelPart("Contact"), delta_time);
     
+    if (mCheckGap == MappingCheck)
+    {
+        NodesArrayType& update_nodes_array = mrMainModelPart.GetSubModelPart("Contact").Nodes();
+    
+        #pragma omp parallel for
+        for(int i = 0; i < static_cast<int>(update_nodes_array.size()); ++i) 
+            noalias((update_nodes_array.begin() + i)->Coordinates()) += (update_nodes_array.begin() + i)->GetValue(DELTA_COORDINATES);
+    }
+    
 #ifdef _OPENMP
     #pragma omp parallel for 
 #endif
-    for(int i = 0; i < static_cast<int>(mPointListDestination.size()); ++i) mPointListDestination[i]->UpdatePoint(dynamic);
+    for(int i = 0; i < static_cast<int>(mPointListDestination.size()); ++i) mPointListDestination[i]->UpdatePoint();
 }
 
 /***********************************************************************************/
@@ -260,7 +269,7 @@ void TreeContactSearch<TDim, TNumNodes>::UpdatePointListMortar()
 
 template<unsigned int TDim, unsigned int TNumNodes>
 void TreeContactSearch<TDim, TNumNodes>::UpdateMortarConditions()
-{        
+{            
     // We update the list of points
     UpdatePointListMortar();
     
@@ -650,7 +659,7 @@ inline void TreeContactSearch<TDim, TNumNodes>::CheckPairing(
             it_node->SetValue(AUXILIAR_COORDINATES, ZeroVector(3));
     }
     
-    Parameters mapping_parameters = Parameters(R"({"inverted_master_slave_pairing": false, "use_predicted_position": true})" );
+    Parameters mapping_parameters = Parameters(R"({"inverted_master_slave_pairing": false})" );
     mapping_parameters["inverted_master_slave_pairing"].SetBool(mThisParameters["inverted_search"].GetBool());
     auto mapper = SimpleMortarMapperProcess<TDim, TNumNodes, Variable<array_1d<double, 3>>, NonHistorical>(contact_model_part, AUXILIAR_COORDINATES, mapping_parameters);
     mapper.Execute();
@@ -706,6 +715,14 @@ inline void TreeContactSearch<TDim, TNumNodes>::CheckPairing(
         else
             it_node->SetValue(NORMAL_GAP, 0.0);
     }
+    
+    // We revert the nodes to the original position    
+    #pragma omp parallel for
+    for(int i = 0; i < static_cast<int>(nodes_array.size()); ++i) 
+        noalias((nodes_array.begin() + i)->Coordinates()) -= (nodes_array.begin() + i)->GetValue(DELTA_COORDINATES);
+    
+    // Calculate the mean of the normal in all the nodes
+    MortarUtilities::ComputeNodesMeanNormalModelPart(contact_model_part); 
 }
 
 /***********************************************************************************/

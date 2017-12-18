@@ -11,6 +11,7 @@ import KratosMultiphysics.KratosUnittest as KratosUnittest
 ## SMALL TESTS
 # Exact integration tests
 from test_double_curvature_integration import TestDoubleCurvatureIntegration as TTestDoubleCurvatureIntegration
+from test_dynamic_search import TestDynamicSearch as TTestDynamicSearch
 from test_mortar_mapper import TestMortarMapping as TTestMortarMapping
 
 # Mesh tying tests
@@ -75,6 +76,10 @@ def AssambleTestSuites():
     smallSuite.addTest(TTestDoubleCurvatureIntegration('test_double_curvature_integration_quad'))
     smallSuite.addTest(TTestDoubleCurvatureIntegration('test_moving_mesh_integration_quad'))
     
+    # Dynamic search
+    smallSuite.addTest(TTestDynamicSearch('test_dynamic_search_triangle'))
+    smallSuite.addTest(TTestDynamicSearch('test_dynamic_search_quad'))
+    
     # Mortar mapping
     smallSuite.addTest(TTestMortarMapping('test_basic_mortar_mapping_triangle'))
     smallSuite.addTest(TTestMortarMapping('test_basic_mortar_mapping_quad'))
@@ -133,6 +138,7 @@ def AssambleTestSuites():
         KratosUnittest.TestLoader().loadTestsFromTestCases([
             ### SMALL
             TTestDoubleCurvatureIntegration,
+            TTestDynamicSearch,
             TTestMortarMapping,
             TSimplePatchTestTwoDMeshTying,
             TSimpleSlopePatchTestTwoDMeshTying,

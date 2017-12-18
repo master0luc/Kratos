@@ -42,8 +42,7 @@ SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::SimpleMortarMapperP
         "relative_convergence_tolerance"   : 1.0e-4,
         "max_number_iterations"            : 10,
         "integration_order"                : 2,
-        "inverted_master_slave_pairing"    : false,
-        "use_predicted_position"           : false
+        "inverted_master_slave_pairing"    : false
     })" );
     
     mThisParameters.ValidateAndAssignDefaults(DefaultParameters);
@@ -75,8 +74,7 @@ SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::SimpleMortarMapperP
         "relative_convergence_tolerance"   : 1.0e-4,
         "max_number_iterations"            : 10,
         "integration_order"                : 2,
-        "inverted_master_slave_pairing"    : false,
-        "use_predicted_position"           : false
+        "inverted_master_slave_pairing"    : false
     })" );
     
     mThisParameters.ValidateAndAssignDefaults(DefaultParameters);
@@ -486,19 +484,6 @@ template< int TDim, int TNumNodes, class TVarType, HistoricalValues THist>
 void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteExplicitMapping()
 {
     KRATOS_TRY;
-
-    // If the position of the geometry has been updated
-    const bool predicted_position = mThisParameters["use_predicted_position"].GetBool();
-    
-    // We update the coordinates
-    if (predicted_position == true)
-    {
-        NodesArrayType& update_nodes_array = mrThisModelPart.Nodes();
-        
-        #pragma omp parallel for
-        for(int i = 0; i < static_cast<int>(update_nodes_array.size()); ++i) 
-            noalias((update_nodes_array.begin() + i)->Coordinates()) += (update_nodes_array.begin() + i)->GetValue(DELTA_COORDINATES);
-    }
     
     // Calculate the mean of the normal in all the nodes
     MortarUtilities::ComputeNodesMeanNormalModelPart(mrThisModelPart); 
@@ -664,19 +649,6 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteExplici
         iteration += 1;
     }
     
-    // We revert the coordinates to the original position
-    if (predicted_position == true)
-    {
-        NodesArrayType& update_nodes_array = mrThisModelPart.Nodes();
-        
-        #pragma omp parallel for
-        for(int i = 0; i < static_cast<int>(update_nodes_array.size()); ++i) 
-            noalias((update_nodes_array.begin() + i)->Coordinates()) -= (update_nodes_array.begin() + i)->GetValue(DELTA_COORDINATES);
-        
-        // Calculate the mean of the normal in all the nodes
-        MortarUtilities::ComputeNodesMeanNormalModelPart(mrThisModelPart); 
-    }
-    
     KRATOS_CATCH("");
 }
 
@@ -687,19 +659,6 @@ template< int TDim, int TNumNodes, class TVarType, HistoricalValues THist>
 void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteImplicitMapping()
 {
     KRATOS_TRY;
-
-    // If the position of the geometry has been updated
-    const bool predicted_position = mThisParameters["use_predicted_position"].GetBool();
-    
-    // We update the coordinates
-    if (predicted_position == true)
-    {
-        NodesArrayType& update_nodes_array = mrThisModelPart.Nodes();
-        
-        #pragma omp parallel for
-        for(int i = 0; i < static_cast<int>(update_nodes_array.size()); ++i) 
-            noalias((update_nodes_array.begin() + i)->Coordinates()) += (update_nodes_array.begin() + i)->GetValue(DELTA_COORDINATES);
-    }
     
     // Calculate the mean of the normal in all the nodes
     MortarUtilities::ComputeNodesMeanNormalModelPart(mrThisModelPart); 
@@ -840,19 +799,6 @@ void SimpleMortarMapperProcess<TDim, TNumNodes, TVarType, THist>::ExecuteImplici
         }
         
         iteration += 1;
-    }
-    
-    // We revert the coordinates to the original position
-    if (predicted_position == true)
-    {
-        NodesArrayType& update_nodes_array = mrThisModelPart.Nodes();
-        
-        #pragma omp parallel for
-        for(int i = 0; i < static_cast<int>(update_nodes_array.size()); ++i) 
-            noalias((update_nodes_array.begin() + i)->Coordinates()) -= (update_nodes_array.begin() + i)->GetValue(DELTA_COORDINATES);
-        
-        // Calculate the mean of the normal in all the nodes
-        MortarUtilities::ComputeNodesMeanNormalModelPart(mrThisModelPart); 
     }
     
     KRATOS_CATCH(""); 
