@@ -176,12 +176,14 @@ public:
             const int nl_iter = rModelPart.GetProcessInfo()[NL_ITERATION_NUMBER];
             const double label = static_cast<double>(nl_iter);
             
-            mGidIO.InitializeMesh(label);
-            mGidIO.WriteMesh(rModelPart.GetMesh());
-            mGidIO.FinalizeMesh();
+            if (nl_iter == 1)
+            {
+                mGidIO.InitializeMesh(label);
+                mGidIO.WriteMesh(rModelPart.GetMesh());
+                mGidIO.FinalizeMesh();
+                mGidIO.InitializeResults(label, rModelPart.GetMesh());
+            }
             
-            mGidIO.InitializeResults(label, rModelPart.GetMesh());
-             
             mGidIO.WriteNodalFlags(INTERFACE, "INTERFACE", rModelPart.Nodes(), label);
             mGidIO.WriteNodalFlags(ACTIVE, "ACTIVE", rModelPart.Nodes(), label);
             mGidIO.WriteNodalFlags(SLAVE, "SLAVE", rModelPart.Nodes(), label);
