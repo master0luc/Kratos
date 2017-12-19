@@ -179,8 +179,9 @@ public:
             mGidIO.InitializeMesh(label);
             mGidIO.WriteMesh(rModelPart.GetMesh());
             mGidIO.FinalizeMesh();
-            mGidIO.InitializeResults(label, rModelPart.GetMesh());
             
+            mGidIO.InitializeResults(label, rModelPart.GetMesh());
+             
             mGidIO.WriteNodalFlags(INTERFACE, "INTERFACE", rModelPart.Nodes(), label);
             mGidIO.WriteNodalFlags(ACTIVE, "ACTIVE", rModelPart.Nodes(), label);
             mGidIO.WriteNodalFlags(SLAVE, "SLAVE", rModelPart.Nodes(), label);
@@ -232,11 +233,33 @@ public:
         // GiD IO for debugging
         if (mIODebug == true)
         {
-            mGidIO.FinalizeResults();
+            mGidIO.CloseResultFile();
             std::string new_name = "POST_LINEAR_ITER_STEP=";
             new_name.append(std::to_string(rModelPart.GetProcessInfo()[STEP]));
             mGidIO.ChangeOutputName(new_name);
         }
+    }
+    
+    /**
+     * This function finalizes the solution step
+     * @param rModelPart Reference to the ModelPart containing the contact problem.
+     * @param rDofSet Reference to the container of the problem's degrees of freedom (stored by the BuilderAndSolver)
+     * @param A System matrix (unused)
+     * @param Dx Vector of results (variations on nodal variables)
+     * @param b RHS vector (residual)
+     */
+    
+    void FinalizeSolutionStep(
+        ModelPart& rModelPart,
+        DofsArrayType& rDofSet,
+        const TSystemMatrixType& A,
+        const TSystemVectorType& Dx,
+        const TSystemVectorType& b
+        ) override
+    { 
+        // GiD IO for debugging
+        if (mIODebug == true)
+            mGidIO.FinalizeResults();
     }
     
     ///@}
