@@ -88,9 +88,7 @@ void AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes,
     KRATOS_TRY;   
     
     if (rResult.size() != MatrixSize)
-    {
         rResult.resize( MatrixSize, false );
-    }
     
     unsigned int index = 0;
     
@@ -139,9 +137,7 @@ void AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes,
     KRATOS_TRY;
     
     if (rConditionalDofList.size() != MatrixSize)
-    {
         rConditionalDofList.resize( MatrixSize );
-    }
     
     unsigned int index = 0;
     

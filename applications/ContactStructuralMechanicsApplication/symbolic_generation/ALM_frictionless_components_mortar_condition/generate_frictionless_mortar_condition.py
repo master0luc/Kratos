@@ -21,24 +21,28 @@ def convert_active_inactive_int(list_active):
         count += 1
     return value
 
-### Debug
+## Debug
 #dim_combinations = [2]
 #nnodes_combinations = [2]
+#normal_combs = 2
 
 dim_combinations = [2,3,3]
 nnodes_combinations = [2,3,4]
+normal_combs = 2
 
-lhs_string = ""
 lhs_template_begin_string = "\n/***********************************************************************************/\n/***********************************************************************************/\n\ntemplate<>\nbounded_matrix<double, MatrixSize, MatrixSize> AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation>::CalculateLocalLHS(\n        const MortarConditionMatrices& rMortarConditionMatrices,\n        const DerivativeDataType& rDerivativeData,\n        const unsigned int rActiveInactive\n        )\n{\n    bounded_matrix<double,MatrixSize,MatrixSize> lhs;\n    \n    // Initialize values\n    const bounded_matrix<double, TNumNodes, TDim>& u1 = rDerivativeData.u1;\n    const bounded_matrix<double, TNumNodes, TDim>& u2 = rDerivativeData.u2;\n    const bounded_matrix<double, TNumNodes, TDim>& X1 = rDerivativeData.X1;\n    const bounded_matrix<double, TNumNodes, TDim>& X2 = rDerivativeData.X2;\n    \n    const array_1d<double, TNumNodes>& LMNormal = MortarUtilities::GetVariableVector<TNumNodes>(this->GetGeometry(), NORMAL_CONTACT_STRESS, 0);\n    \n    const bounded_matrix<double, TNumNodes, TDim>& NormalSlave = rDerivativeData.NormalSlave;\n    const bounded_matrix<double, TNumNodes, TDim>& AbsNormalSlave = MortarUtilities::GetAbsMatrix<TDim, TNumNodes>(NormalSlave);\n\n    // The ALM parameters\n    const double ScaleFactor = rDerivativeData.ScaleFactor;\n    const array_1d<double, TNumNodes>& PenaltyParameter = rDerivativeData.PenaltyParameter;\n    \n    // Mortar operators\n    const bounded_matrix<double, TNumNodes, TNumNodes>& MOperator = rMortarConditionMatrices.MOperator;\n    const bounded_matrix<double, TNumNodes, TNumNodes>& DOperator = rMortarConditionMatrices.DOperator;\n    // Mortar operators derivatives\n    const array_1d<bounded_matrix<double, TNumNodes, TNumNodes>, SIZEDERIVATIVES2>& DeltaMOperator = rMortarConditionMatrices.DeltaMOperator;\n    const array_1d<bounded_matrix<double, TNumNodes, TNumNodes>, SIZEDERIVATIVES2>& DeltaDOperator = rMortarConditionMatrices.DeltaDOperator;\n\n"
 
 lhs_template_end_string = "\n\n    return lhs;\n}\n"
 
-rhs_string = ""
 rhs_template_begin_string = "\n/***********************************************************************************/\n/***********************************************************************************/\n\ntemplate<>\narray_1d<double, MatrixSize> AugmentedLagrangianMethodFrictionlessMortarContactCondition<TDim,TNumNodes, TNormalVariation>::CalculateLocalRHS(\n        const MortarConditionMatrices& rMortarConditionMatrices,\n        const DerivativeDataType& rDerivativeData,\n        const unsigned int rActiveInactive\n        )\n{\n    array_1d<double,MatrixSize> rhs;\n\n    // Initialize values\n    const bounded_matrix<double, TNumNodes, TDim>& u1 = rDerivativeData.u1;\n    const bounded_matrix<double, TNumNodes, TDim>& u2 = rDerivativeData.u2;\n    const bounded_matrix<double, TNumNodes, TDim>& X1 = rDerivativeData.X1;\n    const bounded_matrix<double, TNumNodes, TDim>& X2 = rDerivativeData.X2;\n    \n    const array_1d<double, TNumNodes>& LMNormal = MortarUtilities::GetVariableVector<TNumNodes>(this->GetGeometry(), NORMAL_CONTACT_STRESS, 0);\n    \n    const bounded_matrix<double, TNumNodes, TDim>& NormalSlave = rDerivativeData.NormalSlave;\n    const bounded_matrix<double, TNumNodes, TDim>& AbsNormalSlave = MortarUtilities::GetAbsMatrix<TDim, TNumNodes>(NormalSlave);\n\n    // The ALM parameters\n    const double ScaleFactor = rDerivativeData.ScaleFactor;\n    const array_1d<double, TNumNodes>& PenaltyParameter = rDerivativeData.PenaltyParameter;\n    \n    // Mortar operators\n    const bounded_matrix<double, TNumNodes, TNumNodes>& MOperator = rMortarConditionMatrices.MOperator;\n    const bounded_matrix<double, TNumNodes, TNumNodes>& DOperator = rMortarConditionMatrices.DOperator;\n\n"
 
 rhs_template_end_string = "\n\n    return rhs;\n}\n"
 
-for normalvar in range(2):
+# We track the output each time
+output_count = 0
+total_combs = normal_combs * len(nnodes_combinations)
+
+for normalvar in range(normal_combs):
     
     if normalvar == 0:
         normalvarstring = "false"
@@ -49,7 +53,11 @@ for normalvar in range(2):
         lhs_template_begin_string += "   const array_1d<bounded_matrix<double, TNumNodes, TDim>,  (TNumNodes * TDim)> DeltaNormalSlave = rDerivativeData.DeltaNormalSlave;\n\n"
     
     for dim, nnodes in zip(dim_combinations, nnodes_combinations):
-
+        # Update counter and clear strings
+        lhs_string = ""
+        rhs_string = ""
+        output_count += 1
+        
         from sympy.utilities.iterables import ibin
         active_inactive_combinations = list(ibin(nnodes, 'all'))
         
@@ -241,32 +249,38 @@ for normalvar in range(2):
         lhs_string = lhs_string.replace("array[1]d", "array_1d") # Repair the definition
         rhs_string = rhs_string.replace("array[1]d", "array_1d") # Repair the definition
 
-#############################################################################
-############################### SIMPLIFICATION ##############################
-#############################################################################
+        #############################################################################
+        ############################### SIMPLIFICATION ##############################
+        #############################################################################
 
-lhs_string = lhs_string.replace("pow(", "std::pow(")
-lhs_string = lhs_string.replace("sqrt(", "std::sqrt(")
-rhs_string = rhs_string.replace("pow(", "std::pow(")
-rhs_string = rhs_string.replace("sqrt(", "std::sqrt(")
+        lhs_string = lhs_string.replace("pow(", "std::pow(")
+        lhs_string = lhs_string.replace("sqrt(", "std::sqrt(")
+        rhs_string = rhs_string.replace("pow(", "std::pow(")
+        rhs_string = rhs_string.replace("sqrt(", "std::sqrt(")
 
-for dof in reversed(range(len(u1_var))):
-    lhs_string = lhs_string.replace("DeltaNormalSlave"+str(dof), "DeltaNormalSlave["+str(dof)+"]")
-for dof in reversed(range(len(u12_var))):
-    lhs_string = lhs_string.replace("DeltaDOperator"+str(dof), "DeltaDOperator["+str(dof)+"]")
-for dof in reversed(range(len(u12_var))):
-    lhs_string = lhs_string.replace("DeltaMOperator"+str(dof), "DeltaMOperator["+str(dof)+"]")
-    
-#############################################################################
-################################# FINAL SAVING ##############################
-#############################################################################
-
-input = open("ALM_frictionless_mortar_contact_condition_template.cpp",'r').read()
-outputstring = input.replace("// replace_lhs", lhs_string)
-outputstring = outputstring.replace("// replace_rhs", rhs_string)
-output = open("ALM_frictionless_mortar_contact_condition.cpp",'w')
-output.write(outputstring)
-output.close()
+        for dof in reversed(range(len(u1_var))):
+            lhs_string = lhs_string.replace("DeltaNormalSlave"+str(dof), "DeltaNormalSlave["+str(dof)+"]")
+        for dof in reversed(range(len(u12_var))):
+            lhs_string = lhs_string.replace("DeltaDOperator"+str(dof), "DeltaDOperator["+str(dof)+"]")
+        for dof in reversed(range(len(u12_var))):
+            lhs_string = lhs_string.replace("DeltaMOperator"+str(dof), "DeltaMOperator["+str(dof)+"]")
+            
+        #############################################################################
+        ################################# FINAL SAVING ##############################
+        #############################################################################
+        
+        if (output_count == 1):
+            input = open("ALM_frictionless_mortar_contact_condition_template.cpp",'r').read()
+        else:
+            input = open("ALM_frictionless_mortar_contact_condition.cpp",'r').read()
+        if (output_count < total_combs):
+            lhs_string += "// replace_lhs"
+            rhs_string += "// replace_rhs"
+        outputstring = input.replace("// replace_lhs", lhs_string)
+        outputstring = outputstring.replace("// replace_rhs", rhs_string)
+        output = open("ALM_frictionless_mortar_contact_condition.cpp",'w')
+        output.write(outputstring)
+        output.close()
 
 print("Strings have been replaced...")
 
