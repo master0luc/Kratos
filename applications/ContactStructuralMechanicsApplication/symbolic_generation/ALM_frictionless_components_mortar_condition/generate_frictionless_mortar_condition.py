@@ -58,12 +58,12 @@ for normalvar in range(2):
         for active_inactive in active_inactive_combinations: # Change output in combination of this
             
             active_inactive_comb += 1
-            number_dof = dim * (2 * nnodes) + nnodes
+            number_dof = dim * (3 * nnodes)
 
             #Defining the unknowns
             u1 = DefineMatrix('u1',nnodes,dim) #u1(i,j) is displacement of node i component j at domain 1
             u2 = DefineMatrix('u2',nnodes,dim) #u2(i,j) is displacement of node i component j at domain 2
-            LMNormal = DefineVector('LMNormal',nnodes) 
+            LM = DefineMatrix('LM',nnodes,dim)
             NormalGap = DefineVector('NormalGap',nnodes) 
             DOperator = DefineMatrix('DOperator',nnodes,nnodes) 
             MOperator = DefineMatrix('MOperator',nnodes,nnodes) 
@@ -84,7 +84,7 @@ for normalvar in range(2):
             # Define test functions
             w1 = DefineMatrix('w1',nnodes,dim)
             w2 = DefineMatrix('w2',nnodes,dim)
-            wLMNormal = DefineVector('wLMNormal',nnodes)
+            wLM = DefineMatrix('wLMN',nnodes,dim)
 
             # Define variables list for later derivation
             u1_var = []
@@ -95,10 +95,10 @@ for normalvar in range(2):
             u12_var=u1_var.copy()
             u1_lm_var=u1_var.copy()
             CreateVariableMatrixList(u12_var, u2)
-            CreateVariableVectorList(lm_var, LMNormal)
-            CreateVariableVectorList(u1_lm_var, LMNormal)
+            CreateVariableMatrixList(lm_var, LM)
+            CreateVariableMatrixList(u1_lm_var, LM)
             all_var=u12_var.copy()
-            CreateVariableVectorList(all_var, LMNormal)
+            CreateVariableMatrixList(all_var, LM)
 
             # Force the variables to be dependendant of the DOF
             if normalvar == 1:
@@ -109,12 +109,6 @@ for normalvar in range(2):
             # Defining the normal NormalGap
             Dx1Mx2 = DOperator * x1 - MOperator * x2
             Dw1Mw2 = DOperator * w1 - MOperator * w2
-            
-            Dw1Mw2Normal = Dw1Mw2.copy()
-            AbsNormalSlave = DefineMatrix('AbsNormalSlave',nnodes,dim)
-            for node in range(nnodes):
-                for idim in range(dim):
-                    Dw1Mw2Normal[node, idim] = AbsNormalSlave[node, idim] * ((DOperator.row(node).dot(w1.col(idim))) - (MOperator.row(node).dot(w2.col(idim))))
             
             for node in range(nnodes): 
                 NormalGap[node] = Dx1Mx2.row(node).dot(NormalSlave.row(node))
@@ -134,9 +128,10 @@ for normalvar in range(2):
                     testfunc[count] = w1[i,k]
                     count+=1
             for i in range(0,nnodes):
-                dofs[count] = LMNormal[i]
-                testfunc[count] = wLMNormal[i]
-                count+=1
+                for k in range(0,dim):
+                    dofs[count] = LM[i,k]
+                    testfunc[count] = wLM[i,k]
+                    count+=1
             print("dofs = ",dofs)
             print("testfunc = ",testfunc)
 
@@ -151,12 +146,11 @@ for normalvar in range(2):
             for node in range(nnodes):
                 active = active_inactive[node] 
                 if (active == 1):
-                    augmented_contact_pressure = (ScaleFactor * LMNormal[node] + PenaltyParameter[node] * NormalGap[node]) 
-                    rv_galerkin += (augmented_contact_pressure * NormalSlave.row(node)).dot(Dw1Mw2Normal.row(node))
-                    #rv_galerkin += (augmented_contact_pressure * NormalSlave.row(node)).dot(Dw1Mw2.row(node))
-                    rv_galerkin += ScaleFactor * NormalGap[node] * wLMNormal[node]
+                    augmented_lm = (ScaleFactor * LM.row(node) + PenaltyParameter[node] * NormalGap[node] * NormalSlave.row(node)) 
+                    rv_galerkin += (augmented_lm).dot(Dw1Mw2.row(node))
+                    rv_galerkin += ScaleFactor * NormalGap[node] * (wLM.row(node).dot(NormalSlave.row(node)))
                 else:
-                    rv_galerkin += - ScaleFactor**2.0/PenaltyParameter[node] * LMNormal[node] * wLMNormal[node]
+                    rv_galerkin += - ScaleFactor**2.0/PenaltyParameter[node] * (LM.row(node).dot(NormalSlave.row(node))) * (wLM.row(node).dot(NormalSlave.row(node)))
 
             if(do_simplifications):
                 rv_galerkin = simplify(rv_galerkin)
