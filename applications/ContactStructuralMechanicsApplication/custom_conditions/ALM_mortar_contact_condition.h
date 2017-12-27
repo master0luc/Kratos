@@ -539,7 +539,7 @@ protected:
         GeneralVariables& rVariables,
         const array_1d<double, 3>& NormalMaster,
         const PointType& LocalPoint
-    );
+        );
     
     /******************************************************************/
     /********** AUXILLIARY METHODS FOR GENERAL CALCULATIONS ***********/
@@ -556,6 +556,12 @@ protected:
         return 0;
     }
 
+    /**
+     * It checks if the element is isolated or not
+     */
+    
+    bool CheckIsolatedElement();
+    
     /**
      * It returns theintegration method considered
      */

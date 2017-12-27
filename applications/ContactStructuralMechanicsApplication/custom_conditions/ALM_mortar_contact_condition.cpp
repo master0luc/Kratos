@@ -288,7 +288,8 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     
     // We call the exact integration utility
     // TODO: Think about the limit
-    IntegrationUtility integration_utility = IntegrationUtility (mIntegrationOrder, this->GetGeometry().Length());
+    const double distance_threshold = 1.0 * this->GetGeometry().Length();
+    IntegrationUtility integration_utility = IntegrationUtility (mIntegrationOrder, distance_threshold);
     
     // If we consider the normal variation
     const NormalDerivativesComputation consider_normal_variation = static_cast<NormalDerivativesComputation>(rCurrentProcessInfo[CONSIDER_NORMAL_VARIATION]);
@@ -301,7 +302,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     
     // Reading integration points
     ConditionArrayListType conditions_points_slave;
-    const bool is_inside = (this->Is(ISOLATED)) ? false : integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, normal_master, conditions_points_slave);
+    const bool is_inside = CheckIsolatedElement() ? false : integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, normal_master, conditions_points_slave);
     
     double integration_area;
     integration_utility.GetTotalArea(slave_geometry, conditions_points_slave, integration_area);
@@ -447,7 +448,8 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
     
     // We call the exact integration utility
     // TODO: Think about the limit
-    IntegrationUtility integration_utility = IntegrationUtility (mIntegrationOrder, this->GetGeometry().Length());
+    const double distance_threshold = 1.0 * this->GetGeometry().Length();
+    IntegrationUtility integration_utility = IntegrationUtility (mIntegrationOrder, distance_threshold);
     
     // The master geometry
     GeometryType& master_geometry = this->GetPairedGeometry();
@@ -455,7 +457,7 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim, TNumNodes, TFrictiona
         
     // Reading integration points
     ConditionArrayListType conditions_points_slave;
-    const bool is_inside = (this->Is(ISOLATED)) ? false : integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, normal_master, conditions_points_slave);
+    const bool is_inside = CheckIsolatedElement() ? false : integration_utility.GetExactIntegration(slave_geometry, normal_slave, master_geometry, normal_master, conditions_points_slave);
     
     double integration_area;
     integration_utility.GetTotalArea(slave_geometry, conditions_points_slave, integration_area);
@@ -633,6 +635,20 @@ void AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     
     // JACOBIAN
     rVariables.jMaster = master_geometry.Jacobian( rVariables.jMaster, projected_gp_local);
+}
+
+/***********************************************************************************/
+/***********************************************************************************/
+
+template< unsigned int TDim, unsigned int TNumNodes, bool TFrictional, bool TNormalVariation>
+bool AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional, TNormalVariation>:: CheckIsolatedElement()
+{
+    if (this->Is(ISOLATED))
+        return true;
+    
+    // TODO: Add the movement check!!!!
+    
+    return false;
 }
 
 /***********************************************************************************/
