@@ -501,14 +501,14 @@ inline void TreeContactSearch<TDim, TNumNodes>::InitializeAcceleration()
             auto it_node = nodes_array.begin() + i;
             const array_1d<double, 3>& nodal_volume_acceleration = it_node->FastGetSolutionStepValue(VOLUME_ACCELERATION);
             if (norm_2(volume_acceleration) > 0.0) {
-                if (!it_node->IsFixed(ACCELERATION_X)) it_node->FastGetSolutionStepValue(ACCELERATION_X) = volume_acceleration[0];
-                if (!it_node->IsFixed(ACCELERATION_Y)) it_node->FastGetSolutionStepValue(ACCELERATION_Y) = volume_acceleration[1];
-                if (!it_node->IsFixed(ACCELERATION_Z)) it_node->FastGetSolutionStepValue(ACCELERATION_Z) = volume_acceleration[2];
+                if (!it_node->IsFixed(ACCELERATION_X)) it_node->FastGetSolutionStepValue(ACCELERATION_X, 1) = volume_acceleration[0];
+                if (!it_node->IsFixed(ACCELERATION_Y)) it_node->FastGetSolutionStepValue(ACCELERATION_Y, 1) = volume_acceleration[1];
+                if (!it_node->IsFixed(ACCELERATION_Z)) it_node->FastGetSolutionStepValue(ACCELERATION_Z, 1) = volume_acceleration[2];
             }
             else if (norm_2(nodal_volume_acceleration) > 0.0) {
-                if (!it_node->IsFixed(ACCELERATION_X)) it_node->FastGetSolutionStepValue(ACCELERATION_X) = nodal_volume_acceleration[0];
-                if (!it_node->IsFixed(ACCELERATION_Y)) it_node->FastGetSolutionStepValue(ACCELERATION_Y) = nodal_volume_acceleration[1];
-                if (!it_node->IsFixed(ACCELERATION_Z)) it_node->FastGetSolutionStepValue(ACCELERATION_Z) = nodal_volume_acceleration[2];
+                if (!it_node->IsFixed(ACCELERATION_X)) it_node->FastGetSolutionStepValue(ACCELERATION_X, 1) = nodal_volume_acceleration[0];
+                if (!it_node->IsFixed(ACCELERATION_Y)) it_node->FastGetSolutionStepValue(ACCELERATION_Y, 1) = nodal_volume_acceleration[1];
+                if (!it_node->IsFixed(ACCELERATION_Z)) it_node->FastGetSolutionStepValue(ACCELERATION_Z, 1) = nodal_volume_acceleration[2];
             }
         }
     }
