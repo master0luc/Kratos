@@ -10,6 +10,7 @@
 //
 
 // System includes
+// #include <algorithm>
 #ifdef KRATOS_DEBUG
 #include <iomanip>
 #endif
@@ -17,11 +18,8 @@
 // External includes
 
 // Project includes
-/* Mortar includes */
+#include "includes/global_variables.h"
 #include "custom_conditions/ALM_mortar_contact_condition.h"
-
-/* Additional includes */
-#include <algorithm>
 
 /* Utilities */
 #include "utilities/math_utils.h"
@@ -646,7 +644,65 @@ bool AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     if (this->Is(ISOLATED))
         return true;
     
-    // TODO: Add the movement check!!!!
+//     // We define the tolerance
+//     const double tolerance = std::numeric_limits<double>::epsilon();
+//  
+//     // Some auxiliar values
+//     PointType center_local_coords;
+//     Vector N_slave, N_master;
+//     
+//     // Slave geometry
+//     GeometryType& slave_geometry = this->GetGeometry();
+//     slave_geometry.PointLocalCoordinates(center_local_coords, slave_geometry.Center());
+//     slave_geometry.ShapeFunctionsValues( N_slave, center_local_coords.Coordinates() );
+//     
+//     const MatrixType& delta_disp_mat_slave = MortarUtilities::GetVariableMatrix<TDim, TNumNodes>(slave_geometry, DISPLACEMENT, 0) - MortarUtilities::GetVariableMatrix<TDim, TNumNodes>(slave_geometry, DISPLACEMENT, 1);
+//     
+//     const Vector& delta_disp_vect_slave = prod(trans(delta_disp_mat_slave), N_slave); // TODO: Check multiplciation is consistent
+//     
+//     // Master geometry
+//     GeometryType& master_geometry = this->GetPairedGeometry();
+//     master_geometry.PointLocalCoordinates(center_local_coords, master_geometry.Center());
+//     master_geometry.ShapeFunctionsValues( N_master, center_local_coords.Coordinates() );
+//     
+//     const MatrixType& delta_disp_mat_master = MortarUtilities::GetVariableMatrix<TDim, TNumNodes>(master_geometry, DISPLACEMENT, 0) - MortarUtilities::GetVariableMatrix<TDim, TNumNodes>(master_geometry, DISPLACEMENT, 1);
+//     
+//     const Vector& delta_disp_vect_master = prod(trans(delta_disp_mat_master), N_master); // TODO: Check multiplciation is consistent
+//     
+//     // We will assume that if nothing it moves can be paired
+//     const double norm_slave = norm_2(delta_disp_vect_slave);
+//     const double norm_master = norm_2(delta_disp_vect_master);
+//     if (norm_slave < tolerance && norm_master < tolerance)
+//         return false;
+//     
+//     // We define the normals
+//     const array_1d<double, 3> normal_slave = this->GetValue(NORMAL);
+//     const array_1d<double, 3>& normal_master = this->GetValue(PAIRED_NORMAL);
+//     
+//     const double angle_slave = MathUtils<double>::VectorsAngle(delta_disp_vect_slave, normal_slave);
+//     const double angle_master = MathUtils<double>::VectorsAngle(delta_disp_vect_master, normal_master);
+//     
+//     // In case the both angles are in absolute value minor to angle threshold is active
+//     const double angle_threshold = Globals::Pi/2;
+//     if (std::abs(angle_slave) <= angle_threshold || std::abs(angle_master) <= angle_threshold )
+//         return false;
+//     else if (((std::abs(angle_slave) > angle_threshold) && (norm_slave < tolerance))
+//           || ((std::abs(angle_master) > angle_threshold) && (norm_master < tolerance))) { // In case the angle is greater Pi/2 and the other domain is not moving
+// #ifdef KRATOS_DEBUG
+//     std::cout << "ABS(ANGLE SLAVE) : " << std::abs(angle_slave) << "NORM DELTA DISP: " << norm_slave << std::endl;
+//     std::cout << "ABS(ANGLE MASTER) : " << std::abs(angle_master) << "NORM DELTA DISP: " << norm_master << std::endl;
+// #endif
+//         return true;
+//     } else { // In case both are moving in oposition to the normal
+// #ifdef KRATOS_DEBUG
+//     std::cout << "ABS(ANGLE SLAVE) : " << std::abs(angle_slave) << "NORM DELTA DISP: " << norm_slave << std::endl;
+//     std::cout << "ABS(ANGLE MASTER) : " << std::abs(angle_master) << "NORM DELTA DISP: " << norm_master << std::endl;
+// #endif
+//         return true;
+//     }
+    
+    // TODO: Think about the magnitude order (one can be much larger than the other)
+    // TODO: Think about the influence of velocity and acceleration
     
     return false;
 }
