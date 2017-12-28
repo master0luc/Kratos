@@ -558,9 +558,13 @@ protected:
 
     /**
      * It checks if the element is isolated or not
+     * @param DeltaTime The increment of time in each time step
      */
     
-    bool CheckIsolatedElement();
+    bool CheckIsolatedElement(
+        const double DeltaTime, 
+        const bool HalfJump = true
+        );
     
     /**
      * It returns theintegration method considered
