@@ -75,9 +75,11 @@
         "help"          : "This process compares two files and executes an Unittest Assert",
         "process_name"  : "CompareTwoFilesCheckProcess",
         "Parameters"    : {
-            "file_name_1"       : "eigen_test/Eigen_Q4_Thick_2x2_Plate_test.post.res.ref",
-            "file_name_2"       : "eigen_test/Eigen_Q4_Thick_2x2_Plate_EigenResults_0.post.res",
-            "deterministic"     : true
+            "file_name_1"             : "eigen_test/Eigen_Q4_Thick_2x2_Plate_test.post.res.ref",
+            "file_name_2"             : "eigen_test/Eigen_Q4_Thick_2x2_Plate_EigenResults_0.post.res",
+            "deterministic"           : false,
+            "non_deterministic_comp"  : "post_res_file",
+            "remove_file_2"           : true
         }
     }],
     "restart_options"          : {

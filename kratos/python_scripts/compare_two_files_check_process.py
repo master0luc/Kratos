@@ -26,7 +26,9 @@ class CompareTwoFilesCheckProcess(KratosMultiphysics.Process, KratosUnittest.Tes
             "deterministic"          : true,
             "non_deterministic_comp" : "mesh_file",
             "error_assumed"          : 1.0e-6,
-            "dimension"              : 3
+            "dimension"              : 3,
+            "remove_file_1"          : false,
+            "remove_file_2"          : false
         }
         """)
         
@@ -68,8 +70,81 @@ class CompareTwoFilesCheckProcess(KratosMultiphysics.Process, KratosUnittest.Tes
             elif (self.non_deterministic_comp == "sol_file"):
                 error = _ReadMetric(self.file_name_1, self.file_name_2, self.dimension)
                 self.assertTrue(error < self.error_assumed)
+            elif (self.non_deterministic_comp == "post_res_file"):
+                self._compare_post_res_file(self.file_name_1, self.file_name_2)
             else: 
                 raise NameError('Non-deterministic comparision not implemented yet')
+        
+        if self.params["remove_file_1"].GetBool():
+            os.remove(self.file_name_1)
+        if self.params["remove_file_2"].GetBool():
+            os.remove(self.file_name_2)
+
+    def _compare_post_res_file(self, input_file1, input_file2):
+        f1 = open(input_file1,'r')
+        f2 = open(input_file2,'r')
+        
+        lines1 = f1.readlines()
+        lines2 = f2.readlines()
+        num_lines_1 = len(lines1)
+
+        if num_lines_1 != len(lines2):
+            raise Exception("Files have different number of lines!")
+
+        results_start_index = -1
+        results_available = False
+
+        # comparing the header
+        for i in range(num_lines_1):
+            if lines1[i].startswith("Result "):
+                results_start_index = i
+                results_available = True
+                break
+
+            tmp1 = lines1[i].split()
+            tmp2 = lines2[i].split()
+
+            if len(tmp1) != len(tmp2):
+                raise Exception("Lines have different length!")
+
+            for j in range(len(tmp1)):
+                self.assertTrue(tmp1[j] == tmp2[j], msg=tmp1[j] + " != " + tmp2[j])
+
+        # comparing the results
+        if results_available:
+            while results_start_index < num_lines_1:
+                results_start_index = self._compare_results_block(lines1, lines2, results_start_index)
+        
+        f1.close()
+        f2.close()
+
+    def _compare_results_block(self, lines1, lines2, current_index):
+        # comparing result labels
+        tmp1 = lines1[current_index].split()
+        tmp2 = lines2[current_index].split()
+
+        if len(tmp1) != len(tmp2):
+            raise Exception("Result labels have different length!")
+
+        for j in range(len(tmp1)):
+            self.assertTrue(tmp1[j] == tmp2[j], msg=tmp1[j] + " != " + tmp2[j])
+
+        current_index += 1 # skipping "Values"-line
+
+        # comparing results
+        while lines1[current_index+1] != "End Values\n":
+            current_index += 1
+            tmp1 = lines1[current_index].split()
+            tmp2 = lines2[current_index].split()
+            if len(tmp1) != len(tmp2):
+                raise Exception("Different number of results!")
+
+            for j in range(len(tmp1)):
+                self.assertAlmostEqual(float(tmp1[j]),
+                                       float(tmp2[j]), 7)
+
+        return current_index+2 # directly incrementing to get the new result label
+        
 
 def _ConvertStringToListFloat(line, space = " ", endline = ""):
     list_values = []
