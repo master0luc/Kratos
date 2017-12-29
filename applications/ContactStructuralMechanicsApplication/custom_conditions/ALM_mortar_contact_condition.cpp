@@ -712,10 +712,11 @@ bool AugmentedLagrangianMethodMortarContactCondition<TDim,TNumNodes,TFrictional,
     
     // In case the both angles are in absolute value minor to angle threshold is active
     const double angle_threshold = 1.025 * Globals::Pi/2; // We add some tolerance to the angle
+    const double ratio_master_slave = 5.0e-2;
     if (std::abs(angle_slave) <= angle_threshold || std::abs(angle_master) <= angle_threshold )
         return false;
-    else if (((std::abs(angle_slave) > angle_threshold) && (norm_slave < tolerance))
-          || ((std::abs(angle_master) > angle_threshold) && (norm_master < tolerance))) { // In case the angle is greater Pi/2 and the other domain is not moving
+    else if (((std::abs(angle_slave) > angle_threshold) && (norm_slave < ratio_master_slave * norm_master))
+          || ((std::abs(angle_master) > angle_threshold) && (norm_master < ratio_master_slave * norm_slave))) { // In case the angle is greater Pi/2 and the other domain is not moving
 #ifdef KRATOS_DEBUG
     std::cout << "ABS(ANGLE SLAVE) : " << std::abs(angle_slave) << "NORM DELTA DISP: " << norm_slave << std::endl;
     std::cout << "ABS(ANGLE MASTER) : " << std::abs(angle_master) << "NORM DELTA DISP: " << norm_master << std::endl;
